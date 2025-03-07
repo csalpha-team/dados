@@ -1,2 +1,11 @@
 # arquivos com credenciais
 .env
+
+# scripts
+test.ipynb
+
+# folders
+temp/
+
+# arquivos de configuração
+.python-version

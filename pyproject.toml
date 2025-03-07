@@ -6,9 +6,11 @@ authors = ["folhesgabriel <pisagabriel09@gmail.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = "^3.10"
 pandas = "^2.2.3"
-basedosdados = "^2.0.0"
+basedosdados = {extras = ["all"], version = "^2.0.0"}
+pydantic = "^2.10.6"
+dotenv = "^0.9.9"
 
 
 [build-system]
