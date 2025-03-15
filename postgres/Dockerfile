@@ -1,24 +1,19 @@
-# Use the official PostgreSQL image
 FROM postgres:15
 
-# These environment variables can be overridden by docker-compose
-ENV POSTGRES_USER=postgres
-ENV POSTGRES_PASSWORD=postgres
-ENV POSTGRES_DB=testdb
-
-# Create a directory for initialization scripts
+# Cria diretório para armazenar scripts de setup dentro do container
 RUN mkdir -p /docker-entrypoint-initdb.d
-# Copy the initialization SQL script into the container
-COPY ./init/init.sql /docker-entrypoint-initdb.d/
 
+# Copia arquivo de definição dos bancos de dados para o container
+COPY ./init/init.sql /docker-entrypoint-initdb.d/init.sql.template
+COPY ./init/create-databases.sh /docker-entrypoint-initdb.d/
 
-# Create a startup script to apply custom configurations at runtime
+# Copia scripts para implementar configurações do banco parametrizadas em .env e 
 COPY ./custom-entrypoint.sh /custom-entrypoint.sh
+
+# Define permissão de execução para o script
 RUN chmod +x /custom-entrypoint.sh
 
-# Expose the PostgreSQL port
 EXPOSE 5432
 
-# Use custom entrypoint to apply runtime configurations
 ENTRYPOINT ["/custom-entrypoint.sh"]
 CMD ["postgres"]

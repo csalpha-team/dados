@@ -13,7 +13,14 @@ services:
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_DB}
+      - PG_SHARED_BUFFERS=${PG_SHARED_BUFFERS}
+      - PG_WORK_MEM=${PG_WORK_MEM}
+      - PG_MAINTENANCE_WORK_MEM=${PG_MAINTENANCE_WORK_MEM}
+      - DB_PREFIX=${DB_PREFIX}
+      - DB_RAW_ZONE=${DB_RAW_ZONE}
+      - DB_TRUSTED_ZONE=${DB_TRUSTED_ZONE}
+      - DB_AGREGATED_ZONE=${DB_AGREGATED_ZONE}
+      - DB_OUTPUT_ZONE=${DB_OUTPUT_ZONE}
     restart: unless-stopped
     networks:
       - app-network
