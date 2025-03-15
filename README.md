@@ -46,7 +46,7 @@ Nossa arquitetura é composta por quatro zonas principais, cada uma representada
   - Sem transformações ou limpezas
   - Preservação do formato original
   - Rastreabilidade completa
-- **Schema**: `raw_data`
+- **Schema**: `DB_RAW_ZONE`
 
 #### 2. Zona de Dados Tratados (`DB_TRUSTED_ZONE`)
 
@@ -65,7 +65,7 @@ Nossa arquitetura é composta por quatro zonas principais, cada uma representada
   - Correção de erros evidentes
   - Padronização de formatos
   - Remoção de duplicidades
-- **Schema**: `trusted_data`
+- **Schema**: `DB_TRUSTED_ZONE`
 
 #### 3. Zona de Dados Agregados (`DB_AGREGATED_ZONE`)
 
@@ -79,12 +79,12 @@ Nossa arquitetura é composta por quatro zonas principais, cada uma representada
 +---------------------+
 ```
 
-- **Propósito**: Armazenar dados processados, transformados e agregados
+- **Propósito**: Armazenar dados processados, transformados e agregados que serão utilizados no algoritmo
 - **Características**:
   - Cálculos derivados
   - Agregações e sumarizações
   - Enriquecimento de dados
-- **Schema**: `agregated_data`
+- **Schema**: `DB_AGREGATED_ZONE`
 
 #### 4. Zona de Saída do Algoritmo (`DB_OUTPUT_ZONE`)
 
@@ -98,11 +98,11 @@ Nossa arquitetura é composta por quatro zonas principais, cada uma representada
 +---------------------+
 ```
 
-- **Propósito**: Armazenar resultados finais prontos para consumo por aplicações
+- **Propósito**: Armazenar resultados finais prontos para consumo por aplicações e elaboração de relatórios
+
 - **Características**:
-  - Dados otimizados para leitura
-  - Formatos adequados para visualização
-  - Resultados de algoritmos e modelos
+  - Matrizes de insumo produto
+  - Resultados do [algoritmo](https://github.com/csalpha-team/csalpha) 
 - **Schema**: `output_data`
 
 ### Fluxo de Dados
@@ -125,7 +125,7 @@ O fluxo típico de dados através das zonas segue este padrão:
 1. Os dados brutos são ingeridos na **Zona Raw**
 2. Processos de limpeza e validação transformam os dados para a **Zona Trusted**
 3. Transformações, cálculos e agregações movem os dados para a **Zona Agregada**
-4. Algoritmos específicos processam os dados e armazenam resultados na **Zona Output**
+4. Algoritmos específicos processam os dados e armazenam resultados na **Zona de Saída**
 
 ### Tecnologias Utilizadas
 
@@ -145,7 +145,6 @@ O fluxo típico de dados através das zonas segue este padrão:
 │   └── init/                 # Scripts de inicialização dos bancos
 │       ├── init.sql.template # Template SQL para criação dos bancos
 │       └── create-databases.sh # Script de criação dos bancos
-└── docs/                     # Documentação
 ```
 
 ### Configuração
@@ -153,11 +152,11 @@ O fluxo típico de dados através das zonas segue este padrão:
 As configurações das zonas de dados podem ser personalizadas através do arquivo `.env`. Por padrão, os bancos de dados seguem este padrão de nomenclatura:
 
 ```
-DB_PREFIX=csalpha
-DB_RAW_ZONE=${DB_PREFIX}_raw
-DB_TRUSTED_ZONE=${DB_PREFIX}_trusted
+DB_PREFIX=zona
+DB_RAW_ZONE=${DB_PREFIX}_brutos
+DB_TRUSTED_ZONE=${DB_PREFIX}_tratados
 DB_AGREGATED_ZONE=${DB_PREFIX}_agregated
-DB_OUTPUT_ZONE=${DB_PREFIX}_output
+DB_OUTPUT_ZONE=${DB_PREFIX}_saida_algoritmo
 ```
 
 Para instruções detalhadas sobre como executar o ambiente localmente, consulte o arquivo [CONTRIBUTING.md](CONTRIBUTING.md).
