@@ -11,3 +11,6 @@ temp/
 .python-version
 
 # arquivos temporários
+
+# cache
+__pycache__
