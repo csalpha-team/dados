@@ -102,9 +102,23 @@ class PostgresETL:
             self.conn.rollback()
             raise
     
+    def create_schema(self, schema_name: str, if_not_exists: bool = True) -> None:
+        """
+        Create a schema in the database
+        
+        Args:
+            schema_name (str): Name of the schema to create
+            if_not_exists (bool): Add IF NOT EXISTS to query
+        """
+        exists_clause = "IF NOT EXISTS " if if_not_exists else ""
+        query = f"CREATE SCHEMA {exists_clause}{schema_name}"
+        
+        self.execute_query(query, commit=True)
+        self.logger.info(f"Schema {schema_name} created or already exists")
+    
     def create_table(self, table_name: str, columns: Dict[str, str], 
-                     primary_key: Optional[Union[str, List[str]]] = None,
-                     if_not_exists: bool = True) -> None:
+                 primary_key: Optional[Union[str, List[str]]] = None,
+                 if_not_exists: bool = True) -> None:
         """
         Create a table in the database
         
@@ -114,6 +128,9 @@ class PostgresETL:
             primary_key (str or List[str], optional): Column(s) to use as primary key
             if_not_exists (bool): Add IF NOT EXISTS to query
         """
+        # First, ensure the schema exists
+        self.create_schema(self.schema, if_not_exists=True)
+        
         columns_str = ", ".join([f"{col} {dtype}" for col, dtype in columns.items()])
         
         exists_clause = "IF NOT EXISTS " if if_not_exists else ""
