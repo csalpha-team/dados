@@ -61,7 +61,7 @@ if __name__ == "__main__":
         with open(f"../json/{file}", "r") as f:
             data = json.load(f)
         
-            tbl = parse_agrocenso_json(data)
+            tbl = parse_agrocenso_json(data, tipo_classificacao='Produtos da extração vegetal')
             
             df = pd.concat([df, tbl], ignore_index=True)
             
