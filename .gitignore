@@ -11,6 +11,8 @@ temp/
 .python-version
 
 # arquivos temporários
-
+br_csalpha_access
+prodlist_industria.xlsx
+prodlist_pesca.xlsx
 # cache
 __pycache__
