@@ -116,9 +116,10 @@ class PostgresETL:
         self.execute_query(query, commit=True)
         self.logger.info(f"Schema {schema_name} created or already exists")
     
-    def create_table(self, table_name: str, columns: Dict[str, str], 
+    def create_table(self, table_name: str, columns: Dict[str, str],
                  primary_key: Optional[Union[str, List[str]]] = None,
-                 if_not_exists: bool = True) -> None:
+                 if_not_exists: bool = True,
+                 drop_if_exists: bool = False) -> None:
         """
         Create a table in the database
         
@@ -127,13 +128,21 @@ class PostgresETL:
             columns (Dict[str, str]): Dictionary mapping column names to their types
             primary_key (str or List[str], optional): Column(s) to use as primary key
             if_not_exists (bool): Add IF NOT EXISTS to query
+            drop_if_exists (bool): Drop the table if it already exists before creating
         """
         # First, ensure the schema exists
         self.create_schema(self.schema, if_not_exists=True)
         
-        columns_str = ", ".join([f"{col} {dtype}" for col, dtype in columns.items()])
+        # If drop_if_exists is True, drop the table if it exists
+        if drop_if_exists:
+            self.execute_query(f"DROP TABLE IF EXISTS {self.schema}.{table_name}", commit=True)
+            self.logger.info(f"Dropped table {table_name} if it existed")
+            # Since we're dropping the table, we don't need the IF NOT EXISTS clause
+            exists_clause = ""
+        else:
+            exists_clause = "IF NOT EXISTS " if if_not_exists else ""
         
-        exists_clause = "IF NOT EXISTS " if if_not_exists else ""
+        columns_str = ", ".join([f"{col} {dtype}" for col, dtype in columns.items()])
         
         query = f"CREATE TABLE {exists_clause}{self.schema}.{table_name} ({columns_str}"
         
@@ -147,10 +156,14 @@ class PostgresETL:
         query += ")"
         
         self.execute_query(query, commit=True)
-        self.logger.info(f"Table {table_name} created or already exists")
+        
+        if drop_if_exists:
+            self.logger.info(f"Table {table_name} created")
+        else:
+            self.logger.info(f"Table {table_name} created or already exists")
         
     def load_data(self, table_name: str, data: Union[pd.DataFrame, List[Dict[str, Any]]],
-                  if_exists: str = 'append', chunk_size: int = 1000) -> int:
+                  if_exists: str = 'append', chunk_size: int = 100000) -> int:
         """
         Load data into a PostgreSQL table
         

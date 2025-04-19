@@ -67,8 +67,9 @@ async def async_crawler_censoagro(
     agregado: str, 
     nivel_geografico: str, 
     localidades: pd.DataFrame, 
-    classificacao: List[str], 
-    categorias, ) -> None:
+    classificacao: List[str],
+    nome_tabela: str
+    ) -> None:
     """
     Faz requisições para a API para cada ano, variável e categoria, salvando as respostas em arquivos JSON.
     Processa municípios em grupos de 20 para otimizar as requisições.
@@ -96,7 +97,6 @@ async def async_crawler_censoagro(
                     nivel_geografico, 
                     localidade,
                     classificacao, 
-                    categorias
                 )
                 print(f"URL for municipio {localidade}: {url}")
                 task = fetch(session, url)
@@ -105,8 +105,8 @@ async def async_crawler_censoagro(
             for localidade, future in tqdm(tasks, total=len(tasks)):
                 try:
                     response = await future
-                    os.makedirs('../json', exist_ok=True)
-                    with open(f'../json/{localidade}.json', 'w') as f:
+                    os.makedirs(f'../tmp/{nome_tabela}', exist_ok=True)
+                    with open(f'../tmp/{nome_tabela}/{localidade}.json', 'w') as f:
                         json.dump(response, f)
                 except asyncio.TimeoutError:
                     print(f"Request timed out for municipality {localidade}")
