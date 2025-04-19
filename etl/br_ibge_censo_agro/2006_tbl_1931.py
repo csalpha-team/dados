@@ -17,18 +17,16 @@ billing_id = os.getenv("BASEDOSDADADOS_PROJECT_ID")
 
 #https://servicodados.ibge.gov.br/api/docs/agregados?versao=3#api-bq
 API_URL_BASE        = "https://servicodados.ibge.gov.br/api/v3/agregados/{}/periodos/{}/variaveis/{}?localidades={}[{}]&classificacao={}"
-AGREGADO         = "6957"
-PERIODOS         = "2017"
-VARIAVEIS        = "|".join(["10084","10085","10086","10087","10088","10089"])
+AGREGADO         = "1931"
+PERIODOS         = "2006"
+VARIAVEIS        = "|".join(["40", "1999",])
 NIVEL_GEOGRAFICO = "N6"
 LOCALIDADES      = "all"
-CLASSIFICACAO    = "226[all]|829[all]"
-nome_tabela = "tbl_6957_2017"
-
+CLASSIFICACAO    = "12547[all]|12896[all]"
+nome_tabela = "tbl_1931_2006"
 
 if __name__ == "__main__":
     
-    print('Baixando tabela de municipios')
     print('------ Baixando tabela de municipios ------')
     municipios = bd.read_sql(
         """
@@ -63,12 +61,16 @@ if __name__ == "__main__":
         with open(f"../tmp/{nome_tabela}/{file}", "r") as f:
             data = json.load(f)
         
-            tbl = parse_agrocenso_json(data, id_produto='226', id_tipo_agricultura='829')
+            tbl = parse_agrocenso_json(data, id_produto='12547', id_tipo_agricultura='12896')
             
             df = pd.concat([df, tbl], ignore_index=True)
             
             del tbl
-    
+            
+    df = df.rename(columns={
+        'id_produto': 'id_tipo_producao',
+        'produto': 'tipo_producao',})
+            
     print('------ Carregando tabela no Banco de Dados ------')        
     with PostgresETL(
         host='localhost', 
@@ -82,8 +84,8 @@ if __name__ == "__main__":
                 'id_variavel': 'VARCHAR(255)',
                 'nome_variavel': 'VARCHAR(255)',
                 'unidade_medida': 'VARCHAR(255)',
-                'id_produto': 'VARCHAR(255)',
-                'produto': 'VARCHAR(255)',
+                'id_tipo_producao': 'VARCHAR(255)',
+                'tipo_producao': 'VARCHAR(255)',
                 'id_tipo_agricultura': 'VARCHAR(255)',
                 'tipo_agricultura': 'VARCHAR(255)',
                 'nome_municipio': 'VARCHAR(255)',
@@ -94,7 +96,7 @@ if __name__ == "__main__":
                
                 
                 
-            db.create_table('tbl_6957_2017', columns, if_not_exists=True)
+            db.create_table(nome_tabela, columns, if_not_exists=True)
             
-            db.load_data('tbl_6957_2017', df, if_exists='replace')
+            db.load_data(nome_tabela, df, if_exists='replace')
       

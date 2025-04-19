@@ -6,7 +6,7 @@ import json
 import os
 import tqdm
 from etl.utils.ibge_api_crawler import (
-    async_crawler_censoagro,
+    async_crawler_ibge_municipio,
 )
 from etl.br_ibge_censo_agro.utils import parse_agrocenso_json
 from etl.utils.postgres_interactions import PostgresETL
@@ -41,7 +41,7 @@ if __name__ == "__main__":
     
     print('------ Baixando dados da API ------')
     asyncio.run(
-        async_crawler_censoagro(
+        async_crawler_ibge_municipio(
             year=PERIODOS, 
             variables=VARIAVEIS,
             api_url_base=API_URL_BASE,
