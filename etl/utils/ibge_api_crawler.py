@@ -60,7 +60,7 @@ async def async_crawler(years: List[int], variables: List[str],
 
 
 
-async def async_crawler_censoagro(
+async def async_crawler_ibge_municipio(
     year: List[int], 
     variables: List[str],
     api_url_base: str, 
@@ -73,6 +73,8 @@ async def async_crawler_censoagro(
     """
     Faz requisições para a API para cada ano, variável e categoria, salvando as respostas em arquivos JSON.
     Processa municípios em grupos de 20 para otimizar as requisições.
+    Este crawler foi idealizado para extrair dados por município. Essa foi a forma mais geral utilizada
+    para contornar a limitação da API do IBGE. 
     """
     
     all_municipios = localidades['id_municipio'].tolist()
@@ -114,6 +116,8 @@ async def async_crawler_censoagro(
                     print(f"Error processing municipality {localidade}: {str(e)}")
         
         await asyncio.sleep(1)
+
+
 
 
 async def async_crawler3(years: List[int], variables: List[str],
