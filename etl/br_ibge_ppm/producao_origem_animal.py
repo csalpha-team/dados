@@ -19,14 +19,14 @@ load_dotenv()
 billing_id = os.getenv("BASEDOSDADADOS_PROJECT_ID")
 
 API_URL_BASE        = "https://servicodados.ibge.gov.br/api/v3/agregados/{}/periodos/{}/variaveis/{}?localidades={}[{}]&classificacao={}"
-AGREGADO            = "3939"
+AGREGADO            = "74"
 PERIODOS            = 'all'
-VARIAVEIS           = "|".join(["105"])
+VARIAVEIS           = "|".join(["106", "215"])
 NIVEL_GEOGRAFICO    = "N6"
 LOCALIDADES         = "all"
-CLASSIFICACAO       = "79[all]" 
+CLASSIFICACAO       = "80[all]" 
 CATEGORIAS          = "all"
-nome_tabela = 'efetivo_rebanhos'
+nome_tabela = 'producao_origem_animal'
 
 
 if __name__ == "__main__":
@@ -69,7 +69,7 @@ if __name__ == "__main__":
             data = json.load(f)
             
             print(f"fazendo parsing do json com base no arquivo: {file}...")
-            tbl = parse_pam_json(data, id_produto="79")
+            tbl = parse_pam_json(data, id_produto="80")
             
             df_list.append(tbl)
             print("Adicionando o DataFrame à lista de DataFrames...")
