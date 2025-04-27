@@ -1,0 +1,82 @@
+
+import dotenv
+import os
+from raw.utils.postgres_interactions import PostgresETL
+from silver.utils import (
+    fix_ibge_digits,
+)
+
+
+
+dotenv.load_dotenv()
+
+
+query = """
+select
+nome_variavel,
+produto,
+tipo_agricultura,
+id_municipio,
+cast(ano as integer) as ano,
+valor
+from al_ibge_censoagro.tbl_6949_2017
+where id_municipio like ("15%");
+
+"""
+
+
+with PostgresETL(
+        host='localhost', 
+        database=os.getenv("DB_TRUSTED_ZONE"), 
+        user=os.getenv("POSTGRES_USER"), 
+        password=os.getenv("POSTGRES_PASSWORD"),
+        schema='al_ibge_censoagro') as db:
+    
+    data = db.download_data(query)
+    
+#Padronizar as categorias de tipo de agricultura
+
+
+
+cols = {
+    
+    "Número de estabelecimentos agropecuários com produtos da extração vegetal": "quantidade_estabelecimentos",
+    "Quantidade produzida na extração vegetal": "quantidade_produzida",
+    "Quantidade vendida de produtos da extração vegetal": "quantidade_vendida",
+    "Valor da produção na extração vegetal": "valor_producao",
+    "Valor da venda de produtos da extração vegetal": "valor_venda",
+}
+
+data.rename(columns=cols, inplace=True)    
+
+COLUNAS_PARA_TRATAR = list(cols.values())
+
+data = fix_ibge_digits(COLUNAS_PARA_TRATAR, data)
+
+
+with PostgresETL(
+    host='localhost', 
+    database=os.getenv("DB_AGGREGATED_ZONE"), 
+    user=os.getenv("POSTGRES_USER"), 
+    password=os.getenv("POSTGRES_PASSWORD"),
+    schema='al_ibge_censoagro') as db:
+        
+        
+        columns = {
+            'ano': 'integer',
+            'id_municipio': 'VARCHAR(7)',
+            'produto': 'VARCHAR(255)',
+            'tipo_agricultura': 'VARCHAR(255)',
+            'quantidade_estabelecimentos': 'integer',
+            'quantidade_produzida': 'integer',
+            'quantidade_vendida': 'integer',
+            'valor_producao': 'numeric',
+            'valor_venda': 'numeric',
+
+        }
+            
+        db.create_table('tbl_6949_2017', columns, if_not_exists=True)
+        
+        db.load_data('tbl_6949_2017', data, if_exists='replace')
+
+

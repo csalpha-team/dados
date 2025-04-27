@@ -163,7 +163,7 @@ class PostgresETL:
             self.logger.info(f"Table {table_name} created or already exists")
         
     def load_data(self, table_name: str, data: Union[pd.DataFrame, List[Dict[str, Any]]],
-                  if_exists: str = 'append', chunk_size: int = 10000) -> int:
+                  if_exists: str = 'append', chunk_size: int = 35399) -> int:
         """
         Load data into a PostgreSQL table
         

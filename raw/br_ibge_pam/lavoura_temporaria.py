@@ -31,69 +31,59 @@ nome_tabela = 'lavoura_temporaria'
 
 if __name__ == "__main__":
     
-    print('------ Baixando tabela de municipios ------')
-    municipios = bd.read_sql(
-        """
-        SELECT id_municipio
-        FROM `basedosdados.br_bd_diretorios_brasil.municipio`
-        WHERE amazonia_legal = 1
-        """,
-        billing_project_id=billing_id,
-    )
+    # print('------ Baixando tabela de municipios ------')
+    # municipios = bd.read_sql(
+    #     """
+    #     SELECT id_municipio
+    #     FROM `basedosdados.br_bd_diretorios_brasil.municipio`
+    #     WHERE amazonia_legal = 1
+    #     """,
+    #     billing_project_id=billing_id,
+    # )
     
-    print('------ Baixando dados da API ------')
-    asyncio.run(
-        async_crawler_ibge_municipio(
-            year=PERIODOS, 
-            variables=VARIAVEIS,
-            api_url_base=API_URL_BASE,
-            agregado=AGREGADO,
-            nivel_geografico=NIVEL_GEOGRAFICO,
-            localidades=municipios,
-            classificacao=CLASSIFICACAO,
-            nome_tabela=nome_tabela,
-        )
-    )
+    # print('------ Baixando dados da API ------')
+    # asyncio.run(
+    #     async_crawler_ibge_municipio(
+    #         year=PERIODOS, 
+    #         variables=VARIAVEIS,
+    #         api_url_base=API_URL_BASE,
+    #         agregado=AGREGADO,
+    #         nivel_geografico=NIVEL_GEOGRAFICO,
+    #         localidades=municipios,
+    #         classificacao=CLASSIFICACAO,
+    #         nome_tabela=nome_tabela,
+    #     )
+    # )
     
-    print('------ Fazendo o parse dos arquivos JSON ------')
+    print('------ Fazendo o parse dos arquivos JSON em chunks ------')
     files = os.listdir(f"../tmp/{nome_tabela}")
     
-    assert len(files) == 772, 'Existem 772 municípios na Amazônia Legal. Deveriam existir 772 items na lista de dfs. Verifique se o download foi feito corretamente.'
+    assert len(files) == 772, 'Existem 772 municípios na Amazônia Legal. Deveriam existir 772 items na lista de arquivos. Verifique se o download foi feito corretamente.'
 
-    df_list = []
+    chunk_size = 30
     
-    for file in files:
+    for i in range(0, len(files), chunk_size):
+        chunk_files = files[i:i + chunk_size]
+        df_list = []
         
-        with open(f"../tmp/{nome_tabela}/{file}", "r") as f:
-            
-            data = json.load(f)
-            
-            print(f"fazendo parsing do json com base no arquivo: {file}...")
-            tbl = parse_pam_json(data, id_produto="81")
+        for file in chunk_files:
+            with open(f"../tmp/{nome_tabela}/{file}", "r") as f:
+                data = json.load(f)
+                print(f"Fazendo parsing do JSON com base no arquivo: {file}...")
+                tbl = parse_pam_json(data, id_produto="81")
+                df_list.append(tbl)
+                print("Adicioncando o DataFrame à lista de DataFrames...")
+                del tbl
 
-            #NOTE: essas operações serão feitas na etapa seguinte
-            #print("Tratando a questão dos pesos dos produtos... Impacto em: quantidade_producao e rendimento_medio_producao")
-            #tbl = tbl.apply(products_weight_ratio_fix, axis=1)
-            #print("Aplicando a correção nominal retroativa da moeda... Impacto: valor_producao")
-            #tbl["valor_producao"] = tbl.apply(currency_fix, axis=1)
-            #print("Transformações finalizadas!")
-            
-            df_list.append(tbl)
-            print("Adicionando o DataFrame à lista de DataFrames...")
-            del tbl
-
-
-    df = pd.concat(df_list, ignore_index=True)
-
-    print('------ Carregando tabela no Banco de Dados ------')        
-
-    with PostgresETL(
-        host='localhost', 
-        database=os.getenv("DB_RAW_ZONE"), 
-        user=os.getenv("POSTGRES_USER"), 
-        password=os.getenv("POSTGRES_PASSWORD"),
-        schema='al_ibge_pam') as db:
-            
+        df_chunk = pd.concat(df_list, ignore_index=True)
+        print(f'------ Carregando chunk {i // chunk_size + 1} no Banco de Dados ------')
+        
+        with PostgresETL(
+            host='localhost', 
+            database=os.getenv("DB_RAW_ZONE"), 
+            user=os.getenv("POSTGRES_USER"), 
+            password=os.getenv("POSTGRES_PASSWORD"),
+            schema='al_ibge_pam') as db:
             
             columns = {
                 'id_variavel': 'VARCHAR(255)',
@@ -111,4 +101,7 @@ if __name__ == "__main__":
                 
             db.create_table(nome_tabela, columns, if_not_exists=True)
             
-            db.load_data(nome_tabela, df, if_exists='replace')
+                
+            db.load_data(nome_tabela, df_chunk, if_exists='append')
+        
+        del df_chunk
