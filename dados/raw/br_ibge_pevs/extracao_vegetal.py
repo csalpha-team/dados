@@ -3,16 +3,16 @@ import asyncio
 import pandas as pd
 import json
 import basedosdados as bd
-from raw.utils.ibge_api_crawler import (
+from dados.raw.utils.ibge_api_crawler import (
     async_crawler_ibge_municipio
     
 )
 
-from raw.br_ibge_pam.utils import (
+from dados.raw.br_ibge_pam.utils import (
     parse_pam_json,
 )
 from dotenv import load_dotenv
-from raw.utils.postgres_interactions import PostgresETL
+from dados.raw.utils.postgres_interactions import PostgresETL
 
 load_dotenv()
 billing_id = os.getenv("BASEDOSDADADOS_PROJECT_ID")
