@@ -42,7 +42,7 @@ async def async_crawler_ibge_municipio(
     
     all_municipios = localidades['id_municipio'].tolist()
         
-    batch_size = 30
+    batch_size = 60
     
     for i in range(0, len(all_municipios), batch_size):
         batch_municipios = all_municipios[i:i+batch_size]

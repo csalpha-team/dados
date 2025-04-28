@@ -24,7 +24,6 @@ valor
 from al_ibge_pevs.produtos_extracao_vegetal
 where id_municipio like '15%';
 """
-#unidade_medida
 
 with PostgresETL(
         host='localhost', 
@@ -70,7 +69,7 @@ print(data.columns)
     
 with PostgresETL(
     host='localhost', 
-    database=os.getenv("DB_TRUSTED_ZONE"), 
+    database=os.getenv("DB_SILVER_ZONE"), 
     user=os.getenv("POSTGRES_USER"), 
     password=os.getenv("POSTGRES_PASSWORD"),
     schema='al_ibge_pevs') as db:

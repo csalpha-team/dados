@@ -8,7 +8,7 @@ from dados.raw.utils.ibge_api_crawler import (
     
 )
 
-from dados.raw.br_ibge_pam.utils import (
+from dados.raw.al_ibge_pam.utils import (
     parse_pam_json,
 )
 from dotenv import load_dotenv

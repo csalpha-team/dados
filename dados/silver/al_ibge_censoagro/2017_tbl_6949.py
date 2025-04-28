@@ -63,11 +63,11 @@ data = fix_ibge_digits(COLUNAS_PARA_TRATAR, data)
 #Padroniza nome de produtos
 data["produto"] = data["produto"].map(dicionario_protudos_censo_6949_2233)
 
-
+#NOTE: PEGAR SOMENTE CATEGORIAS - SIM E NAO QUE REPRESENTAM A TOTALIDADE DOS SUBGRUPOS
     
 with PostgresETL(
     host='localhost', 
-    database=os.getenv("DB_TRUSTED_ZONE"), 
+    database=os.getenv("DB_SILVER_ZONE"), 
     user=os.getenv("POSTGRES_USER"), 
     password=os.getenv("POSTGRES_PASSWORD"),
     schema='al_ibge_censoagro') as db:

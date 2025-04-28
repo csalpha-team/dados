@@ -5,11 +5,11 @@ import dotenv
 import json
 import os
 import tqdm
-from raw.utils.ibge_api_crawler import (
+from dados.raw.utils.ibge_api_crawler import (
     async_crawler_ibge_municipio,
 )
-from raw.br_ibge_censo_agro.utils import parse_agrocenso_json
-from raw.utils.postgres_interactions import PostgresETL
+from dados.raw.al_ibge_censoagro.utils import parse_agrocenso_json
+from dados.raw.utils.postgres_interactions import PostgresETL
 
 dotenv.load_dotenv()
 billing_id = os.getenv("BASEDOSDADADOS_PROJECT_ID")

@@ -3,60 +3,58 @@ import asyncio
 import pandas as pd
 import json
 import basedosdados as bd
-from raw.utils.ibge_api_crawler import (
+from dados.raw.utils.ibge_api_crawler import (
     async_crawler_ibge_municipio
     
 )
 
-from raw.br_ibge_pam.utils import (
+from dados.raw.al_ibge_pam.utils import (
     parse_pam_json,
 )
 from dotenv import load_dotenv
-from raw.utils.postgres_interactions import PostgresETL
+from dados.raw.utils.postgres_interactions import PostgresETL
+from dotenv import load_dotenv
 
-#TODO 
-#REFATORAR LOGICA DE UPLOAD DOS DADOS; FAZER PROCESSAMENTO EM CHUNKS COM APPEND
-#GERAR URLS PRONTAS; E ITERAR SOBRE COM APPEND;
 
 load_dotenv()
 billing_id = os.getenv("BASEDOSDADADOS_PROJECT_ID")
 
 API_URL_BASE        = "https://servicodados.ibge.gov.br/api/v3/agregados/{}/periodos/{}/variaveis/{}?localidades={}[{}]&classificacao={}"
-AGREGADO            = "1613" # É a tabela no SIDRA
+AGREGADO            = "1612" # É a tabela no SIDRA
 PERIODOS            = 'all'
-VARIAVEIS           = "|".join(["2313", "1002313", "216", "1000216", "214", "112","215",
-                       "1000215"]) # As variáveis da tabela
+VARIAVEIS           = '|'.join(["109", "1000109", "216", "1000216", "214", "112", "215",
+                       "1000215"])
 NIVEL_GEOGRAFICO    = "N6" # N6 = Municipal
 LOCALIDADES         = "all"
-CLASSIFICACAO       = "82[all]" # Código pré-definido por agregado
+CLASSIFICACAO       = "81[all]" # Código pré-definido por agregado
 
-nome_tabela = 'lavoura_permanente'
+nome_tabela = 'lavoura_temporaria'
 
 if __name__ == "__main__":
     
-    # print('------ Baixando tabela de municipios ------')
-    # municipios = bd.read_sql(
-    #     """
-    #     SELECT id_municipio
-    #     FROM `basedosdados.br_bd_diretorios_brasil.municipio`
-    #     WHERE amazonia_legal = 1
-    #     """,
-    #     billing_project_id=billing_id,
-    # )
+    print('------ Baixando tabela de municipios ------')
+    municipios = bd.read_sql(
+        """
+        SELECT id_municipio
+        FROM `basedosdados.br_bd_diretorios_brasil.municipio`
+        WHERE amazonia_legal = 1
+        """,
+        billing_project_id=billing_id,
+    )
     
-    # print('------ Baixando dados da API ------')
-    # asyncio.run(
-    #     async_crawler_ibge_municipio(
-    #         year=PERIODOS, 
-    #         variables=VARIAVEIS,
-    #         api_url_base=API_URL_BASE,
-    #         agregado=AGREGADO,
-    #         nivel_geografico=NIVEL_GEOGRAFICO,
-    #         localidades=municipios,
-    #         classificacao=CLASSIFICACAO,
-    #         nome_tabela=nome_tabela,
-    #     )
-    # )
+    print('------ Baixando dados da API ------')
+    asyncio.run(
+        async_crawler_ibge_municipio(
+            year=PERIODOS, 
+            variables=VARIAVEIS,
+            api_url_base=API_URL_BASE,
+            agregado=AGREGADO,
+            nivel_geografico=NIVEL_GEOGRAFICO,
+            localidades=municipios,
+            classificacao=CLASSIFICACAO,
+            nome_tabela=nome_tabela,
+        )
+    )
     
     print('------ Fazendo o parse dos arquivos JSON em chunks ------')
     files = os.listdir(f"../tmp/{nome_tabela}")
@@ -73,9 +71,9 @@ if __name__ == "__main__":
             with open(f"../tmp/{nome_tabela}/{file}", "r") as f:
                 data = json.load(f)
                 print(f"Fazendo parsing do JSON com base no arquivo: {file}...")
-                tbl = parse_pam_json(data, id_produto="82")
+                tbl = parse_pam_json(data, id_produto="81")
                 df_list.append(tbl)
-                print("Adicionando o DataFrame à lista de DataFrames...")
+                print("Adicioncando o DataFrame à lista de DataFrames...")
                 del tbl
 
         df_chunk = pd.concat(df_list, ignore_index=True)

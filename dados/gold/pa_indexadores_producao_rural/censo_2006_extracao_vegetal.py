@@ -52,7 +52,7 @@ data['nome_regiao_integracao'] = data['id_municipio'].map(dicionario_regioes_int
 
 with PostgresETL(
         host='localhost', 
-        database=os.getenv("DB_AGREGATED_ZONE"), 
+        database=os.getenv("DB_GOLD_ZONE"), 
         user=os.getenv("POSTGRES_USER"), 
         password=os.getenv("POSTGRES_PASSWORD"),
         schema='pa_indexadores_producao_rural') as db:
