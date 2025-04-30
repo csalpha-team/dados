@@ -2,23 +2,6 @@
 Este repositório implementa uma arquitetura de zonas para processamento de dados usando PostgreSQL. A arquitetura é projetada para permitir o processamento de dados em diferentes estágios, desde dados brutos até dados prontos para uso no algoritmo e o armazenamento de saídas.
 
 
-## Planejamento dos conjuntos de dados
-- abrangencia-territorial_orgao-produtor_nome-conjunto-dados
-- br_me_comex_stat
-- br_me_rais
-- br_ibge_pam
-- br_ibge_ppm
-- br_ibge_pevs
-- br_ibge_censo_agro
-- br_ibge_pof
-- br_ibge_pnadc
-- br_ibge_pia (pesquisa anual da industria)
-- br_ibge_paic (da industria da construcao)
-- br_ibge_pas (servicos)
-- br_ibge_pac (pesquisa do comercio)
-
-
-
 ## Arquitetura de Zonas para Processamento de Dados
 
 ### Visão Geral
@@ -48,11 +31,11 @@ Nossa arquitetura é composta por quatro zonas principais, cada uma representada
   - Rastreabilidade completa
 - **Schema**: `DB_RAW_ZONE`
 
-#### 2. Zona de Dados Tratados (`DB_TRUSTED_ZONE`)
+#### 2. Zona de Dados Tratados (`DB_SILVER_ZONE`)
 
 ```
 +---------------------+
-| ZONA TRUSTED        |
+| ZONA SILVER        |
 +---------------------+
 | Dados validados     |
 | Limpeza básica      |
@@ -65,13 +48,13 @@ Nossa arquitetura é composta por quatro zonas principais, cada uma representada
   - Correção de erros evidentes
   - Padronização de formatos
   - Remoção de duplicidades
-- **Schema**: `DB_TRUSTED_ZONE`
+- **Schema**: `DB_SILVER_ZONE`
 
 #### 3. Zona de Dados Agregados (`DB_AGREGATED_ZONE`)
 
 ```
 +---------------------+
-| ZONA AGREGADA       |
+| ZONA GOLD       |
 +---------------------+
 | Dados processados   |
 | Cálculos derivados  |
@@ -86,13 +69,13 @@ Nossa arquitetura é composta por quatro zonas principais, cada uma representada
   - Enriquecimento de dados
 - **Schema**: `DB_AGREGATED_ZONE`
 
-#### 4. Zona de Saída do Algoritmo (`DB_OUTPUT_ZONE`)
+#### 4. Zona de Saída do Algoritmo (`DB_MATRICES_ZONE`)
 
 ```
 +---------------------+
-| ZONA OUTPUT         |
+| ZONA MATRICES        |
 +---------------------+
-| Resultados finais   |
+| Armazena matrizes   |
 | Dados para consumo  |
 | Saídas otimizadas   |
 +---------------------+
@@ -110,7 +93,7 @@ Nossa arquitetura é composta por quatro zonas principais, cada uma representada
 ```
 +----------+     +-----------+     +-------------+     +-----------+
 |  DADOS   |     |   ZONA    |     |    ZONA     |     |   ZONA    |
-|  BRUTOS  | --> |   RAW     | --> |   TRUSTED   | --> | AGREGADA  |
+|  BRUTOS  | --> |   RAW     | --> |   SILVER   | --> | GOLD  |
 +----------+     +-----------+     +-------------+     +-----------+
                                                             |
                                                             v
@@ -123,8 +106,8 @@ Nossa arquitetura é composta por quatro zonas principais, cada uma representada
 O fluxo típico de dados através das zonas segue este padrão:
 
 1. Os dados brutos são ingeridos na **Zona Raw**
-2. Processos de limpeza e validação transformam os dados para a **Zona Trusted**
-3. Transformações, cálculos e agregações movem os dados para a **Zona Agregada**
+2. Processos de limpeza e validação transformam os dados para a **Zona SILVER**
+3. Transformações, cálculos e agregações movem os dados para a **Zona GOLD**
 4. Algoritmos específicos processam os dados e armazenam resultados na **Zona de Saída**
 
 ### Tecnologias Utilizadas
@@ -154,7 +137,7 @@ As configurações das zonas de dados podem ser personalizadas através do arqui
 ```
 DB_PREFIX=zona
 DB_RAW_ZONE=${DB_PREFIX}_brutos
-DB_TRUSTED_ZONE=${DB_PREFIX}_tratados
+DB_SILVER_ZONE=${DB_PREFIX}_tratados
 DB_AGREGATED_ZONE=${DB_PREFIX}_agregated
 DB_OUTPUT_ZONE=${DB_PREFIX}_saida_algoritmo
 ```
