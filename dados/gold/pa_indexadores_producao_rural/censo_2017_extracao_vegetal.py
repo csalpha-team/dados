@@ -28,29 +28,13 @@ where id_municipio like '15%';
 
 with PostgresETL(
         host='localhost', 
-        database=os.getenv("DB_TRUSTED_ZONE"), 
+        database=os.getenv("DB_SILVER_ZONE"), 
         user=os.getenv("POSTGRES_USER"), 
         password=os.getenv("POSTGRES_PASSWORD"),
         schema='al_ibge_pevs') as db:
     
     data = db.download_data(query)
  
-
-dicionario_tipo_agricultura = {
-    "Agricultura familiar - Pronaf B": "agricultura familiar",
-    "Agricultura familiar - Pronaf V'": "agricultura familiar",
-    "Agricultura familiar - não pronafiano": "agricultura familiar",
-    "Agricultura familiar - sim": "agricultura familiar",
-    "Agricultura familiar - não": "agricultura não familiar",
-    "Pronamp - não": "agricultura não familiar",
-    "Pronamp - sim": "agricultura não familiar",
-    "Total": "total",
-}
-
-
-#rename categorias and sum to new categorias
-data['tipo_agricultura'] = data['tipo_agricultura'].map(dicionario_tipo_agricultura)
-data = data.groupby(['id_municipio', 'ano', 'produto', 'tipo_agricultura']).sum().reset_index()
 
    
 print('------ Baixando tabela de municipios ------')
@@ -71,7 +55,7 @@ data['nome_regiao_integracao'] = data['id_municipio'].map(dicionario_regioes_int
 \
 with PostgresETL(
         host='localhost', 
-        database=os.getenv("DB_AGREGATED_ZONE"), 
+        database=os.getenv("DB_GOLD_ZONE"), 
         user=os.getenv("POSTGRES_USER"), 
         password=os.getenv("POSTGRES_PASSWORD"),
         schema='pa_indexadores_producao_rural') as db:
@@ -91,8 +75,8 @@ with PostgresETL(
             'valor_venda': 'numeric',
         }
             
-    db.create_table('censo_2017_extracao_vegetal', columns, drop_if_exists=True)
+    db.create_table('extracao_vegetal_censo_2017', columns, drop_if_exists=True)
     
-    db.load_data('censo_2017_extracao_vegetal', data, if_exists='replace')
+    db.load_data('extracao_vegetal_censo_2017', data, if_exists='replace')
 
     

@@ -28,7 +28,7 @@ where id_municipio like '15%';
 
 with PostgresETL(
         host='localhost', 
-        database=os.getenv("DB_TRUSTED_ZONE"), 
+        database=os.getenv("DB_SILVER_ZONE"), 
         user=os.getenv("POSTGRES_USER"), 
         password=os.getenv("POSTGRES_PASSWORD"),
         schema='al_ibge_pevs') as db:

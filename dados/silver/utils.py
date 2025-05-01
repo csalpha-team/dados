@@ -1,16 +1,175 @@
 import pandas as pd
 from typing import List
-from pandas import DataFrame
+import pandas as pd
 
-def fix_ibge_digits(columns: List[str], df = pd.DataFrame) -> pd.DataFrame:
+
+
+
+def fix_ibge_digits(df: pd.DataFrame, columns: List[str], group_vars: List[str] = None) -> pd.DataFrame:
+    """
+    Corrige valores não numéricos em colunas específicas de um dataframe do IBGE,
+    substituindo valores não numéricos específicos por 0 e valores 'X' por
+    médias apropriadas agrupadas pelas variáveis especificadas.
+   
+    #! -	"Zero absoluto, não resultante de um cálculo ou arredondamento.
+    #Ex: Em determinado município não existem pessoas de 14 anos de idade sem instrução."
+    #! 0	"Zero resultante de um cálculo ou arredondamento.
+    #Ex: A inflação do feijão em determinada Região Metropolitana foi 0.
+    #EX. Determinado município produziu 400 kg de sementes de girassol e os dados da tabela são expressos em toneladas."
+    #! X	"Valor inibido para não identificar o informante.
+    #Ex: Determinado município só possui uma empresa produtora de cimento, logo o valor de sua produção deve ser inibido."
+    #! ..	"Valor não se aplica.
+    #Ex: Não se pode obter o total da produção agrícola em determinado município quando os produtos agrícolas são contabilizados com unidades de medida distintas."
+    #! ...	"Valor não disponível.
+    #Ex: A produção de feijão em determinado município não foi pesquisada ou determinado município não existia no ano da pesquisa."
+
+    Parâmetros:
+    -----------
+    df : pd.DataFrame
+        O dataframe contendo dados do IBGE
+    columns : List[str]
+        Lista de nomes de colunas para processar
+    group_vars : List[str], opcional
+        Lista de variáveis para agrupar no cálculo das médias.
+        Padrão é ['id_municipio', 'ano', 'produto'] se None
+       
+    Retorna:
+    --------
+    pd.DataFrame
+        O dataframe com valores corrigidos
     
+    Raises:
+    -------
+    ValueError
+        Se algum valor 'X' não puder ser substituído
+    """
+    # Cria uma cópia para evitar modificar o dataframe original
+    df_fixed = df.copy()
     
-    for coluna in columns:
-        print(f"Corrigindo coluna {coluna}")
-        df[coluna] = df[coluna].apply(lambda x: 0 if x in ("..", "...", "-", "X") else x)
-        df[coluna] = pd.to_numeric(df[coluna], errors='coerce').fillna(0).astype("Int64")
+    # Define as variáveis de agrupamento padrão se não fornecidas
+    if group_vars is None:
+        group_vars = ['id_municipio', 'ano', 'produto']
+    
+    # Garantir que 'id_municipio' está nas variáveis de agrupamento para extrair UF
+    if 'id_municipio' not in group_vars:
+        print("AVISO: 'id_municipio' não está nas variáveis de agrupamento. Adicionando para extrair UF...")
+        group_vars = ['id_municipio'] + group_vars
+   
+    # Operação será realizada por UF (estado)
+    # Extrai códigos de estado únicos dos IDs de municípios
+    uf_codes = df_fixed['id_municipio'].str[0:2].unique()
+   
+    for column in columns:
+        # Filtra valores que não são dígitos e imprime suas ocorrências
+        non_digit_values = df_fixed[column][~df_fixed[column].astype(str).str.isdigit()]
+        print(f"Valores não numéricos na coluna {column}:")
+        print(non_digit_values.value_counts())
+       
+        # Substitui '..' e '-' por 0
+        df_fixed[column] = df_fixed[column].apply(lambda x: 0 if x in ("..", "...", "-") else x)
+       
+        # Se valores 'X' forem encontrados, calcula e substitui pelas médias agrupadas
+        if 'X' in non_digit_values.values:
+            print(f"\nSubstituindo valores 'X' na coluna {column} por médias agrupadas...")
+            df_fixed = fix_ibge_x_digit(df_fixed, column, group_vars)
+   
+    return df_fixed
+
+def fix_ibge_x_digit(df: pd.DataFrame, column: str, group_vars: List[str]) -> pd.DataFrame:
+    """
+    Substitui valores 'X' em uma coluna pela média calculada
+    agrupando pelos valores em group_vars.
+   
+    Parâmetros:
+    -----------
+    df : pd.DataFrame
+        O dataframe contendo dados do IBGE
+    column : str
+        Nome da coluna a ser processada
+    group_vars : List[str]
+        Lista de variáveis para agrupar no cálculo das médias
+       
+    Retorna:
+    --------
+    pd.DataFrame
+        O dataframe com valores 'X' substituídos por médias
+    
+    Raises:
+    -------
+    ValueError
+        Se algum valor 'X' não puder ser substituído
+    """
+    # Cria uma cópia para evitar modificar o dataframe original
+    df_fixed = df.copy()
+    
+    # Contabiliza quantos valores 'X' existem inicialmente
+    x_count_before = (df_fixed[column] == 'X').sum()
+    print(f"Total de valores 'X' para substituir na coluna {column}: {x_count_before}")
+   
+    # Garante que a coluna é numérica para cálculo (exceto valores 'X')
+    df_fixed[column] = pd.to_numeric(df_fixed[column].replace('X', None), errors='coerce')
+   
+    # Dicionário para rastrear substituições por UF
+    uf_substitutions = {}
+    for uf_code in df_fixed['id_municipio'].str[0:2].unique():
+        uf_substitutions[uf_code] = 0
+    
+    # Obtém todas as combinações únicas de variáveis de agrupamento
+    # Removemos 'id_municipio' do agrupamento, mas mantemos para filtragem por UF
+    group_vars_without_mun = [var for var in group_vars if var != 'id_municipio']
+    
+    # Processa cada UF separadamente
+    for uf_code in df_fixed['id_municipio'].str[0:2].unique():
+        # Filtra o dataframe para a UF atual
+        uf_mask = df_fixed['id_municipio'].str[0:2] == uf_code
+        uf_df = df_fixed[uf_mask].copy()
         
-    return df
+        # Calcula as médias para cada combinação de variáveis de agrupamento
+        # Agrupa por todas as variáveis exceto 'id_municipio'
+        if group_vars_without_mun:
+            group_means = uf_df.groupby(group_vars_without_mun)[column].mean().reset_index()
+            
+            # Para cada grupo, aplica a média correspondente
+            for _, row in group_means.iterrows():
+                # Cria uma máscara para este grupo
+                group_mask = pd.Series(True, index=uf_df.index)
+                for var in group_vars_without_mun:
+                    group_mask &= (uf_df[var] == row[var])
+                
+                # Adiciona a máscara para valores 'X' (agora NaN)
+                x_mask = group_mask & uf_df[column].isna()
+                
+                # Aplica a média se existirem valores a substituir e a média não for NaN
+                x_count = x_mask.sum()
+                if x_count > 0 and not pd.isna(row[column]):
+                    uf_df.loc[x_mask, column] = row[column]
+                    uf_substitutions[uf_code] += x_count
+        else:
+            # Se não houver variáveis de agrupamento além de 'id_municipio',
+            # calcula a média geral da UF
+            mean_value = uf_df[column].mean()
+            x_mask = uf_df[column].isna()
+            x_count = x_mask.sum()
+            if x_count > 0 and not pd.isna(mean_value):
+                uf_df.loc[x_mask, column] = mean_value
+                uf_substitutions[uf_code] += x_count
+        
+        # Atualiza o dataframe principal com os valores corrigidos para esta UF
+        df_fixed.loc[uf_mask, column] = uf_df[column]
+    
+    print("\nResumo de substituições por UF:")
+    for uf, count in uf_substitutions.items():
+        print(f"  UF {uf}: {count} valores substituídos")
+    
+    remaining_x = df_fixed[column].isna().sum()
+    if remaining_x > 0:
+        print(f"AVISO: Ainda existem {remaining_x} valores 'X' não substituídos na coluna {column}.")
+        print("Convertendo valores remanescentes para 0.")
+        # Substitui valores NaN remanescentes por 0
+        df_fixed[column] = df_fixed[column].fillna(0)
+   
+    return df_fixed
+
         
 
 def currency_fix(row):
@@ -88,3 +247,30 @@ def products_weight_ratio_fix(row):
     row["rendimento_medio_producao"] = rendimento_medio_producao
 
     return row
+
+
+
+def check_duplicates(data: pd.DataFrame, columns: List) -> None:
+    """
+    Verifica linhas duplicadas no DataFrame com base nas colunas especificadas.
+
+    Args:
+        data (pd.DataFrame): O DataFrame a ser verificado para duplicatas.
+        columns (List): A lista de nomes de colunas a serem consideradas para a detecção de duplicatas.
+
+    Raises:
+        ValueError: Se forem encontradas linhas duplicadas no DataFrame.
+    """
+    print(f"Verificando duplicatas com base nas colunas: {columns}")
+    
+    duplicates = data.duplicated(subset=columns, keep=False)
+    
+    if duplicates.any():
+        duplicate_rows = data[duplicates]
+        print("Foram encontradas combinações duplicadas:")
+        print(duplicate_rows.count())
+        raise ValueError("Foram encontrados múltiplos valores para algumas combinações das colunas especificadas.")
+    else:
+        print("Nenhuma combinação duplicada encontrada.")
+
+

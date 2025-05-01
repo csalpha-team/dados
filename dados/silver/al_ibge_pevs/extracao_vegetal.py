@@ -4,6 +4,7 @@ from dados.raw.utils.postgres_interactions import (
 from dados.silver.utils import (
     currency_fix,
     fix_ibge_digits,
+    check_duplicates,
 )
 from dotenv import load_dotenv
 import os
@@ -21,51 +22,51 @@ produto,
 id_municipio,
 cast(ano as integer) as ano,
 valor
-from al_ibge_pevs.produtos_extracao_vegetal
-where id_municipio like '15%';
+from al_ibge_pevs.produtos_extracao_vegetal;
 """
 
 with PostgresETL(
-        host='localhost', 
-        database=os.getenv("DB_RAW_ZONE"), 
-        user=os.getenv("POSTGRES_USER"), 
-        password=os.getenv("POSTGRES_PASSWORD"),
-        schema='al_ibge_pevs') as db:
+    host='localhost', 
+    database=os.getenv("DB_RAW_ZONE"), 
+    user=os.getenv("POSTGRES_USER"), 
+    password=os.getenv("POSTGRES_PASSWORD"),
+    schema='al_ibge_pevs') as db:
     
     data = db.download_data(query)
-    print(data.columns)
     
+
+# Checar existência de duplicatas por segurança
+columns_index = ["id_municipio", "ano", "produto", "nome_variavel"]
+
+check_duplicates(data, columns_index)
+
 #pivotar tabela
 data = data.pivot_table(
-    index=["id_municipio", "ano", "produto"],
+    index=columns_index[0:3],
     columns=["nome_variavel"],
     values="valor",
     aggfunc="sum"
 ).reset_index()
 
-#renomear colunas
-data.rename(columns={
+
+cols = {
     "Quantidade produzida na extração vegetal": "quantidade",
     "Valor da produção na extração vegetal": "valor",
-}, inplace=True)    
-
-COLUNAS_PARA_TRATAR = [
-    "quantidade",
-    "valor"
-]
-
-data = fix_ibge_digits(COLUNAS_PARA_TRATAR, data)
-
-#Fazer correçoes Monetárias
-data["valor"] = data["valor"].astype("float")
-
-# Apply currency_fix only to non-null and non-float values
-data["valor"] = data["valor"].apply(lambda x: currency_fix(x) if isinstance(x, str) else x)
+}
+#renomear colunas
+data.rename(columns=cols, inplace=True)    
 
 #Padroniza nome de produtos
 data["produto"] = data["produto"].map(dicionario_produtos_pevs)
 
-print(data.columns)
+# conserta dígitos do IBGE
+data = fix_ibge_digits(data,list(cols.values()), columns_index[0:3])
+
+# Aplica correção monetária
+data["valor"] = data["valor"].astype("float")
+data["valor"] = data["valor"].apply(lambda x: currency_fix(x) if isinstance(x, str) else x)
+
+
     
 with PostgresETL(
     host='localhost', 

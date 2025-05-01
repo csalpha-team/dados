@@ -3,6 +3,7 @@ import os
 from dados.raw.utils.postgres_interactions import PostgresETL
 from dados.silver.utils import (
     fix_ibge_digits,
+    check_duplicates,
 )
 
 from dados.silver.al_ibge_pevs.utils import (
@@ -19,9 +20,10 @@ tipo_agricultura,
 id_municipio,
 cast(ano as integer) as ano,
 valor
-from al_ibge_censoagro.tbl_2233_2006;
-
+from al_ibge_censoagro.tbl_2233_2006
+where tipo_agricultura IN ('Agricultura familiar - Lei 11.326', 'Agricultura não familiar');
 """
+
 
 with PostgresETL(
         host='localhost', 
@@ -33,10 +35,15 @@ with PostgresETL(
     data = db.download_data(query)
     
     
-    
+
+# Checar existência de duplicatas por segurança
+columns_index = ["id_municipio", "ano", "produto", "tipo_agricultura", "nome_variavel"]
+
+check_duplicates(data, columns_index)
+
 #pivotar tabela
 data = data.pivot_table(
-    index=["id_municipio", "ano", "produto", "tipo_agricultura"],
+    index=columns_index[0:4],
     columns=["nome_variavel"],
     values="valor",
     aggfunc="sum"
@@ -44,7 +51,6 @@ data = data.pivot_table(
 
 # renomear colunas
 cols = {
-    
     "Número de estabelecimentos agropecuários": "quantidade_estabelecimentos",
     "Quantidade colhida": "quantidade_produzida",
     "Quantidade vendida": "quantidade_vendida",
@@ -54,19 +60,21 @@ cols = {
 
 data.rename(columns=cols, inplace=True)    
 
-COLUNAS_PARA_TRATAR = list(cols.values())
 
-data = fix_ibge_digits(COLUNAS_PARA_TRATAR, data)
 data['produto'] = data['produto'].map(dicionario_protudos_censo_6949_2233)
 
 # Padroniza tipo agricultura
 dicionario_tipo_agricultura = {
     "Agricultura familiar - Lei 11.326": "agricultura familiar",
     "Agricultura não familiar": "agricultura não familiar",
-    "Total": "total",
 }
 
+
 data["tipo_agricultura"] = data.tipo_agricultura.map(dicionario_tipo_agricultura)
+
+
+data = fix_ibge_digits(data,list(cols.values()), ['id_municipio', 'ano', 'produto', 'tipo_agricultura'])
+
 
 
 data = data[['ano', 'id_municipio',  'produto', 'tipo_agricultura',

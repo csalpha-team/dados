@@ -4,6 +4,7 @@ import os
 from dados.raw.utils.postgres_interactions import PostgresETL
 from dados.silver.utils import (
     fix_ibge_digits,
+    check_duplicates,
 )
 
 from dados.silver.al_ibge_pevs.utils import (
@@ -21,8 +22,8 @@ tipo_agricultura,
 id_municipio,
 cast(ano as integer) as ano,
 valor
-from al_ibge_censoagro.tbl_6949_2017;
-
+from al_ibge_censoagro.tbl_6949_2017
+where tipo_agricultura IN ('Agricultura familiar - sim', 'Agricultura familiar - não');
 """
 
 
@@ -37,13 +38,18 @@ with PostgresETL(
     
 
 
+# Checar existência de duplicatas por segurança
+columns_index = ["id_municipio", "ano", "produto", "tipo_agricultura", "nome_variavel"]
+
+check_duplicates(data, columns_index)
+
+#pivotar tabela
 data = data.pivot_table(
-    index=["id_municipio", "ano", "produto", "tipo_agricultura"],
+    index=columns_index[0:4],
     columns=["nome_variavel"],
     values="valor",
     aggfunc="sum"
 ).reset_index()
-
 
 cols = {
     
@@ -56,15 +62,22 @@ cols = {
 
 data.rename(columns=cols, inplace=True)    
 
-COLUNAS_PARA_TRATAR = list(cols.values())
-
-data = fix_ibge_digits(COLUNAS_PARA_TRATAR, data)
-
 #Padroniza nome de produtos
 data["produto"] = data["produto"].map(dicionario_protudos_censo_6949_2233)
 
-#NOTE: PEGAR SOMENTE CATEGORIAS - SIM E NAO QUE REPRESENTAM A TOTALIDADE DOS SUBGRUPOS
-    
+dicionario_tipo_agricultura = {
+    "Agricultura familiar - sim": "agricultura familiar",
+    "Agricultura familiar - não": "agricultura não familiar",
+}
+
+#rename categorias and sum to new categorias
+data['tipo_agricultura'] = data['tipo_agricultura'].map(dicionario_tipo_agricultura)
+
+data = data[data['tipo_agricultura'].isin(["agricultura familiar", "agricultura não familiar"])]
+
+data = fix_ibge_digits(data,list(cols.values()), ['id_municipio', 'ano', 'produto', 'tipo_agricultura'])
+
+
 with PostgresETL(
     host='localhost', 
     database=os.getenv("DB_SILVER_ZONE"), 
