@@ -11,7 +11,6 @@ from dados.raw.utils.ibge_api_crawler import (
 from dados.raw.al_ibge_censoagro.utils import parse_agrocenso_json
 from dados.raw.utils.postgres_interactions import PostgresETL
 
-
 dotenv.load_dotenv()
 billing_id = os.getenv("BASEDOSDADADOS_PROJECT_ID")
 
@@ -23,7 +22,7 @@ VARIAVEIS        = "|".join(["183","214","1982","215","216"])
 NIVEL_GEOGRAFICO = "N6"
 LOCALIDADES      = "all"
 CLASSIFICACAO    = "226[all]|12896[all]"
-nome_tabela = "tbl_2237_2006"
+nome_tabela = "tbl_2337_2006"
 
 
 
@@ -94,7 +93,7 @@ if __name__ == "__main__":
                
                 
                 
-            db.create_table('tbl_2237_2006', columns, if_not_exists=True)
+            db.create_table('tbl_2337_2006', columns, if_not_exists=True)
             
-            db.load_data('tbl_2237_2006', df, if_exists='replace')
+            db.load_data('tbl_2337_2006', df, if_exists='replace')
       
