@@ -10,8 +10,9 @@ from dados.gold.pa_indexadores_producao_rural.utils import (
 load_dotenv()
 billing_id = os.getenv("BASEDOSDADADOS_PROJECT_ID")
 
+TABLE="tbl_2337_2006"
 
-query = """
+query = f"""
 select
 ano,
 id_municipio,
@@ -19,9 +20,8 @@ tipo_agricultura,
 quantidade_estabelecimentos,
 quantidade_produzida,
 quantidade_vendida,
-valor_producao,
-valor_venda
-from al_ibge_censoagro.tbl_2233_2006
+valor_producao
+from al_ibge_censoagro.{TABLE}
 where id_municipio like '15%';
 
 """
@@ -69,12 +69,11 @@ with PostgresETL(
             'quantidade_produzida': 'integer',
             'quantidade_vendida': 'integer',
             'valor_producao': 'numeric',
-            'valor_venda': 'numeric',
         }
 
-    db.create_table('extracao_vegetal_censo_2006', columns)
+    db.create_table('lavoura_temporaria_censo_2006', columns, drop_if_exists=True)
     
-    db.load_data('extracao_vegetal_censo_2006', data, if_exists='replace')
+    db.load_data('lavoura_temporaria_censo_2006', data, if_exists='replace')
 
     
 
