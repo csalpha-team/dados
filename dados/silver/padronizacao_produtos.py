@@ -84,7 +84,7 @@ dicionario_produtos_censo_6949_2233 = {
     'Cajarana': 'cajarana',
     'Camu-camu (fruto)': 'camu camu-fruto',
     'Carnaúba (cera)': 'carnaúba-cera',
-    'Carnaúba (pó de palha)': 'carnaúba-pó de palha KG',
+    'Carnaúba (pó de palha) - Kg': 'carnaúba-pó de palha',
     'Casca de angico': 'angico-casca',
     'Castanha-do-Brasil (castanha-do-Pará)': 'castanha do pará',
     'Caucho (goma elástica)': 'caucho-goma elástica',
@@ -246,7 +246,7 @@ dicionario_produtos_censo_6955_2518 = {
 
 ### lAVOURA TEMPORÁRIA
 dicionario_produtos_pam_temporaria = {
-    "Abacaxi": "abacaxi",
+    "Abacaxi*": "abacaxi",
     "Alfafa fenada": "alfafa-fenada",
     "Algodão herbáceo (em caroço)": "algodão herbáceo",
     "Alho": "alho",

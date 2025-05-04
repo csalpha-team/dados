@@ -16,6 +16,7 @@ select
 ano,
 id_municipio,
 tipo_agricultura,
+produto,
 quantidade_estabelecimentos,
 quantidade_produzida,
 quantidade_vendida,

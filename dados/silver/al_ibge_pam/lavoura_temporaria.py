@@ -62,7 +62,6 @@ cols = {
 
 
 data.rename(columns=cols, inplace=True)    
-print(data.columns)
 
 #Padroniza nome de produtos
 data["produto"] = data["produto"].map(dicionario_produtos_pam_temporaria)

@@ -61,7 +61,6 @@ cols = {
 
 data.rename(columns=cols, inplace=True)    
 
-
 data['produto'] = data['produto'].map(dicionario_produtos_censo_6949_2233)
 
 # Padroniza tipo agricultura
