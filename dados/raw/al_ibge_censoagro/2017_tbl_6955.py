@@ -19,10 +19,10 @@ billing_id = os.getenv("BASEDOSDADADOS_PROJECT_ID")
 API_URL_BASE        = "https://servicodados.ibge.gov.br/api/v3/agregados/{}/periodos/{}/variaveis/{}?localidades={}[{}]&classificacao={}"
 AGREGADO         = "6955"
 PERIODOS         = "2017"
-VARIAVEIS        = "|".join(["9506", "9507" , "1075" "10076","10077","10078","10079","10080","10081","10082","10083"])
+VARIAVEIS        = "|".join(["9504","9506", "9507" , "10075", "10076","10077","10078","10079","10080","10081","10082","10083"])
 NIVEL_GEOGRAFICO = "N6"
 LOCALIDADES      = "all"
-CLASSIFICACAO    = "227[all]|829[all]"
+CLASSIFICACAO    = "227[all]|829[46303,46304]"
 nome_tabela = "tbl_6955_2017"
 
 
@@ -72,6 +72,8 @@ if __name__ == "__main__":
             
             
     df = pd.concat(df_list, ignore_index=True)
+    
+    del df_list
     
     print('------ Carregando tabela no Banco de Dados ------')        
     
