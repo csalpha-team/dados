@@ -10,17 +10,18 @@ load_dotenv()
 billing_id = os.getenv("BASEDOSDADADOS_PROJECT_ID")
 
 
-
 query = """
 select
 ano,
 id_municipio,
 produto,
 quantidade_produzida,
-valor_producao
-from al_ibge_pevs.produtos_extracao_vegetal
-where id_municipio like '15%' AND
-produto !~ '^[0-9]' AND  produto !~ 'total';
+valor_producao,
+area_destinada_colheita,
+area_colhida,
+rendimento_medio_producao
+from al_ibge_pam.lavoura_permanente
+where id_municipio like '15%';
 """
 
 with PostgresETL(
@@ -28,7 +29,7 @@ with PostgresETL(
     database=os.getenv("DB_SILVER_ZONE"), 
     user=os.getenv("POSTGRES_USER"), 
     password=os.getenv("POSTGRES_PASSWORD"),
-    schema='al_ibge_pevs') as db:
+    schema='al_ibge_pam') as db:
     
     data = db.download_data(query)
 
@@ -65,8 +66,11 @@ with PostgresETL(
             'produto': 'VARCHAR(255)',
             'quantidade_produzida': 'numeric',
             'valor_producao': 'numeric',
+            'area_destinada_colheita' : 'numeric',
+            'area_colhida' : 'numeric',
+            'rendimento_medio_producao' : 'numeric',
         }
             
-        db.create_table('extracao_vegetal_pevs', columns, drop_if_exists=True)
+        db.create_table('lavoura_permanente_pam', columns)
         
-        db.load_data('extracao_vegetal_pevs', data, if_exists='replace')
+        db.load_data('lavoura_permanente_pam', data, if_exists='replace')
