@@ -84,7 +84,7 @@ dicionario_produtos_censo_6949_2233 = {
     'Cajarana': 'cajarana',
     'Camu-camu (fruto)': 'camu camu-fruto',
     'Carnaúba (cera)': 'carnaúba-cera',
-    'Carnaúba (pó de palha) - Kg': 'carnaúba-pó de palha KG',
+    'Carnaúba (pó de palha)': 'carnaúba-pó de palha KG',
     'Casca de angico': 'angico-casca',
     'Castanha-do-Brasil (castanha-do-Pará)': 'castanha do pará',
     'Caucho (goma elástica)': 'caucho-goma elástica',
@@ -169,7 +169,7 @@ dicionario_produtos_pam_permanente = {
     'Uva': 'uva'
 }
 
-dicionario_produtos_censo_6955_2337 = {
+dicionario_produtos_censo_6955_2518 = {
     "Abacate": "abacate",
     "Açaí (fruto)": "açaí-fruto",
     "Acerola": "acerola",
@@ -283,7 +283,7 @@ dicionario_produtos_pam_temporaria = {
 }
 
 
-dicionario_produtos_censo_6957_2518 = {
+dicionario_produtos_censo_6957_2337 = {
     "Abacaxi": "abacaxi",
     "Abóbora, moranga, jerimum": "abóbora",
     "Algodão herbáceo": "algodão herbáceo",

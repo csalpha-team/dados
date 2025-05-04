@@ -7,11 +7,12 @@ from dados.silver.utils import (
 )
 
 from dados.silver.padronizacao_produtos import (
-    dicionario_produtos_censo_6949_2233
+    dicionario_produtos_censo_6955_2518
 )
 
+
 load_dotenv()
-TABLE="tbl_2233_2006"
+TABLE="tbl_2518_2006"
 
 query = f"""
 select
@@ -22,7 +23,15 @@ id_municipio,
 cast(ano as integer) as ano,
 valor
 from al_ibge_censoagro.{TABLE}
-where tipo_agricultura IN ('Agricultura familiar - Lei 11.326', 'Agricultura não familiar');
+where tipo_agricultura IN ('Agricultura familiar - Lei 11.326', 'Agricultura não familiar') AND
+nome_variavel IN (
+'Área colhida nos estabelecimentos agropecuários com mais de 50 pés existentes em 31/12',
+'Área plantada nos estabelecimentos agropecuários com mais de 50 pés existentes em 31/12',
+'Número de estabelecimentos agropecuários com mais de 50 pés existentes em 31/12',
+'Quantidade produzida nos estabelecimentos agropecuários com mais de 50 pés existentes em 31/12',
+'Quantidade vendida nos estabelecimentos agropecuários com mais de 50 pés existentes em 31/12',
+'Valor da produção dos estabelecimentos agropecuários com mais de 50 pés existentes em 31/12',
+'Valor das vendas dos estabelecimentos agropecuários com mais de 50 pés existentes em 31/12');
 """
 
 
@@ -31,11 +40,10 @@ with PostgresETL(
         database=os.getenv("DB_RAW_ZONE"), 
         user=os.getenv("POSTGRES_USER"), 
         password=os.getenv("POSTGRES_PASSWORD"),
-        schema='al_ibge_pevs') as db:
+        schema='al_ibge_censoagro') as db:
     
     data = db.download_data(query)
-    
-    
+
 
 # Checar existência de duplicatas por segurança
 columns_index = ["id_municipio", "ano", "produto", "tipo_agricultura", "nome_variavel"]
@@ -52,17 +60,18 @@ data = data.pivot_table(
 
 # renomear colunas
 cols = {
-    "Número de estabelecimentos agropecuários": "quantidade_estabelecimentos",
-    "Quantidade colhida": "quantidade_produzida",
-    "Quantidade vendida": "quantidade_vendida",
-    "Valor da produção": "valor_producao",
-    "Valor das vendas": "valor_venda",
+    "Área colhida nos estabelecimentos agropecuários com mais de 50 pés existentes em 31/12" : "area_colhida",
+    "Área plantada nos estabelecimentos agropecuários com mais de 50 pés existentes em 31/12": "area_plantada",
+    "Número de estabelecimentos agropecuários com mais de 50 pés existentes em 31/12": "quantidade_estabelecimentos",
+    "Quantidade produzida nos estabelecimentos agropecuários com mais de 50 pés existentes em 31/12": "quantidade_produzida",
+    "Quantidade vendida nos estabelecimentos agropecuários com mais de 50 pés existentes em 31/12": "quantidade_vendida",
+    "Valor da produção dos estabelecimentos agropecuários com mais de 50 pés existentes em 31/12": "valor_producao",
+    "Valor das vendas dos estabelecimentos agropecuários com mais de 50 pés existentes em 31/12": "valor_venda",
 }
 
 data.rename(columns=cols, inplace=True)    
 
-
-data['produto'] = data['produto'].map(dicionario_produtos_censo_6949_2233)
+data['produto'] = data['produto'].map(dicionario_produtos_censo_6955_2518)
 
 # Padroniza tipo agricultura
 dicionario_tipo_agricultura = {
@@ -76,12 +85,6 @@ data["tipo_agricultura"] = data.tipo_agricultura.map(dicionario_tipo_agricultura
 
 data = fix_ibge_digits(data,list(cols.values()), ['id_municipio', 'ano', 'produto', 'tipo_agricultura'], div_column="quantidade_estabelecimentos")
 
-
-
-data = data[['ano', 'id_municipio',  'produto', 'tipo_agricultura',
-       'quantidade_estabelecimentos', 'quantidade_produzida',
-       'quantidade_vendida', 'valor_producao',
-        'valor_venda',]]
     
 with PostgresETL(
     host='localhost', 
@@ -100,7 +103,10 @@ with PostgresETL(
             'quantidade_produzida': 'integer',
             'quantidade_vendida': 'integer',
             'valor_producao': 'numeric',
-            'valor_venda': 'numeric',
+            'valor_venda' : 'numeric',
+            'area_colhida': 'numeric',
+            'area_plantada': 'numeric',
+
         }
             
         db.create_table(f'{TABLE}', columns, drop_if_exists=True)

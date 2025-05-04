@@ -2,10 +2,8 @@ import pandas as pd
 from typing import List
 import pandas as pd
 
-
-
-
-def fix_ibge_digits(df: pd.DataFrame, columns: List[str], group_vars: List[str] = None) -> pd.DataFrame:
+def fix_ibge_digits(df: pd.DataFrame, columns: List[str], group_vars: List[str] = None, 
+                   div_column: str = None) -> pd.DataFrame:
     """
     Corrige valores não numéricos em colunas específicas de um dataframe do IBGE,
     substituindo valores não numéricos específicos por 0 e valores 'X' por
@@ -32,6 +30,9 @@ def fix_ibge_digits(df: pd.DataFrame, columns: List[str], group_vars: List[str] 
     group_vars : List[str], opcional
         Lista de variáveis para agrupar no cálculo das médias.
         Padrão é ['id_municipio', 'ano', 'produto'] se None
+    div_column : str, opcional
+        Nome da coluna contendo o número de estabelecimentos para dividir a média.
+        Se None, a média não será dividida.
        
     Retorna:
     --------
@@ -71,14 +72,16 @@ def fix_ibge_digits(df: pd.DataFrame, columns: List[str], group_vars: List[str] 
         # Se valores 'X' forem encontrados, calcula e substitui pelas médias agrupadas
         if 'X' in non_digit_values.values:
             print(f"\nSubstituindo valores 'X' na coluna {column} por médias agrupadas...")
-            df_fixed = fix_ibge_x_digit(df_fixed, column, group_vars)
+            df_fixed = fix_ibge_x_digit(df_fixed, column, group_vars, div_column)
    
     return df_fixed
 
-def fix_ibge_x_digit(df: pd.DataFrame, column: str, group_vars: List[str]) -> pd.DataFrame:
+def fix_ibge_x_digit(df: pd.DataFrame, column: str, group_vars: List[str], 
+                    div_column: str = None) -> pd.DataFrame:
     """
     Substitui valores 'X' em uma coluna pela média calculada
-    agrupando pelos valores em group_vars.
+    agrupando pelos valores em group_vars. Se div_column for fornecido,
+    a média será dividida pelo valor dessa coluna.
    
     Parâmetros:
     -----------
@@ -88,6 +91,9 @@ def fix_ibge_x_digit(df: pd.DataFrame, column: str, group_vars: List[str]) -> pd
         Nome da coluna a ser processada
     group_vars : List[str]
         Lista de variáveis para agrupar no cálculo das médias
+    div_column : str, opcional
+        Nome da coluna contendo o número de estabelecimentos para dividir a média.
+        Se None, a média não será dividida.
        
     Retorna:
     --------
@@ -142,7 +148,22 @@ def fix_ibge_x_digit(df: pd.DataFrame, column: str, group_vars: List[str]) -> pd
                 # Aplica a média se existirem valores a substituir e a média não for NaN
                 x_count = x_mask.sum()
                 if x_count > 0 and not pd.isna(row[column]):
-                    uf_df.loc[x_mask, column] = row[column]
+                    mean_value = row[column]
+                    
+                    # Se div_column for fornecido, divide a média pelo valor dessa coluna
+                    if div_column is not None:
+                        # Para cada linha com valor X, divide a média pelo valor de div_column
+                        for idx in uf_df.loc[x_mask].index:
+                            div_value = df_fixed.loc[idx, div_column]
+                            # Evita divisão por zero
+                            try:
+                                df_fixed.loc[idx, column] = mean_value / int(div_value)
+                            except ZeroDivisionError as e:
+                                df_fixed.loc[idx, column] = mean_value  # Mantém o valor original se div_value for zero
+                    else:
+                        # Comportamento original: substitui diretamente pela média
+                        df_fixed.loc[x_mask, column] = mean_value
+                    
                     uf_substitutions[uf_code] += x_count
         else:
             # Se não houver variáveis de agrupamento além de 'id_municipio',
@@ -151,11 +172,20 @@ def fix_ibge_x_digit(df: pd.DataFrame, column: str, group_vars: List[str]) -> pd
             x_mask = uf_df[column].isna()
             x_count = x_mask.sum()
             if x_count > 0 and not pd.isna(mean_value):
-                uf_df.loc[x_mask, column] = mean_value
+                if div_column is not None:
+                    # Para cada linha com valor X, divide a média pelo valor de div_column
+                    for idx in uf_df.loc[x_mask].index:
+                        div_value = df_fixed.loc[idx, div_column]
+                        # Evita divisão por zero
+                        if div_value != 0:
+                            df_fixed.loc[idx, column] = mean_value / div_value
+                        else:
+                            df_fixed.loc[idx, column] = mean_value  # Mantém o valor original se div_value for zero
+                else:
+                    # Comportamento original: substitui diretamente pela média
+                    df_fixed.loc[x_mask, column] = mean_value
+                
                 uf_substitutions[uf_code] += x_count
-        
-        # Atualiza o dataframe principal com os valores corrigidos para esta UF
-        df_fixed.loc[uf_mask, column] = uf_df[column]
     
     print("\nResumo de substituições por UF:")
     for uf, count in uf_substitutions.items():
@@ -167,6 +197,13 @@ def fix_ibge_x_digit(df: pd.DataFrame, column: str, group_vars: List[str]) -> pd
         print("Convertendo valores remanescentes para 0.")
         # Substitui valores NaN remanescentes por 0
         df_fixed[column] = df_fixed[column].fillna(0)
+    
+    remaining_x = (df_fixed[column] == 'X').sum()
+    if remaining_x > 0:
+        print(f"AVISO: Ainda existem {remaining_x} valores literais 'X' não substituídos na coluna {column}.")
+        print("Convertendo valores 'X' remanescentes para 0.")
+        # Substitui valores 'X' remanescentes por 0
+        df_fixed[column] = df_fixed[column].replace('X', 0)
    
     return df_fixed
 
