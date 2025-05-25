@@ -6,12 +6,47 @@ from dados.silver.utils import (
     fix_ibge_digits,
     check_duplicates,
 )
+
+#1. para pesquisas conjunturais
+
+
+#1. 2233 censo 2006 - extracao vegetal
+#2. quantidade estabelecimentos, valor producao....
+
+#1. X .. -....
+#1. tudo que nao é X, é convertido 0
+#2. identifica onde, municipio, tipo_agricultura, produto, ano tem valores X
+#3. se é conjuntural
+#3.1 calcula média dos valores de cada municipio pra essa mesma agregacao - ano passado ano fututuo media, 
+# o valor mínimo de dados preenchidos na série determina a possibilidade de execução/ verificar se é possível ancorar crescimento por taxa média
+# o valor precisa ser comparado com as estatisticas do agredado (dado a nível de UF)
+# situacoes de quebra longas podem nao corresponder as series reais do agregadao/ 
+#3.2 estrutural
+#se existe X
+#1. calcula a
+
+#conjuntural - nao tem media legitima
+#estrutural - tem média legitima encontrada a partir do valor e frequencia (erro controlado p/ variancia)
+
+#sobre as diferenças estruturais
+#se considera que ambos agentes estão submetidos a mesma dinâmica do território/
+
+
+#Primeiro ver a 
+
+
 from dotenv import load_dotenv
 import os
 import pandas as pd
 from dados.silver.padronizacao_produtos import (
     dicionario_produtos_pam_permanente
 )
+
+
+
+
+
+
 
 load_dotenv()
 

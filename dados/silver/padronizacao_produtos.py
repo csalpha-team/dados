@@ -5,7 +5,11 @@
 #NOTE: informações adicionais entre parênteses, como "semente", "fruto", etc.
 #! Defini o padrão  {produto}-{informação adicional}
 
-#TODO: VALIDAR EQUIVALENCIA DAS CONVERSOES
+#NOTE: Quando existem produtos com especificações diferentes
+#ex. PAM : Erva-mate (folha verde)
+#ex. Censo Agro 2006 - 2017 : Erva-mate
+#A padronização do nome foi feita considerando o censo como referência
+
 
 ### EXTRAÇÃO VEGETAL
 dicionario_produtos_pevs = {
@@ -122,10 +126,6 @@ dicionario_produtos_censo_6949_2233 = {
 }
 
 ### lAVOURA PERMANENTE
-#NOTE: Quando existem produtos com especificações diferentes
-#ex. PAM : Erva-mate (folha verde)
-#ex. Censo Agro 2006 - 2017 : Erva-mate
-#A padronização do nome foi feita considerando o censo como referência
 
 dicionario_produtos_pam_permanente = {
     'Abacate': 'abacate',
