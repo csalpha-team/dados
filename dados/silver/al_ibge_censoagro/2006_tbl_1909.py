@@ -6,23 +6,21 @@ from dados.silver.utils import (
     check_duplicates,
 )
 
-from dados.silver.padronizacao_produtos import (
-    dicionario_produtos_censo_6949_2233
-)
 
 load_dotenv()
-TABLE="tbl_2233_2006"
+TABLE="tbl_1909_2006"
 
 query = f"""
 select
 nome_variavel,
-produto,
+despesa,
 tipo_agricultura,
 id_municipio,
 cast(ano as integer) as ano,
 valor
 from al_ibge_censoagro.{TABLE}
-where tipo_agricultura IN ('Agricultura familiar - Lei 11.326', 'Agricultura não familiar');
+where tipo_agricultura IN ('Agricultura familiar - Lei 11.326', 'Agricultura não familiar') and
+nome_variavel IN ('Número de estabelecimentos agropecuários que realizaram despesas', 'Valor das despesas realizadas pelos estabelecimentos agropecuários');
 """
 
 
@@ -31,14 +29,14 @@ with PostgresETL(
         database=os.getenv("DB_RAW_ZONE"), 
         user=os.getenv("POSTGRES_USER"), 
         password=os.getenv("POSTGRES_PASSWORD"),
-        schema='al_ibge_pevs') as db:
+        schema='al_ibge_censoagro') as db:
     
     data = db.download_data(query)
     
     
 
 # Checar existência de duplicatas por segurança
-columns_index = ["id_municipio", "ano", "produto", "tipo_agricultura", "nome_variavel"]
+columns_index = ["id_municipio", "ano", "despesa", "tipo_agricultura", "nome_variavel"]
 
 check_duplicates(data, columns_index)
 
@@ -50,18 +48,20 @@ data = data.pivot_table(
     aggfunc="sum"
 ).reset_index()
 
+print(data.columns)
+print(data.head())
 # renomear colunas
+
+
 cols = {
-    "Número de estabelecimentos agropecuários": "quantidade_estabelecimentos",
-    "Quantidade colhida": "quantidade_produzida",
-    "Quantidade vendida": "quantidade_vendida",
-    "Valor da produção": "valor_producao",
-    "Valor das vendas": "valor_venda",
+    'despesa': 'tipo_despesa',
+    'Número de estabelecimentos agropecuários que realizaram despesas': "quantidade_estabelecimentos_fizeram_despesa",
+    'Valor das despesas realizadas pelos estabelecimentos agropecuários': "valor_despesa",
+
 }
 
 data.rename(columns=cols, inplace=True)    
 
-data['produto'] = data['produto'].map(dicionario_produtos_censo_6949_2233)
 
 # Padroniza tipo agricultura
 dicionario_tipo_agricultura = {
@@ -73,14 +73,12 @@ dicionario_tipo_agricultura = {
 data["tipo_agricultura"] = data.tipo_agricultura.map(dicionario_tipo_agricultura)
 
 
-data = fix_ibge_digits(data,list(cols.values()), ['id_municipio', 'ano', 'produto', 'tipo_agricultura'], div_column="quantidade_estabelecimentos")
+data = fix_ibge_digits(data,list(cols.values()), ['id_municipio', 'ano', 'tipo_despesa', 'tipo_agricultura'], div_column="quantidade_estabelecimentos_fizeram_despesa")
 
 
 
-data = data[['ano', 'id_municipio',  'produto', 'tipo_agricultura',
-       'quantidade_estabelecimentos', 'quantidade_produzida',
-       'quantidade_vendida', 'valor_producao',
-        'valor_venda',]]
+data = data[['ano', 'id_municipio',  'tipo_agricultura',
+       'quantidade_estabelecimentos_fizeram_despesa', 'tipo_despesa', 'valor_despesa']]
     
 with PostgresETL(
     host='localhost', 
@@ -93,13 +91,10 @@ with PostgresETL(
         columns = {
             'ano': 'integer',
             'id_municipio': 'VARCHAR(7)',
-            'produto': 'VARCHAR(255)',
             'tipo_agricultura': 'VARCHAR(255)',
-            'quantidade_estabelecimentos': 'integer',
-            'quantidade_produzida': 'integer',
-            'quantidade_vendida': 'integer',
-            'valor_producao': 'numeric',
-            'valor_venda': 'numeric',
+            'quantidade_estabelecimentos_fizeram_despesa': 'integer',
+            'tipo_despesa': 'VARCHAR(255)',
+            'valor_despesa': 'numeric',
         }
             
         db.create_table(f'{TABLE}', columns, drop_if_exists=True)

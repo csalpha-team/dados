@@ -1,5 +1,4 @@
-
-import dotenv
+from dotenv import load_dotenv
 import os
 from dados.raw.utils.postgres_interactions import PostgresETL
 from dados.silver.utils import (
@@ -8,14 +7,12 @@ from dados.silver.utils import (
 )
 
 from dados.silver.padronizacao_produtos import (
-    dicionario_produtos_censo_6949_2233
+    dicionario_produtos_censo_6957_2337
 )
 
-dotenv.load_dotenv()
+load_dotenv()
 
-TABLE="tbl_6949_2017"
-
-query = f"""
+query = """
 select
 nome_variavel,
 produto,
@@ -23,8 +20,8 @@ tipo_agricultura,
 id_municipio,
 cast(ano as integer) as ano,
 valor
-from al_ibge_censoagro.{TABLE}
-where tipo_agricultura IN ('Agricultura familiar - sim', 'Agricultura familiar - não');
+from al_ibge_censoagro.tbl_2337_2006
+where tipo_agricultura IN ('Agricultura familiar - Lei 11.326', 'Agricultura não familiar');
 """
 
 
@@ -37,7 +34,7 @@ with PostgresETL(
     
     data = db.download_data(query)
     
-
+    
 
 # Checar existência de duplicatas por segurança
 columns_index = ["id_municipio", "ano", "produto", "tipo_agricultura", "nome_variavel"]
@@ -52,34 +49,38 @@ data = data.pivot_table(
     aggfunc="sum"
 ).reset_index()
 
+# renomear colunas
 cols = {
-    
-    "Número de estabelecimentos agropecuários com produtos da extração vegetal": "quantidade_estabelecimentos",
-    "Quantidade produzida na extração vegetal": "quantidade_produzida",
-    "Quantidade vendida de produtos da extração vegetal": "quantidade_vendida",
-    "Valor da produção na extração vegetal": "valor_producao",
-    "Valor da venda de produtos da extração vegetal": "valor_venda",
+    "Número de estabelecimentos agropecuários": "quantidade_estabelecimentos",
+    "Quantidade produzida": "quantidade_produzida",
+    "Área colhida" : "area_colhida",
+    "Quantidade vendida": "quantidade_vendida",
+    "Valor da produção": "valor_producao",
 }
 
 data.rename(columns=cols, inplace=True)    
 
+data['produto'] = data['produto'].map(dicionario_produtos_censo_6957_2337)
 
-#Padroniza nome de produtos
-data["produto"] = data["produto"].map(dicionario_produtos_censo_6949_2233)
-
+# Padroniza tipo agricultura
 dicionario_tipo_agricultura = {
-    "Agricultura familiar - sim": "agricultura familiar",
-    "Agricultura familiar - não": "agricultura não familiar",
+    "Agricultura familiar - Lei 11.326": "agricultura familiar",
+    "Agricultura não familiar": "agricultura não familiar",
 }
 
-#rename categorias and sum to new categorias
-data['tipo_agricultura'] = data['tipo_agricultura'].map(dicionario_tipo_agricultura)
 
-data = data[data['tipo_agricultura'].isin(["agricultura familiar", "agricultura não familiar"])]
-
-data = fix_ibge_digits(data,list(cols.values()), ['id_municipio', 'ano', 'produto', 'tipo_agricultura'],div_column="quantidade_estabelecimentos")
+data["tipo_agricultura"] = data.tipo_agricultura.map(dicionario_tipo_agricultura)
 
 
+data = fix_ibge_digits(data,list(cols.values()), ['id_municipio', 'ano', 'produto', 'tipo_agricultura'], div_column="quantidade_estabelecimentos")
+
+
+
+data = data[['ano', 'id_municipio',  'produto', 'tipo_agricultura',
+       'quantidade_estabelecimentos', 'quantidade_produzida',
+       'quantidade_vendida', 'valor_producao',
+        'area_colhida',]]
+    
 with PostgresETL(
     host='localhost', 
     database=os.getenv("DB_SILVER_ZONE"), 
@@ -97,12 +98,10 @@ with PostgresETL(
             'quantidade_produzida': 'integer',
             'quantidade_vendida': 'integer',
             'valor_producao': 'numeric',
-            'valor_venda': 'numeric',
-
+            'area_colhida': 'numeric',
         }
             
-        db.create_table(f'{TABLE}', columns, if_not_exists=True)
+        db.create_table('tbl_2337_2006', columns, drop_if_exists=True)
         
-        db.load_data(f'{TABLE}', data, if_exists='replace')
-
-
+        db.load_data('tbl_2337_2006', data, if_exists='replace')
+      

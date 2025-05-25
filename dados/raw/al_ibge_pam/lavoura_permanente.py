@@ -98,6 +98,6 @@ if __name__ == "__main__":
   
             db.create_table(nome_tabela, columns, if_not_exists=True)  
                 
-            db.load_data(nome_tabela, df_chunk, if_exists='append')
+            db.load_data(nome_tabela, df_chunk, if_exists='replace')
         
         del df_chunk

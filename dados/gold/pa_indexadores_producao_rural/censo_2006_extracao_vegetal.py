@@ -16,6 +16,7 @@ select
 ano,
 id_municipio,
 tipo_agricultura,
+produto,
 quantidade_estabelecimentos,
 quantidade_produzida,
 quantidade_vendida,
@@ -28,10 +29,10 @@ where id_municipio like '15%';
 
 with PostgresETL(
         host='localhost', 
-        database=os.getenv("DB_TRUSTED_ZONE"), 
+        database=os.getenv("DB_SILVER_ZONE"), 
         user=os.getenv("POSTGRES_USER"), 
         password=os.getenv("POSTGRES_PASSWORD"),
-        schema='al_ibge_pevs') as db:
+        schema='al_ibge_censoagro') as db:
     
     data = db.download_data(query)
     
@@ -72,9 +73,9 @@ with PostgresETL(
             'valor_venda': 'numeric',
         }
 
-    db.create_table('censo_2006_extracao_vegetal', columns, drop_if_exists=True)
+    db.create_table('extracao_vegetal_censo_2006', columns)
     
-    db.load_data('censo_2006_extracao_vegetal', data, if_exists='replace')
+    db.load_data('extracao_vegetal_censo_2006', data, if_exists='replace')
 
     
 

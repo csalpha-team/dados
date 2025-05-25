@@ -5,11 +5,11 @@ import dotenv
 import json
 import os
 import tqdm
-from raw.utils.ibge_api_crawler import (
+from dados.raw.utils.ibge_api_crawler import (
     async_crawler_ibge_municipio,
 )
-from raw.br_ibge_censo_agro.utils import parse_agrocenso_json
-from raw.utils.postgres_interactions import PostgresETL
+from dados.raw.al_ibge_censoagro.utils import parse_agrocenso_json
+from dados.raw.utils.postgres_interactions import PostgresETL
 
 
 dotenv.load_dotenv()
@@ -28,7 +28,6 @@ nome_tabela = "tbl_6957_2017"
 
 if __name__ == "__main__":
     
-    print('Baixando tabela de municipios')
     print('------ Baixando tabela de municipios ------')
     municipios = bd.read_sql(
         """
@@ -55,7 +54,7 @@ if __name__ == "__main__":
     
     files = os.listdir(f"../tmp/{nome_tabela}")
     
-    df = pd.DataFrame()
+    df_list = []
     
     print('------ Fazendo o parse dos arquivos JSON ------')
     for file in tqdm.tqdm(files):
@@ -65,9 +64,14 @@ if __name__ == "__main__":
         
             tbl = parse_agrocenso_json(data, id_produto='226', id_tipo_agricultura='829')
             
-            df = pd.concat([df, tbl], ignore_index=True)
+            del data
             
+            df_list.append(tbl)
+
             del tbl
+            
+            
+    df = pd.concat(df_list, ignore_index=True)
     
     print('------ Carregando tabela no Banco de Dados ------')        
     with PostgresETL(
