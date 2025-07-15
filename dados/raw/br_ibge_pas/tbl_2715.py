@@ -7,11 +7,10 @@ from dotenv import load_dotenv
 from dados.raw.utils.postgres_interactions import PostgresETL
 from dados.raw.al_ibge_pac.utils import parse_pac_json_to_table
 #https://servicodados.ibge.gov.br/api/docs/agregados?versao=3#api-bq
-#https://sidra.ibge.gov.br/tabela/1407
-URL = 'https://servicodados.ibge.gov.br/api/v3/agregados/1407/periodos/{}/variaveis/368|312|314|503|866?localidades=N1[all]&classificacao=12354[all]|11066[all]'
+#https://sidra.ibge.gov.br/tabela/2715
+URL = 'https://servicodados.ibge.gov.br/api/v3/agregados/2715/periodos/{}/variaveis/630|631|672|673?localidades=N1[all]&classificacao=12354[all]|12355[all]'
 
-TABLE_ID= 'tbl_1407'
-
+TABLE_ID= 'tbl_2715'
 
 load_dotenv()
 
@@ -43,7 +42,7 @@ if __name__ == "__main__":
         database=os.getenv("DB_RAW_ZONE"), 
         user=os.getenv("POSTGRES_USER"), 
         password=os.getenv("POSTGRES_PASSWORD"),
-        schema='br_ibge_pac') as db:
+        schema='br_ibge_pas') as db:
             
             columns = {
                 'id_variavel': 'VARCHAR(255)',

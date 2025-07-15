@@ -5,11 +5,11 @@ import dotenv
 import json
 import os
 import tqdm
-from raw.utils.ibge_api_crawler import (
+from dados.raw.utils.ibge_api_crawler import (
     async_crawler_ibge_municipio,
 )
-from raw.br_ibge_censo_agro.utils import parse_agrocenso_json
-from raw.utils.postgres_interactions import PostgresETL
+from dados.raw.al_ibge_censoagro.utils import parse_agrocenso_json
+from dados.raw.utils.postgres_interactions import PostgresETL
 
 
 dotenv.load_dotenv()
@@ -19,42 +19,42 @@ billing_id = os.getenv("BASEDOSDADADOS_PROJECT_ID")
 API_URL_BASE        = "https://servicodados.ibge.gov.br/api/v3/agregados/{}/periodos/{}/variaveis/{}?localidades={}[{}]&classificacao={}"
 AGREGADO         = "6955"
 PERIODOS         = "2017"
-VARIAVEIS        = "|".join(["10076","10077","10078","10079","10080","10081","10082","10083"])
+VARIAVEIS        = "|".join(["9504","9506", "9507" , "10075", "10076","10077","10078","10079","10080","10081","10082","10083"])
 NIVEL_GEOGRAFICO = "N6"
 LOCALIDADES      = "all"
-CLASSIFICACAO    = "227[all]|829[all]"
+CLASSIFICACAO    = "227[all]|829[46303,46304]"
 nome_tabela = "tbl_6955_2017"
 
 
 if __name__ == "__main__":
     
-    # print('------ Baixando tabela de municipios ------')
-    # municipios = bd.read_sql(
-    #     """
-    #     SELECT id_municipio
-    #     FROM `basedosdados.br_bd_diretorios_brasil.municipio`
-    #     WHERE amazonia_legal = 1
-    #     """,
-    #     billing_project_id=billing_id,
-    # )
+    print('------ Baixando tabela de municipios ------')
+    municipios = bd.read_sql(
+        """
+        SELECT id_municipio
+        FROM `basedosdados.br_bd_diretorios_brasil.municipio`
+        WHERE amazonia_legal = 1
+        """,
+        billing_project_id=billing_id,
+    )
     
-    # print('------ Baixando dados da API ------')
-    # asyncio.run(
-    #     async_crawler_ibge_municipio(
-    #         year=PERIODOS, 
-    #         variables=VARIAVEIS,
-    #         api_url_base=API_URL_BASE,
-    #         agregado=AGREGADO,
-    #         nivel_geografico=NIVEL_GEOGRAFICO,
-    #         localidades=municipios,
-    #         classificacao=CLASSIFICACAO,
-    #         nome_tabela=nome_tabela,
-    #     )
-    # )
+    print('------ Baixando dados da API ------')
+    asyncio.run(
+        async_crawler_ibge_municipio(
+            year=PERIODOS, 
+            variables=VARIAVEIS,
+            api_url_base=API_URL_BASE,
+            agregado=AGREGADO,
+            nivel_geografico=NIVEL_GEOGRAFICO,
+            localidades=municipios,
+            classificacao=CLASSIFICACAO,
+            nome_tabela=nome_tabela,
+        )
+    )
     
     files = os.listdir(f"../tmp/{nome_tabela}")
     
-    df = pd.DataFrame()
+    df_list = []
     
     print('------ Fazendo o parse dos arquivos JSON ------')
     for file in tqdm.tqdm(files):
@@ -64,9 +64,16 @@ if __name__ == "__main__":
         
             tbl = parse_agrocenso_json(data, id_produto='227', id_tipo_agricultura='829')
             
-            df = pd.concat([df, tbl], ignore_index=True)
+            del data
             
+            df_list.append(tbl)
+
             del tbl
+            
+            
+    df = pd.concat(df_list, ignore_index=True)
+    
+    del df_list
     
     print('------ Carregando tabela no Banco de Dados ------')        
     
