@@ -31,7 +31,7 @@ with PostgresETL(
         database=os.getenv("DB_GOLD_ZONE"), 
         user=os.getenv("POSTGRES_USER"), 
         password=os.getenv("POSTGRES_PASSWORD"),
-        schema='br_ibge_pof') as db:
+        schema='brasil_despesas_familiares') as db:
     
     columns = {
             'ano': 'integer',

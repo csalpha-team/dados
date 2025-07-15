@@ -16,3 +16,6 @@ prodlist_industria.xlsx
 prodlist_pesca.xlsx
 # cache
 __pycache__
+
+# notebooks para exportar tabelas do banco
+exportar_tabelas.ipynb

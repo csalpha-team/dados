@@ -44,6 +44,25 @@ os.chdir(ROOT_DIR)
 # emprego total registrado na cnae x da soma dos municípios no subterritório y
 
 
+#ano da mip
+#taxar crescimento setor industrial / taxa de crescimento setor alfa (censo/pam)
+#ex. taxa de crescimento industria de polpa / taxa de crescimento producao acai fruto
+
+#industr transformacao - industria de beneficiamento
+
+#### n
+a tabela da pam
+#1. Filtrar produto que equivale ao setor A (exemplo: 1031700 - polpa de açaí)
+#2. Filtrar ano - A série deve iniciar no ano da MIP
+#3. integrar dados com o censo 2006. 2016. e pam
+
+#### na tabela da rais
+#1. Filtrar vinculos ativos (vinculo_ativo_3112 = '1')
+#2. Ano - A série deve iniciar no ano da MIP
+#1. agregacao -> Setores A precisamos somar os valores da regiao intermediaria a nivel do municipio e calcular a taxa de crescimento
+#2. agregacao -> Setores B precisamos somar todos os municipios fora da regiao intermediaria do setor A a nivel do estado e calcular a taxa de crescimento
+
+
 query = """
 WITH 
 dicionario_vinculo_ativo_3112 AS (
@@ -74,7 +93,7 @@ LEFT JOIN `dicionario_vinculo_ativo_3112`
 LEFT JOIN (SELECT DISTINCT subclasse,descricao_subclasse,descricao_secao  FROM `basedosdados.br_bd_diretorios_brasil.cnae_2`) AS diretorio_cnae_2_subclasse
     ON dados.cnae_2_subclasse = diretorio_cnae_2_subclasse.subclasse
 
-WHERE sigla_uf = 'PA' AND ano > 1995;
+WHERE sigla_uf = 'PA' AND ano > 2011 and vinculo_ativo_3112 = '1' and cnae_2_subclasse = '1031700';
 """
 
 print('Downloading data...')
