@@ -109,12 +109,12 @@ with PostgresETL(
             'ano': 'integer',
             'id_municipio': 'VARCHAR(7)',
             'tipo_agricultura': 'VARCHAR(255)',
-            'pessoal_total_ocupado': 'VARCHAR(255)',
-            'quantidade_total_estabecimentos': 'VARCHAR(255)',
-            'pessoal_ocupado_familia': 'VARCHAR(255)',
-            'quantidade_estabecimentos_pessoal_ocupado_familia' : 'VARCHAR(255)',
-            'pessoal_ocupado_fora_familia' : 'VARCHAR(255)',
-            'quantidade_estabecimentos_pessoal_ocupado_fora_familia' : 'VARCHAR(255)'
+            'pessoal_total_ocupado': 'INTEGER',
+            'quantidade_total_estabecimentos': 'INTEGER',
+            'pessoal_ocupado_familia': 'INTEGER',
+            'quantidade_estabecimentos_pessoal_ocupado_familia' : 'INTEGER',
+            'pessoal_ocupado_fora_familia' : 'INTEGER',
+            'quantidade_estabecimentos_pessoal_ocupado_fora_familia' : 'INTEGER'
         }
             
         db.create_table(TABLE_ID, columns, drop_if_exists=True)

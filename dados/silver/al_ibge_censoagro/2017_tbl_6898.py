@@ -20,7 +20,8 @@ tipo_producao,
 id_municipio,
 valor
 FROM al_ibge_censoagro.{TABLE_ID}
-where tipo_agricultura IN ('Agricultura familiar - sim', 'Agricultura familiar - não');
+where tipo_agricultura IN ('Agricultura familiar - sim', 'Agricultura familiar - não') AND
+tipo_agricultura != 'Total';
 """
 
 
@@ -49,7 +50,7 @@ data = data.pivot_table(
 # renomear colunas
 cols = {
     "Valor da produção dos estabelecimentos agropecuários": "valor_producao",
-    "Número de estabelecimentos agropecuários com produção": "numero_estabelecimentos_produtivos", 
+    "Número de estabelecimentos agropecuários com produção": "quantidade_estabelecimentos_produtivos", 
 }
 
 data.rename(columns=cols, inplace=True)    
@@ -62,10 +63,10 @@ dicionario_tipo_agricultura = {
 
 data["tipo_agricultura"] = data.tipo_agricultura.map(dicionario_tipo_agricultura)
 
-data = fix_ibge_digits(data,list(cols.values()), ['id_municipio', 'ano', 'tipo_agricultura'], div_column='numero_estabelecimentos_produtivos')
+data = fix_ibge_digits(data,list(cols.values()), ['id_municipio', 'ano', 'tipo_agricultura'], div_column='quantidade_estabelecimentos_produtivos')
 
 data = data[['ano', 'id_municipio',  'tipo_agricultura', 'tipo_producao',
-       'valor_producao', 'numero_estabelecimentos_produtivos',]]
+       'valor_producao', 'quantidade_estabelecimentos_produtivos',]]
 
 
 with PostgresETL(
@@ -81,7 +82,7 @@ with PostgresETL(
             'id_municipio': 'VARCHAR(7)',
             'tipo_agricultura': 'VARCHAR(255)',
             'tipo_producao': 'VARCHAR(255)',
-            'numero_estabelecimentos_produtivos': 'INTEGER',
+            'quantidade_estabelecimentos_produtivos': 'INTEGER',
             'valor_producao': 'FLOAT',
         }
             
