@@ -1,9 +1,9 @@
 import basedosdados as bd
 import os
 from dotenv import load_dotenv
-from raw.utils.postgres_interactions import PostgresETL
+from dados.raw.utils.postgres_interactions import PostgresETL
 import pandas as pd
-from raw.br_csalpha_diretorios_brasil.utils import process_ncm_codes
+from dados.raw.br_csalpha_diretorios_brasil.utils import process_ncm_codes
 
 
 print('Loading environment variables...')
@@ -16,7 +16,7 @@ ROOT_DIR = os.getenv("ROOT_DIR")
 os.chdir(ROOT_DIR)
 
 
-path = 'etl/br_csalpha_diretorios_brasil/prodlist_industria.xlsx'
+path = 'dados/raw/br_csalpha_diretorios_brasil/prodlist_industria.xlsx'
 df = pd.read_excel(path, header=None)
 
 df.dropna(how='all', inplace=True)
@@ -61,7 +61,7 @@ df = df[colums]
 
 with PostgresETL(
   host='localhost', 
-  database=os.getenv("DB_TRUSTED_ZONE"), 
+  database=os.getenv("DB_SILVER_ZONE"), 
   user=os.getenv("POSTGRES_USER"), 
   password=os.getenv("POSTGRES_PASSWORD"),
   schema='br_csalpha_diretorios_brasil') as db:

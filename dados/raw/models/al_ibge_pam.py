@@ -15,6 +15,14 @@ class BasePamTable(BaseTable):
     ano: str = Field(description="Ano de referência", json_schema_extra={"sql_type": "VARCHAR(255)"})
     valor: str = Field(description="Valor da variável", json_schema_extra={"sql_type": "VARCHAR(255)"})
 
+Class (CustomModel):
+    tabela: BasePamTable
+    descricao: BaseDescription
+    processo: correcao dos valore X; Selecao das colunas y; 
+    Unidade_medidade
+    
+    
+
 class LavouraTemporaria(BasePamTable):
     """IBGE PAM - Lavoura Temporária"""
     
