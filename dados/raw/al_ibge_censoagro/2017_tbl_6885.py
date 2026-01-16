@@ -17,13 +17,13 @@ billing_id = os.getenv("BASEDOSDADADOS_PROJECT_ID")
 
 #https://servicodados.ibge.gov.br/api/docs/agregados?versao=3#api-bq
 API_URL_BASE        = "https://servicodados.ibge.gov.br/api/v3/agregados/{}/periodos/{}/variaveis/{}?localidades={}[{}]&classificacao={}"
-AGREGADO         = "6886"
+AGREGADO         = "6885"
 PERIODOS         = "2017"
-VARIAVEIS        = "|".join(["2053" ,"2003","9543","9544","9545"])
+VARIAVEIS        = "|".join(["10099" ,"185","2052","2002","2053", "2003", "9543", "9544", "9545"])
 NIVEL_GEOGRAFICO = "N6"
 LOCALIDADES      = "all"
 CLASSIFICACAO    = "829[all]|223[all]"
-nome_tabela = "tbl_6886_2017"
+nome_tabela = "tbl_6885_2017"
 
 
 if __name__ == "__main__":
