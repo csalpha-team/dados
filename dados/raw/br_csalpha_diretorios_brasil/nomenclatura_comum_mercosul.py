@@ -1,7 +1,7 @@
 import basedosdados as bd
 import os
 from dotenv import load_dotenv
-from raw.utils.postgres_interactions import PostgresETL
+from dados.raw.utils.postgres_interactions import PostgresETL
 
 print('Loading environment variables...')
 # Loading .env file
