@@ -6,11 +6,14 @@ from dados.gold.pa_indexadores_producao_rural.utils import (
     dicionario_regioes_integracao,
 )
 
+
 load_dotenv()
 billing_id = os.getenv("BASEDOSDADADOS_PROJECT_ID")
 
-query = """
-SELECT
+TABLE="tbl_2284_2006"
+
+query = f"""
+select
     ano,
     id_municipio,
     tipo_agricultura,
@@ -20,21 +23,19 @@ SELECT
     quantidade_produzida,
     quantidade_vendida,
     valor_producao,
-    valor_venda,
     -- Métricas de Autoconsumo (Já existentes na Silver)
     autoconsumo_quantidade_estabelecimentos,
     autoconsumo_quantidade_produzida,
     autoconsumo_quantidade_vendida,
     autoconsumo_valor_producao,
-    autoconsumo_valor_venda,
     -- Métricas de Comércio (Já existentes na Silver)
     comercio_quantidade_estabelecimentos,
     comercio_quantidade_produzida,
     comercio_quantidade_vendida,
-    comercio_valor_producao,
-    comercio_valor_venda
-FROM al_ibge_censoagro.tbl_2233_2006
-WHERE id_municipio LIKE '15%';
+    comercio_valor_producao
+from al_ibge_censoagro.{TABLE}
+where id_municipio like '15%';
+
 """
 
 with PostgresETL(
@@ -45,20 +46,20 @@ with PostgresETL(
         schema='al_ibge_censoagro') as db:
     
     data = db.download_data(query)
-
+    
 print('------ Baixando tabela de municipios ------')
 municipios = bd.read_sql(
     """
-    SELECT id_municipio, nome, sigla_uf 
+    SELECT id_municipio, nome, sigla_uf, 
     FROM `basedosdados.br_bd_diretorios_brasil.municipio`
-    WHERE sigla_uf = 'PA'
+    WHERE amazonia_legal = 1
     """,
     billing_project_id=billing_id,
 )
 
+#left join com a tabela de municipios
 data = data.merge(municipios, on='id_municipio', how='left')
 
-# Mapeamento da região de integração
 data['nome_regiao_integracao'] = data['id_municipio'].map(dicionario_regioes_integracao)
 
 with PostgresETL(
@@ -82,26 +83,28 @@ with PostgresETL(
             'quantidade_produzida': 'numeric',
             'quantidade_vendida': 'numeric',
             'valor_producao': 'numeric',
-            'valor_venda': 'numeric',
             
             # Autoconsumo
             'autoconsumo_quantidade_estabelecimentos': 'integer',
             'autoconsumo_quantidade_produzida': 'numeric',
             'autoconsumo_quantidade_vendida': 'numeric',
             'autoconsumo_valor_producao': 'numeric',
-            'autoconsumo_valor_venda': 'numeric',
             
             # Comércio
             'comercio_quantidade_estabelecimentos': 'integer',
             'comercio_quantidade_produzida': 'numeric',
             'comercio_quantidade_vendida': 'numeric',
             'comercio_valor_producao': 'numeric',
-            'comercio_valor_venda': 'numeric',
         }
 
     cols_to_load = list(columns.keys())
     data = data[cols_to_load]
 
-    db.create_table('extracao_vegetal_censo_2006', columns, drop_if_exists=True)
+    db.create_table('lavoura_temporaria_censo_2006_2284', columns, drop_if_exists=True)
     
-    db.load_data('extracao_vegetal_censo_2006', data, if_exists='replace')
+    db.load_data('lavoura_temporaria_censo_2006_2284', data, if_exists='replace')
+
+    
+
+        
+      

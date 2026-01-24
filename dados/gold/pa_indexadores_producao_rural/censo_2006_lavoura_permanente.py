@@ -14,17 +14,28 @@ TABLE="tbl_2518_2006"
 
 query = f"""
 select
-ano,
-id_municipio,
-tipo_agricultura,
-produto,
-quantidade_estabelecimentos,
-quantidade_produzida,
-quantidade_vendida,
-valor_producao,
-valor_venda,
-area_colhida,
-area_plantada
+    ano,
+    id_municipio,
+    tipo_agricultura,
+    produto,
+    -- Métricas Originais (Totais)
+    quantidade_estabelecimentos,
+    quantidade_produzida,
+    quantidade_vendida,
+    valor_producao,
+    valor_venda,
+    -- Métricas de Autoconsumo (Já existentes na Silver)
+    autoconsumo_quantidade_estabelecimentos,
+    autoconsumo_quantidade_produzida,
+    autoconsumo_quantidade_vendida,
+    autoconsumo_valor_producao,
+    autoconsumo_valor_venda,
+    -- Métricas de Comércio (Já existentes na Silver)
+    comercio_quantidade_estabelecimentos,
+    comercio_quantidade_produzida,
+    comercio_quantidade_vendida,
+    comercio_valor_producao,
+    comercio_valor_venda
 from al_ibge_censoagro.{TABLE}
 where id_municipio like '15%';
 
@@ -69,14 +80,31 @@ with PostgresETL(
             'sigla_uf': 'VARCHAR(2)',
             'produto': 'VARCHAR(255)',
             'tipo_agricultura': 'VARCHAR(255)',
+            
+            # Totais
             'quantidade_estabelecimentos': 'integer',
-            'quantidade_produzida': 'integer',
-            'quantidade_vendida': 'integer',
+            'quantidade_produzida': 'numeric',
+            'quantidade_vendida': 'numeric',
             'valor_producao': 'numeric',
             'valor_venda': 'numeric',
-            'area_colhida': 'numeric',
-            'area_plantada': 'numeric',
+            
+            # Autoconsumo
+            'autoconsumo_quantidade_estabelecimentos': 'integer',
+            'autoconsumo_quantidade_produzida': 'numeric',
+            'autoconsumo_quantidade_vendida': 'numeric',
+            'autoconsumo_valor_producao': 'numeric',
+            'autoconsumo_valor_venda': 'numeric',
+            
+            # Comércio
+            'comercio_quantidade_estabelecimentos': 'integer',
+            'comercio_quantidade_produzida': 'numeric',
+            'comercio_quantidade_vendida': 'numeric',
+            'comercio_valor_producao': 'numeric',
+            'comercio_valor_venda': 'numeric',
         }
+
+    cols_to_load = list(columns.keys())
+    data = data[cols_to_load]
 
     db.create_table('lavoura_permanente_censo_2006', columns, drop_if_exists=True)
     

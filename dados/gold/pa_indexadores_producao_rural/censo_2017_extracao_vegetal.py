@@ -19,9 +19,12 @@ tipo_agricultura,
 produto,
 quantidade_estabelecimentos,
 quantidade_produzida,
-quantidade_vendida,
+quantidade_vendida as comercio_quantidade_produzida,
+quantidade_produzida - quantidade_vendida as autoconsumo_quantidade_vendida,
 valor_producao,
-valor_venda
+valor_venda as comercio_valor_producao,
+valor_producao - valor_venda as autoconsumo_valor_producao
+
 from al_ibge_censoagro.tbl_6949_2017
 where id_municipio like '15%';
 """
@@ -61,18 +64,22 @@ with PostgresETL(
         schema='pa_indexadores_producao_rural') as db:
     
     columns = {
-            'ano': 'integer',
-            'id_municipio': 'VARCHAR(7)',
-            'nome': 'VARCHAR(255)',
-            'nome_regiao_integracao': 'VARCHAR(255)',
-            'sigla_uf': 'VARCHAR(2)',
-            'produto': 'VARCHAR(255)',
-            'tipo_agricultura': 'VARCHAR(255)',
-            'quantidade_estabelecimentos': 'integer',
-            'quantidade_produzida': 'integer',
-            'quantidade_vendida': 'integer',
-            'valor_producao': 'numeric',
-            'valor_venda': 'numeric',
+        'ano': 'integer',
+        'id_municipio': 'VARCHAR(7)',
+        'nome': 'VARCHAR(255)',
+        'nome_regiao_integracao': 'VARCHAR(255)',
+        'sigla_uf': 'VARCHAR(2)',
+        'produto': 'VARCHAR(255)',
+        'tipo_agricultura': 'VARCHAR(255)',
+        'quantidade_estabelecimentos': 'numeric',
+        'quantidade_produzida': 'numeric',
+        'comercio_quantidade_produzida' : 'numeric',
+        'autoconsumo_quantidade_vendida' : 'numeric',
+        'quantidade_vendida': 'numeric',
+        'comercio_valor_producao' : 'numeric',
+        'autoconsumo_valor_producao' : 'numeric',
+        'valor_producao': 'numeric',
+        'valor_venda': 'numeric',
         }
             
     db.create_table('extracao_vegetal_censo_2017', columns, drop_if_exists=True)
