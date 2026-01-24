@@ -1,6 +1,6 @@
 import pandas as pd
 from typing import List
-import pandas as pd
+
 
 def fix_ibge_digits(df: pd.DataFrame, columns: List[str], group_vars: List[str] = None, 
                    div_column: str = None) -> pd.DataFrame:
@@ -31,8 +31,8 @@ def fix_ibge_digits(df: pd.DataFrame, columns: List[str], group_vars: List[str] 
         Lista de variáveis para agrupar no cálculo das médias.
         Padrão é ['id_municipio', 'ano', 'produto'] se None
     div_column : str, opcional
-        Nome da coluna contendo o número de estabelecimentos para dividir a média.
-        Se None, a média não será dividida.
+        Nome da coluna contendo o número de estabelecimentos para multiplicar a média.
+        Se None, a média não será multiplicar.
        
     Retorna:
     --------
@@ -76,34 +76,21 @@ def fix_ibge_digits(df: pd.DataFrame, columns: List[str], group_vars: List[str] 
    
     return df_fixed
 
+import pandas as pd
+import numpy as np
+from typing import List
+
 def fix_ibge_x_digit(df: pd.DataFrame, column: str, group_vars: List[str], 
                     div_column: str = None) -> pd.DataFrame:
     """
-    Substitui valores 'X' em uma coluna pela média calculada
-    agrupando pelos valores em group_vars. Se div_column for fornecido,
-    a média será dividida pelo valor dessa coluna.
-   
-    Parâmetros:
-    -----------
-    df : pd.DataFrame
-        O dataframe contendo dados do IBGE
-    column : str
-        Nome da coluna a ser processada
-    group_vars : List[str]
-        Lista de variáveis para agrupar no cálculo das médias
-    div_column : str, opcional
-        Nome da coluna contendo o número de estabelecimentos para dividir a média.
-        Se None, a média não será dividida.
-       
-    Retorna:
-    --------
-    pd.DataFrame
-        O dataframe com valores 'X' substituídos por médias
+    Substitui valores 'X' utilizando a lógica de Média Unitária (Ratio Imputation).
     
-    Raises:
-    -------
-    ValueError
-        Se algum valor 'X' não puder ser substituído
+    Lógica:
+    1. Calcula a razão (Valor / Divisor) para os dados existentes.
+    2. Encontra a média dessa razão por grupo.
+    3. Para os valores 'X', imputa: (Média da Razão do Grupo) * (Valor do Divisor da linha)
+    
+    Se div_column for None, utiliza a média simples (Média Normal).
     """
     # Cria uma cópia para evitar modificar o dataframe original
     df_fixed = df.copy()
@@ -111,100 +98,106 @@ def fix_ibge_x_digit(df: pd.DataFrame, column: str, group_vars: List[str],
     # Contabiliza quantos valores 'X' existem inicialmente
     x_count_before = (df_fixed[column] == 'X').sum()
     print(f"Total de valores 'X' para substituir na coluna {column}: {x_count_before}")
-   
-    # Garante que a coluna é numérica para cálculo (exceto valores 'X')
-    df_fixed[column] = pd.to_numeric(df_fixed[column].replace('X', None), errors='coerce')
-   
-    # Dicionário para rastrear substituições por UF
+    
+    # 1. Tratamento de Tipos
+    # Garante que a coluna alvo é numérica (X vira NaN)
+    df_fixed[column] = pd.to_numeric(df_fixed[column].replace('X', np.nan), errors='coerce')
+    
+    # Garante que a coluna divisora é numérica (se existir)
+    if div_column:
+        df_fixed[div_column] = pd.to_numeric(df_fixed[div_column], errors='coerce').fillna(0)
+
+    # 2. Cálculo da Coluna de Razão (Unitária)
+    # Variável auxiliar para saber qual coluna usar no cálculo da média
+    target_col_for_mean = column 
+    
+    if div_column:
+        # Nome temporário para a coluna de produtividade/razão
+        ratio_col = f'_temp_ratio_{column}'
+        
+        # Cria a coluna: Valor / Estabelecimentos (evita divisão por zero)
+        # Linhas com NaN em 'column' resultarão em NaN 
+        df_fixed[ratio_col] = df_fixed.apply(
+            lambda row: row[column] / row[div_column] if (row[div_column] > 0 and pd.notna(row[column])) else np.nan, 
+            axis=1
+        )
+        target_col_for_mean = ratio_col
+
+    # Dicionário para rastrear substituições por UF (apenas para log)
     uf_substitutions = {}
     for uf_code in df_fixed['id_municipio'].str[0:2].unique():
         uf_substitutions[uf_code] = 0
     
-    # Obtém todas as combinações únicas de variáveis de agrupamento
-    # Removemos 'id_municipio' do agrupamento, mas mantemos para filtragem por UF
+    # Variáveis de agrupamento sem o município
     group_vars_without_mun = [var for var in group_vars if var != 'id_municipio']
     
-    # Processa cada UF separadamente
+    # 3. Processamento por UF
     for uf_code in df_fixed['id_municipio'].str[0:2].unique():
-        # Filtra o dataframe para a UF atual
+        # Filtra a UF
         uf_mask = df_fixed['id_municipio'].str[0:2] == uf_code
         uf_df = df_fixed[uf_mask].copy()
         
-        # Calcula as médias para cada combinação de variáveis de agrupamento
-        # Agrupa por todas as variáveis exceto 'id_municipio'
+        # Se houver variáveis de grupo, calcula médias agrupadas
         if group_vars_without_mun:
-            group_means = uf_df.groupby(group_vars_without_mun)[column].mean().reset_index()
+            # Calcula a média da variável alvo (seja ela o Total ou a Razão Unitária)
+            group_means = uf_df.groupby(group_vars_without_mun)[target_col_for_mean].mean().reset_index()
             
-            # Para cada grupo, aplica a média correspondente
             for _, row in group_means.iterrows():
-                # Cria uma máscara para este grupo
+                # Cria máscara para encontrar as linhas deste grupo específico dentro da UF
                 group_mask = pd.Series(True, index=uf_df.index)
                 for var in group_vars_without_mun:
                     group_mask &= (uf_df[var] == row[var])
                 
-                # Adiciona a máscara para valores 'X' (agora NaN)
+                # Identifica onde temos 'X' (que agora é NaN na coluna original)
                 x_mask = group_mask & uf_df[column].isna()
-                
-                # Aplica a média se existirem valores a substituir e a média não for NaN
                 x_count = x_mask.sum()
-                if x_count > 0 and not pd.isna(row[column]):
-                    mean_value = row[column]
+                
+                # Se houver buracos para preencher E tivermos uma média válida para o grupo
+                if x_count > 0 and not pd.isna(row[target_col_for_mean]):
+                    mean_val = row[target_col_for_mean]
                     
-                    # Se div_column for fornecido, divide a média pelo valor dessa coluna
-                    if div_column is not None:
-                        # Para cada linha com valor X, divide a média pelo valor de div_column
+                    if div_column:
+                        # Valor = (Média Unitária do Grupo) * (Quantidade de Estabelecimentos da Linha)
                         for idx in uf_df.loc[x_mask].index:
-                            div_value = df_fixed.loc[idx, div_column]
-                            # Evita divisão por zero
-                            try:
-                                df_fixed.loc[idx, column] = mean_value / int(div_value)
-                            except ZeroDivisionError as e:
-                                df_fixed.loc[idx, column] = mean_value  # Mantém o valor original se div_value for zero
+                            div_val = df_fixed.loc[idx, div_column]
+                            imputed_value = mean_val * div_val
+                            df_fixed.loc[idx, column] = imputed_value
                     else:
-                        # Comportamento original: substitui diretamente pela média
-                        df_fixed.loc[x_mask, column] = mean_value
+                        # Lógica Antiga (Fallback): Substituição direta pela média simples
+                        df_fixed.loc[x_mask, column] = mean_val
                     
                     uf_substitutions[uf_code] += x_count
+                    
         else:
-            # Se não houver variáveis de agrupamento além de 'id_municipio',
-            # calcula a média geral da UF
-            mean_value = uf_df[column].mean()
+            # Fallback se não houver grupos: Média geral da UF
+            mean_val = uf_df[target_col_for_mean].mean()
             x_mask = uf_df[column].isna()
-            x_count = x_mask.sum()
-            if x_count > 0 and not pd.isna(mean_value):
-                if div_column is not None:
-                    # Para cada linha com valor X, divide a média pelo valor de div_column
+            
+            if x_mask.sum() > 0 and not pd.isna(mean_val):
+                if div_column:
                     for idx in uf_df.loc[x_mask].index:
-                        div_value = df_fixed.loc[idx, div_column]
-                        # Evita divisão por zero
-                        if div_value != 0:
-                            df_fixed.loc[idx, column] = mean_value / div_value
-                        else:
-                            df_fixed.loc[idx, column] = mean_value  # Mantém o valor original se div_value for zero
+                        df_fixed.loc[idx, column] = mean_val * df_fixed.loc[idx, div_column]
                 else:
-                    # Comportamento original: substitui diretamente pela média
-                    df_fixed.loc[x_mask, column] = mean_value
+                    df_fixed.loc[x_mask, column] = mean_val
                 
-                uf_substitutions[uf_code] += x_count
+                uf_substitutions[uf_code] += x_mask.sum()
+
+    # 4. Limpeza e Logs Finais
     
+    # Remove a coluna temporária se foi criada
+    if div_column and f'_temp_ratio_{column}' in df_fixed.columns:
+        df_fixed.drop(columns=[f'_temp_ratio_{column}'], inplace=True)
+
     print("\nResumo de substituições por UF:")
     for uf, count in uf_substitutions.items():
-        print(f"  UF {uf}: {count} valores substituídos")
+        if count > 0: print(f"  UF {uf}: {count} valores substituídos")
     
-    remaining_x = df_fixed[column].isna().sum()
-    if remaining_x > 0:
-        print(f"AVISO: Ainda existem {remaining_x} valores 'X' não substituídos na coluna {column}.")
-        print("Convertendo valores remanescentes para 0.")
-        # Substitui valores NaN remanescentes por 0
+    # Preenchimento de remanescentes com 0 (casos onde não houve média de grupo disponível)
+    remaining_nan = df_fixed[column].isna().sum()
+    if remaining_nan > 0:
+        print(f"AVISO: {remaining_nan} valores não puderam ser calculados (sem média de grupo). Preenchendo com 0.")
         df_fixed[column] = df_fixed[column].fillna(0)
     
-    remaining_x = (df_fixed[column] == 'X').sum()
-    if remaining_x > 0:
-        print(f"AVISO: Ainda existem {remaining_x} valores literais 'X' não substituídos na coluna {column}.")
-        print("Convertendo valores 'X' remanescentes para 0.")
-        # Substitui valores 'X' remanescentes por 0
-        df_fixed[column] = df_fixed[column].replace('X', 0)
-   
     return df_fixed
 
         
@@ -310,4 +303,66 @@ def check_duplicates(data: pd.DataFrame, columns: List) -> None:
     else:
         print("Nenhuma combinação duplicada encontrada.")
 
+
+
+def calcula_autoconsumo_comercio(
+    df: pd.DataFrame, 
+    id_cols: List[str], 
+    metric_cols: List[str], 
+    category_col: str,
+    total_label: str = 'Total',
+    consumo_label: str = 'Consumo no estabelecimento'
+) -> pd.DataFrame:
+    """
+    Pivota o dataframe para criar colunas de Total e Autoconsumo, 
+    e calcula o Comércio (Total - Autoconsumo).
+
+    Retorna um DataFrame com:
+    - Colunas originais (Total)
+    - Colunas com prefixo 'autoconsumo_'
+    - Colunas com prefixo 'comercio_'
+    """
+    
+    # 1. Pivotagem
+    # Transforma 'Total' e 'Consumo' em colunas hierárquicas
+    # fill_value=0 garante que se não houver registro de consumo, seja 0 e não NaN
+    df_pivot = df.pivot_table(
+        index=id_cols,
+        columns=category_col,
+        values=metric_cols,
+        aggfunc='sum',
+        fill_value=0
+    )
+    
+    # O df_pivot agora tem colunas MultiIndex: (Métrica, Categoria)
+    # Ex: ('quantidade_produzida', 'Total')
+    
+    # 2. Construção do DataFrame Final Plano
+    output_df = pd.DataFrame(index=df_pivot.index)
+    
+    for metric in metric_cols:
+        # Acessa as séries usando o MultiIndex do pivot
+        # Usamos .get() ou try/except implícito para segurança caso falte uma categoria inteira
+        try:
+            val_total = df_pivot[(metric, total_label)]
+        except KeyError:
+            val_total = 0
+            
+        try:
+            val_consumo = df_pivot[(metric, consumo_label)]
+        except KeyError:
+            val_consumo = 0
+            
+        # 2.1 Mantém nome original para o TOTAL
+        output_df[metric] = val_total
+        
+        # 2.2 Cria variável com prefixo AUTOCONSUMO
+        output_df[f'autoconsumo_{metric}'] = val_consumo
+        
+        # 2.3 Cria variável calculada COMERCIO (Total - Autoconsumo)
+        # clip(lower=0) previne negativos por erros de dados
+        output_df[f'comercio_{metric}'] = (output_df[metric] - output_df[f'autoconsumo_{metric}']).clip(lower=0)
+
+    # 3. Reset do índice para trazer id_cols de volta como colunas normais
+    return output_df.reset_index()
 

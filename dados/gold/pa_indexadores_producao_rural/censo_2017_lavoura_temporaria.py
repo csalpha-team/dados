@@ -17,10 +17,14 @@ select
 ano,
 id_municipio,
 tipo_agricultura,
+produto,
 quantidade_estabelecimentos,
 quantidade_produzida,
-quantidade_vendida,
-valor_producao
+quantidade_vendida as comercio_quantidade_produzida,
+quantidade_produzida - quantidade_vendida as autoconsumo_quantidade_vendida,
+valor_producao,
+valor_venda as comercio_valor_producao,
+valor_producao - valor_venda as autoconsumo_valor_producao
 from al_ibge_censoagro.{TABLE}
 where id_municipio like '15%';
 
@@ -65,9 +69,14 @@ with PostgresETL(
             'sigla_uf': 'VARCHAR(2)',
             'produto': 'VARCHAR(255)',
             'tipo_agricultura': 'VARCHAR(255)',
-            'quantidade_estabelecimentos': 'integer',
-            'quantidade_produzida': 'integer',
-            'quantidade_vendida': 'integer',
+            'quantidade_estabelecimentos': 'numeric',
+            'quantidade_produzida': 'numeric',
+            'comercio_quantidade_produzida' : 'numeric',
+            'autoconsumo_quantidade_vendida' : 'numeric',
+            'quantidade_vendida': 'numeric',
+            'comercio_valor_producao' : 'numeric',
+            'autoconsumo_valor_producao' : 'numeric',
+            'quantidade_vendida': 'numeric',
             'valor_producao': 'numeric',
         }
 

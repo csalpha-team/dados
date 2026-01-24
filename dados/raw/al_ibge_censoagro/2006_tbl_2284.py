@@ -17,13 +17,13 @@ billing_id = os.getenv("BASEDOSDADADOS_PROJECT_ID")
 
 #https://servicodados.ibge.gov.br/api/docs/agregados?versao=3#api-bq
 API_URL_BASE        = "https://servicodados.ibge.gov.br/api/v3/agregados/{}/periodos/{}/variaveis/{}?localidades={}[{}]&classificacao={}"
-AGREGADO         = "2233"
+AGREGADO         = "2284"
 PERIODOS         = "2006"
-VARIAVEIS        = "|".join(["183","1981","1982","215","1000215","1983", "1001983"])
+VARIAVEIS        = "|".join(["183","214","1982","215","216",])
 NIVEL_GEOGRAFICO = "N6"
 LOCALIDADES      = "all"
-CLASSIFICACAO    = "229[all]|12763[0,120420]|12764[0]|12896[all]"
-nome_tabela = "tbl_2233_2006"
+CLASSIFICACAO    = "226[all]|12763[0,117916,117917]|12764[0]|12896[all]"
+nome_tabela = "tbl_2284_2006"
 
 
 if __name__ == "__main__":
@@ -62,7 +62,7 @@ if __name__ == "__main__":
         with open(f"../tmp/{nome_tabela}/{file}", "r") as f:
             data = json.load(f)
         
-            tbl = parse_agrocenso_destinacao(data, id_produto='229', id_tipo_agricultura='12896', id_consumo_estocada='12763', id_vendida_entregue='12764')
+            tbl = parse_agrocenso_destinacao(data, id_produto='226', id_tipo_agricultura='12896', id_consumo_estocada='12763', id_vendida_entregue='12764')
             df = pd.concat([df, tbl], ignore_index=True)
             
             del tbl
@@ -93,6 +93,7 @@ if __name__ == "__main__":
                 'valor': 'VARCHAR(255)',
             }
                 
-            db.create_table('tbl_2233_2006', columns, drop_if_exists=True)
+            db.create_table(nome_tabela, columns, drop_if_exists=True)
             
-            db.load_data('tbl_2233_2006', df, if_exists='replace')
+            db.load_data(nome_tabela, df, if_exists='replace')
+      
