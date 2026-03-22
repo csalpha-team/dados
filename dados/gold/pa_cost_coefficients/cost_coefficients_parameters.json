@@ -1,0 +1,85 @@
+{
+  "parameter_groups": {
+    "Custos": [
+      {
+        "coeff_keys": ["CombustíveisBenefEstad", "CombustíveisBenefLoc"],
+        "expense_types": ["Combustíveis"]
+      },
+      {
+        "coeff_keys": ["InsumoEnergia"],
+        "expense_types": ["Energia elétrica"]
+      },
+      {
+        "coeff_keys": ["InsumosCombustível"],
+        "expense_types": ["Combustíveis e lubrificantes"]
+      },
+      {
+        "coeff_keys": ["InsumosMecânicos"],
+        "expense_types": ["Aluguel de máquina", "Compra de máquinas e veículos"]
+      },
+      {
+        "coeff_keys": ["InsumosMineral"],
+        "expense_types": [
+          "Corretivos do solo",
+          "Sal e rações (industrializados ou não-industrializados)",
+          "Sal, ração e outros suplementos"
+        ]
+      },
+      {
+        "coeff_keys": ["InsumosOrgânicos"],
+        "expense_types": ["Sementes e mudas", "Compra de matéria-prima para agroindústria"]
+      },
+      {
+        "coeff_keys": ["InsumosQuímicos"],
+        "expense_types": ["Adubos", "Agrotóxicos", "Medicamentos para animais"]
+      },
+      {
+        "coeff_keys": [
+          "EmbalagemBenefEstad",
+          "EmbalagemBenefLoc",
+          "EmbalagemTransfEstad",
+          "EmbalagemTransfLoc"
+        ],
+        "expense_types": ["Sacarias e embalagens"]
+      },
+      {
+        "coeff_keys": [
+          "CustosVariáveisDiversosBenefEstad",
+          "CustosVariáveisDiversosBenefLoc",
+          "CustosVariáveisDiversosTransfEstad",
+          "CustosVariáveisDiversosTransfLoc"
+        ],
+        "expense_types": ["Outras despesas"]
+      },
+      {
+        "coeff_keys": [
+          "ServiçosConstCivilBenefEstad",
+          "ServiçosConstCivilBenefLoc",
+          "ServiçosConstCivilTransfEstad",
+          "ServiçosConstCivilTransfLocal"
+        ],
+        "expense_types": ["Serviços de empreitada"]
+      },
+      {
+        "coeff_keys": [
+          "TransporteBenefEstad",
+          "TransporteBenefLoc",
+          "TransporteTransfEstad",
+          "TransporteTransfLoc"
+        ],
+        "expense_types": ["Transporte da produção"]
+      }
+    ],
+    "Investimento": [
+      {
+        "coeff_keys": ["InvestPlantio"],
+        "expense_types": ["Novas culturas permanentes e silvicultura", "Formação de pastagens"]
+      }
+    ]
+  },
+  "region_rename_map": {
+    "RioCapim": "Capim",
+    "RioCaete": "Caete"
+  },
+  "total_expense_label": "Total"
+}
