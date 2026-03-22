@@ -86,8 +86,15 @@ def calculate_municipality_coefficients(
         how="left",
     )
 
-    grouped["coeff"] = grouped["valor_despesa"] / grouped["total_despesa"]
-    grouped.loc[grouped["total_despesa"] == 0, "coeff"] = pd.NA
+    grouped["valor_despesa"] = pd.to_numeric(grouped["valor_despesa"], errors="coerce")
+    grouped["total_despesa"] = pd.to_numeric(grouped["total_despesa"], errors="coerce")
+
+    valid_denominator = grouped["total_despesa"].notna() & (grouped["total_despesa"] != 0)
+    grouped["coeff"] = pd.NA
+    grouped.loc[valid_denominator, "coeff"] = (
+        grouped.loc[valid_denominator, "valor_despesa"]
+        / grouped.loc[valid_denominator, "total_despesa"]
+    )
     return grouped
 
 

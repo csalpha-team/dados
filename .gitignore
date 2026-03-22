@@ -19,3 +19,7 @@ __pycache__
 
 # notebooks para exportar tabelas do banco
 exportar_tabelas.ipynb
+
+# ambientes virtuais
+.venv/
+venv/
