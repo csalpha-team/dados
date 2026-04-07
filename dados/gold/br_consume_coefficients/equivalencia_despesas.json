@@ -1,0 +1,502 @@
+[
+    {
+        "TiposDeDespesa": "2.1.2.2.5 Água e esgoto",
+        "TipoDespesaDestinoProvável": "DemandaServiçosGerais"
+    },
+    {
+        "TiposDeDespesa": "2.1.1 Alimentação",
+        "TipoDespesaDestinoProvável": "DemandaAlimentação"
+    },
+    {
+        "TiposDeDespesa": "2.1.11.5 Imóveis de uso ocasional",
+        "TipoDespesaDestinoProvável": "InvestConstEBenfeitorias"
+    },
+    {
+        "TiposDeDespesa": "2.1.2.1 Aluguel",
+        "TipoDespesaDestinoProvável": "InvestConstEBenfeitorias"
+    },
+    {
+        "TiposDeDespesa": "2.1.2.2.6 Outros",
+        "TipoDespesaDestinoProvável": "InvestConstEBenfeitorias"
+    },
+    {
+        "TiposDeDespesa": "2.2.6 Outras",
+        "TipoDespesaDestinoProvável": "InvestConstEBenfeitorias"
+    },
+    {
+        "TiposDeDespesa": "2.1.4.5 Aquisição de veículos",
+        "TipoDespesaDestinoProvável": "DemandaVeículo"
+    },
+    {
+        "TiposDeDespesa": "2.1.2.4 Artigos de limpeza",
+        "TipoDespesaDestinoProvável": "DemandaLimpeza"
+    },
+    {
+        "TiposDeDespesa": "2.1.8.1 Brinquedos e jogos",
+        "TipoDespesaDestinoProvável": "DemandaEletrodomésticos"
+    },
+    {
+        "TiposDeDespesa": "2.1.8.2 Celular e acessórios",
+        "TipoDespesaDestinoProvável": "DemandaEletrodomésticos"
+    },
+    {
+        "TiposDeDespesa": "2.1.4.2 Gasolina - veículo próprio",
+        "TipoDespesaDestinoProvável": "DemandaCombustível"
+    },
+    {
+        "TiposDeDespesa": "2.1.11.2 Comunicação",
+        "TipoDespesaDestinoProvável": "DemandaLimpeza"
+    },
+    {
+        "TiposDeDespesa": "2.1.2.2.2 Telefone fixo",
+        "TipoDespesaDestinoProvável": "DemandaLimpeza"
+    },
+    {
+        "TiposDeDespesa": "2.1.2.2.3 Telefone celular",
+        "TipoDespesaDestinoProvável": "DemandaLimpeza"
+    },
+    {
+        "TiposDeDespesa": "2.1.6.3 Consulta e tratamento dentário",
+        "TipoDespesaDestinoProvável": "DemandaMedicoDentHosp"
+    },
+    {
+        "TiposDeDespesa": "2.1.6.4 Consulta médica",
+        "TipoDespesaDestinoProvável": "DemandaMedicoDentHosp"
+    },
+    {
+        "TiposDeDespesa": "2.1.11.1 Jogos e apostas",
+        "TipoDespesaDestinoProvável": "DemandaServiçosGerais"
+    },
+    {
+        "TiposDeDespesa": "2.1.11.3 Cerimônias e festas",
+        "TipoDespesaDestinoProvável": "DemandaServiçosGerais"
+    },
+    {
+        "TiposDeDespesa": "2.1.8.4 Diversões e esportes",
+        "TipoDespesaDestinoProvável": "DemandaServiçosGerais"
+    },
+    {
+        "TiposDeDespesa": "2.1.8.5 Outras",
+        "TipoDespesaDestinoProvável": "DemandaServiçosGerais"
+    },
+    {
+        "TiposDeDespesa": "2.1.7.1 Cursos regulares",
+        "TipoDespesaDestinoProvável": "DemandaEducação"
+    },
+    {
+        "TiposDeDespesa": "2.1.7.2 Curso superior",
+        "TipoDespesaDestinoProvável": "DemandaEducação"
+    },
+    {
+        "TiposDeDespesa": "2.1.7.3 Outros cursos",
+        "TipoDespesaDestinoProvável": "DemandaEducação"
+    },
+    {
+        "TiposDeDespesa": "2.1.7.6 Outras",
+        "TipoDespesaDestinoProvável": "DemandaEducação"
+    },
+    {
+        "TiposDeDespesa": "2.1.2.6 Eletrodomésticos",
+        "TipoDespesaDestinoProvável": "DemandaEletrodomésticos"
+    },
+    {
+        "TiposDeDespesa": "2.1.2.2.1 Energia elétrica",
+        "TipoDespesaDestinoProvável": "DemandaEnergia"
+    },
+    {
+        "TiposDeDespesa": "2.1.6.8 Exames diversos",
+        "TipoDespesaDestinoProvável": "DemandaMedicoDentHosp"
+    },
+    {
+        "TiposDeDespesa": "2.1.9 Fumo",
+        "TipoDespesaDestinoProvável": "DemandaAlimentação"
+    },
+    {
+        "TiposDeDespesa": "2.1.2.2.4 Gás doméstico",
+        "TipoDespesaDestinoProvável": "DemandaCombustível"
+    },
+    {
+        "TiposDeDespesa": "2.1.5 Higiene e cuidados pessoais",
+        "TipoDespesaDestinoProvável": "DemandaFarmacêuticos"
+    },
+    {
+        "TiposDeDespesa": "2.1.6.7 Hospitalização",
+        "TipoDespesaDestinoProvável": "DemandaMedicoDentHosp"
+    },
+    {
+        "TiposDeDespesa": "2.3.1 Imóvel (aquisição)",
+        "TipoDespesaDestinoProvável": "InvestConstEBenfeitorias"
+    },
+    {
+        "TiposDeDespesa": "2.3.2 Imóvel (reforma)",
+        "TipoDespesaDestinoProvável": "InvestConstEBenfeitorias"
+    },
+    {
+        "TiposDeDespesa": "2.4.2 Prestação de imóvel",
+        "TipoDespesaDestinoProvável": "InvestConstEBenfeitorias"
+    },
+    {
+        "TiposDeDespesa": "2.2.1 Impostos",
+        "TipoDespesaDestinoProvável": "ImpostoTaxas"
+    },
+    {
+        "TiposDeDespesa": "2.2.2 Contribuições trabalhistas",
+        "TipoDespesaDestinoProvável": "ImpostoTaxas"
+    },
+    {
+        "TiposDeDespesa": "2.1.7.4 Livros didáticos e revistas técnicas",
+        "TipoDespesaDestinoProvável": "DemandaLivrosRevistas"
+    },
+    {
+        "TiposDeDespesa": "2.1.7.5 Artigos escolares",
+        "TipoDespesaDestinoProvável": "DemandaLivrosRevistas"
+    },
+    {
+        "TiposDeDespesa": "2.1.8.3 Periódicos, livros e revistas",
+        "TipoDespesaDestinoProvável": "DemandaLivrosRevistas"
+    },
+    {
+        "TiposDeDespesa": "2.1.2.3 Manutenção do lar",
+        "TipoDespesaDestinoProvável": "DemandaLimpeza"
+    },
+    {
+        "TiposDeDespesa": "2.1.2.7 Consertos de artigos do lar",
+        "TipoDespesaDestinoProvável": "DemandaLimpeza"
+    },
+    {
+        "TiposDeDespesa": "2.1.6.9 Material de tratamento",
+        "TipoDespesaDestinoProvável": "DemandaMedicoDentHosp"
+    },
+    {
+        "TiposDeDespesa": "2.1.2.5 Mobiliários e artigos do lar",
+        "TipoDespesaDestinoProvável": "DemandaMobiliário"
+    },
+    {
+        "TiposDeDespesa": "2.2.4 Pensões, mesadas e doações",
+        "TipoDespesaDestinoProvável": "DemandaAlimentação"
+    },
+    {
+        "TiposDeDespesa": "2.1.6.2 Plano/Seguro saúde",
+        "TipoDespesaDestinoProvável": "DemandaMedicoDentHosp"
+    },
+    {
+        "TiposDeDespesa": "2.3.3 Outros investimentos",
+        "TipoDespesaDestinoProvável": "Poupança"
+    },
+    {
+        "TiposDeDespesa": "2.4.1 Empréstimo e carnê",
+        "TipoDespesaDestinoProvável": "Poupança"
+    },
+    {
+        "TiposDeDespesa": "2.4 Diminuição do passivo",
+        "TipoDespesaDestinoProvável": "DemandaEletrodomésticos"
+    },
+    {
+        "TiposDeDespesa": "2.2.5 Previdência privada",
+        "TipoDespesaDestinoProvável": "Poupança"
+    },
+    {
+        "TiposDeDespesa": "2.1.6.10 Outras",
+        "TipoDespesaDestinoProvável": "DemandaFarmacêuticos"
+    },
+    {
+        "TiposDeDespesa": "2.1.6.1 Remédios",
+        "TipoDespesaDestinoProvável": "DemandaFarmacêuticos"
+    },
+    {
+        "TiposDeDespesa": "2.2.3 Serviços bancários",
+        "TipoDespesaDestinoProvável": "DemandaServiçosBancários"
+    },
+    {
+        "TiposDeDespesa": "2.1.6.6 Serviços de cirurgia",
+        "TipoDespesaDestinoProvável": "DemandaMedicoDentHosp"
+    },
+    {
+        "TiposDeDespesa": "2.1.10 Serviços pessoais",
+        "TipoDespesaDestinoProvável": "DemandaServiçosGerais"
+    },
+    {
+        "TiposDeDespesa": "2.1.11.4 Serviços profissionais",
+        "TipoDespesaDestinoProvável": "DemandaServiçosGerais"
+    },
+    {
+        "TiposDeDespesa": "2.1.11.6 Outras",
+        "TipoDespesaDestinoProvável": "DemandaServiçosGerais"
+    },
+    {
+        "TiposDeDespesa": "2.1.4.1 Urbano",
+        "TipoDespesaDestinoProvável": "DemandaCombustível"
+    },
+    {
+        "TiposDeDespesa": "2.1.4.3 Álcool - veículo próprio",
+        "TipoDespesaDestinoProvável": "DemandaCombustível"
+    },
+    {
+        "TiposDeDespesa": "2.1.4.7 Outras",
+        "TipoDespesaDestinoProvável": "DemandaCombustível"
+    },
+    {
+        "TiposDeDespesa": "2.1.6.5 Tratamento ambulatorial",
+        "TipoDespesaDestinoProvável": "DemandaMedicoDentHosp"
+    },
+    {
+        "TiposDeDespesa": "2.1.4.4 Manutenção - veículo próprio",
+        "TipoDespesaDestinoProvável": "DemandaVeículo"
+    },
+    {
+        "TiposDeDespesa": "2.1.3 Vestuário",
+        "TipoDespesaDestinoProvável": "DemandaVestuário"
+    },
+    {
+        "TiposDeDespesa": "2.1.4.6 Viagens",
+        "TipoDespesaDestinoProvável": "DemandaServiçosGerais"
+    },
+    {
+        "TiposDeDespesa": "2.1.2.2.5 Água e esgoto",
+        "TipoDespesaDestinoProvável": "DemandaServiçosGeraisEstadual"
+    },
+    {
+        "TiposDeDespesa": "2.1.1 Alimentação",
+        "TipoDespesaDestinoProvável": "DemandaAlimentaçãoEstadual"
+    },
+    {
+        "TiposDeDespesa": "2.1.11.5 Imóveis de uso ocasional",
+        "TipoDespesaDestinoProvável": "InvestConstEBenfeitoriasEstadual"
+    },
+    {
+        "TiposDeDespesa": "2.1.2.1 Aluguel",
+        "TipoDespesaDestinoProvável": "InvestConstEBenfeitoriasEstadual"
+    },
+    {
+        "TiposDeDespesa": "2.1.2.2.6 Outros",
+        "TipoDespesaDestinoProvável": "InvestConstEBenfeitoriasEstadual"
+    },
+    {
+        "TiposDeDespesa": "2.2.6 Outras",
+        "TipoDespesaDestinoProvável": "InvestConstEBenfeitoriasEstadual"
+    },
+    {
+        "TiposDeDespesa": "2.1.4.5 Aquisição de veículos",
+        "TipoDespesaDestinoProvável": "DemandaVeículoEstadual"
+    },
+    {
+        "TiposDeDespesa": "2.1.2.4 Artigos de limpeza",
+        "TipoDespesaDestinoProvável": "DemandaLimpezaEstadual"
+    },
+    {
+        "TiposDeDespesa": "2.1.8.1 Brinquedos e jogos",
+        "TipoDespesaDestinoProvável": "DemandaEletrodomésticosEstadual"
+    },
+    {
+        "TiposDeDespesa": "2.1.8.2 Celular e acessórios",
+        "TipoDespesaDestinoProvável": "DemandaEletrodomésticosEstadual"
+    },
+    {
+        "TiposDeDespesa": "2.1.4.2 Gasolina - veículo próprio",
+        "TipoDespesaDestinoProvável": "DemandaCombustívelEstadual"
+    },
+    {
+        "TiposDeDespesa": "2.1.11.2 Comunicação",
+        "TipoDespesaDestinoProvável": "DemandaLimpezaEstadual"
+    },
+    {
+        "TiposDeDespesa": "2.1.2.2.2 Telefone fixo",
+        "TipoDespesaDestinoProvável": "DemandaLimpezaEstadual"
+    },
+    {
+        "TiposDeDespesa": "2.1.2.2.3 Telefone celular",
+        "TipoDespesaDestinoProvável": "DemandaLimpezaEstadual"
+    },
+    {
+        "TiposDeDespesa": "2.1.6.3 Consulta e tratamento dentário",
+        "TipoDespesaDestinoProvável": "DemandaMedicoDentHospEstadual"
+    },
+    {
+        "TiposDeDespesa": "2.1.6.4 Consulta médica",
+        "TipoDespesaDestinoProvável": "DemandaMedicoDentHospEstadual"
+    },
+    {
+        "TiposDeDespesa": "2.1.11.1 Jogos e apostas",
+        "TipoDespesaDestinoProvável": "DemandaServiçosGeraisEstadual"
+    },
+    {
+        "TiposDeDespesa": "2.1.11.3 Cerimônias e festas",
+        "TipoDespesaDestinoProvável": "DemandaServiçosGeraisEstadual"
+    },
+    {
+        "TiposDeDespesa": "2.1.8.4 Diversões e esportes",
+        "TipoDespesaDestinoProvável": "DemandaServiçosGeraisEstadual"
+    },
+    {
+        "TiposDeDespesa": "2.1.8.5 Outras",
+        "TipoDespesaDestinoProvável": "DemandaServiçosGeraisEstadual"
+    },
+    {
+        "TiposDeDespesa": "2.1.7.1 Cursos regulares",
+        "TipoDespesaDestinoProvável": "DemandaEducaçãoEstadual"
+    },
+    {
+        "TiposDeDespesa": "2.1.7.2 Curso superior",
+        "TipoDespesaDestinoProvável": "DemandaEducaçãoEstadual"
+    },
+    {
+        "TiposDeDespesa": "2.1.7.3 Outros cursos",
+        "TipoDespesaDestinoProvável": "DemandaEducaçãoEstadual"
+    },
+    {
+        "TiposDeDespesa": "2.1.7.6 Outras",
+        "TipoDespesaDestinoProvável": "DemandaEducaçãoEstadual"
+    },
+    {
+        "TiposDeDespesa": "2.1.2.6 Eletrodomésticos",
+        "TipoDespesaDestinoProvável": "DemandaEletrodomésticosEstadual"
+    },
+    {
+        "TiposDeDespesa": "2.1.2.2.1 Energia elétrica",
+        "TipoDespesaDestinoProvável": "DemandaEnergiaEstadual"
+    },
+    {
+        "TiposDeDespesa": "2.1.6.8 Exames diversos",
+        "TipoDespesaDestinoProvável": "DemandaMedicoDentHospEstadual"
+    },
+    {
+        "TiposDeDespesa": "2.1.9 Fumo",
+        "TipoDespesaDestinoProvável": "DemandaAlimentaçãoEstadual"
+    },
+    {
+        "TiposDeDespesa": "2.1.2.2.4 Gás doméstico",
+        "TipoDespesaDestinoProvável": "DemandaCombustívelEstadual"
+    },
+    {
+        "TiposDeDespesa": "2.1.5 Higiene e cuidados pessoais",
+        "TipoDespesaDestinoProvável": "DemandaFarmacêuticosEstadual"
+    },
+    {
+        "TiposDeDespesa": "2.1.6.7 Hospitalização",
+        "TipoDespesaDestinoProvável": "DemandaMedicoDentHospEstadual"
+    },
+    {
+        "TiposDeDespesa": "2.3.1 Imóvel (aquisição)",
+        "TipoDespesaDestinoProvável": "InvestConstEBenfeitoriasEstadual"
+    },
+    {
+        "TiposDeDespesa": "2.3.2 Imóvel (reforma)",
+        "TipoDespesaDestinoProvável": "InvestConstEBenfeitoriasEstadual"
+    },
+    {
+        "TiposDeDespesa": "2.4.2 Prestação de imóvel",
+        "TipoDespesaDestinoProvável": "InvestConstEBenfeitoriasEstadual"
+    },
+    {
+        "TiposDeDespesa": "2.2.1 Impostos",
+        "TipoDespesaDestinoProvável": "ImpostoTaxasEstadual"
+    },
+    {
+        "TiposDeDespesa": "2.2.2 Contribuições trabalhistas",
+        "TipoDespesaDestinoProvável": "ImpostoTaxasEstadual"
+    },
+    {
+        "TiposDeDespesa": "2.1.7.4 Livros didáticos e revistas técnicas",
+        "TipoDespesaDestinoProvável": "DemandaLivrosRevistasEstadual"
+    },
+    {
+        "TiposDeDespesa": "2.1.7.5 Artigos escolares",
+        "TipoDespesaDestinoProvável": "DemandaLivrosRevistasEstadual"
+    },
+    {
+        "TiposDeDespesa": "2.1.8.3 Periódicos, livros e revistas",
+        "TipoDespesaDestinoProvável": "DemandaLivrosRevistasEstadual"
+    },
+    {
+        "TiposDeDespesa": "2.1.2.3 Manutenção do lar",
+        "TipoDespesaDestinoProvável": "DemandaLimpezaEstadual"
+    },
+    {
+        "TiposDeDespesa": "2.1.2.7 Consertos de artigos do lar",
+        "TipoDespesaDestinoProvável": "DemandaLimpezaEstadual"
+    },
+    {
+        "TiposDeDespesa": "2.1.6.9 Material de tratamento",
+        "TipoDespesaDestinoProvável": "DemandaMedicoDentHospEstadual"
+    },
+    {
+        "TiposDeDespesa": "2.1.2.5 Mobiliários e artigos do lar",
+        "TipoDespesaDestinoProvável": "DemandaMobiliárioEstadual"
+    },
+    {
+        "TiposDeDespesa": "2.2.4 Pensões, mesadas e doações",
+        "TipoDespesaDestinoProvável": "DemandaAlimentaçãoEstadual"
+    },
+    {
+        "TiposDeDespesa": "2.1.6.2 Plano/Seguro saúde",
+        "TipoDespesaDestinoProvável": "DemandaMedicoDentHospEstadual"
+    },
+    {
+        "TiposDeDespesa": "2.3.3 Outros investimentos",
+        "TipoDespesaDestinoProvável": "PoupançaEstadual"
+    },
+    {
+        "TiposDeDespesa": "2.4.1 Empréstimo e carnê",
+        "TipoDespesaDestinoProvável": "PoupançaEstadual"
+    },
+    {
+        "TiposDeDespesa": "2.2.5 Previdência privada",
+        "TipoDespesaDestinoProvável": "PoupançaEstadual"
+    },
+    {
+        "TiposDeDespesa": "2.1.6.10 Outras",
+        "TipoDespesaDestinoProvável": "DemandaFarmacêuticosEstadual"
+    },
+    {
+        "TiposDeDespesa": "2.1.6.1 Remédios",
+        "TipoDespesaDestinoProvável": "DemandaFarmacêuticosEstadual"
+    },
+    {
+        "TiposDeDespesa": "2.2.3 Serviços bancários",
+        "TipoDespesaDestinoProvável": "DemandaServiçosBancáriosEstadual"
+    },
+    {
+        "TiposDeDespesa": "2.1.6.6 Serviços de cirurgia",
+        "TipoDespesaDestinoProvável": "DemandaMedicoDentHospEstadual"
+    },
+    {
+        "TiposDeDespesa": "2.1.10 Serviços pessoais",
+        "TipoDespesaDestinoProvável": "DemandaServiçosGeraisEstadual"
+    },
+    {
+        "TiposDeDespesa": "2.1.11.4 Serviços profissionais",
+        "TipoDespesaDestinoProvável": "DemandaServiçosGeraisEstadual"
+    },
+    {
+        "TiposDeDespesa": "2.1.11.6 Outras",
+        "TipoDespesaDestinoProvável": "DemandaServiçosGeraisEstadual"
+    },
+    {
+        "TiposDeDespesa": "2.1.4.1 Urbano",
+        "TipoDespesaDestinoProvável": "DemandaCombustívelEstadual"
+    },
+    {
+        "TiposDeDespesa": "2.1.4.3 Álcool - veículo próprio",
+        "TipoDespesaDestinoProvável": "DemandaCombustívelEstadual"
+    },
+    {
+        "TiposDeDespesa": "2.1.4.7 Outras",
+        "TipoDespesaDestinoProvável": "DemandaCombustívelEstadual"
+    },
+    {
+        "TiposDeDespesa": "2.1.6.5 Tratamento ambulatorial",
+        "TipoDespesaDestinoProvável": "DemandaMedicoDentHospEstadual"
+    },
+    {
+        "TiposDeDespesa": "2.1.4.4 Manutenção - veículo próprio",
+        "TipoDespesaDestinoProvável": "DemandaVeículoEstadual"
+    },
+    {
+        "TiposDeDespesa": "2.1.3 Vestuário",
+        "TipoDespesaDestinoProvável": "DemandaVestuárioEstadual"
+    },
+    {
+        "TiposDeDespesa": "2.1.4.6 Viagens",
+        "TipoDespesaDestinoProvável": "DemandaServiçosGeraisEstadual"
+    }
+]

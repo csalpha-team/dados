@@ -1,10 +1,10 @@
 from dotenv import load_dotenv
 import os
 from pathlib import Path
+import pandas as pd
 from dados.raw.utils.postgres_interactions import PostgresETL
 from dados.gold.br_consume_coefficients.utils import (
     build_consumption_coefficients,
-    load_mip_mapping,
 )
 
 
@@ -14,10 +14,9 @@ DATASET_ID = "br_consume_coefficients"
 TABLE_ID = "consume_layer_data_preparation"
 SOURCE_SCHEMA = "brasil_despesas_familiares"
 SOURCE_TABLE = "pof_2018_despesas_familiares_situacao_domicilio"
-DEFAULT_MIP_PATH = Path(__file__).with_name("mip_coefficients.xlsx")
+DEFAULT_EQUIVALENCE_PATH = Path(__file__).with_name("equivalencia_despesas.json")
 
 CONSUMPTION_PARAMETERS = {
-    "mip_sheet_name": "DespesasDosSalários",
     "mip_coeff_key_column": "TipoDespesaDestinoProvável",
     "mip_expense_type_column": "TiposDeDespesa",
     "target_variable": "Distribuição da despesa monetária e não monetária média mensal familiar",
@@ -27,10 +26,36 @@ CONSUMPTION_PARAMETERS = {
     "state_pattern": "Estad|Estadual",
 }
 
-mip_path_env = os.getenv("MIP_CONSUMPTION_FILE_PATH")
-mip_path = Path(mip_path_env) if mip_path_env else DEFAULT_MIP_PATH
+equivalence_path_env = os.getenv("CONSUMPTION_EQUIVALENCE_FILE_PATH")
+equivalence_path = (
+    Path(equivalence_path_env) if equivalence_path_env else DEFAULT_EQUIVALENCE_PATH
+)
 
-mip_mapping = load_mip_mapping(mip_path, CONSUMPTION_PARAMETERS["mip_sheet_name"])
+if not equivalence_path.exists():
+    raise FileNotFoundError(
+        f"Arquivo de equivalência de despesas não encontrado: {equivalence_path}"
+    )
+
+mip_mapping = pd.read_json(equivalence_path)
+required_mapping_columns = [
+    CONSUMPTION_PARAMETERS["mip_coeff_key_column"],
+    CONSUMPTION_PARAMETERS["mip_expense_type_column"],
+]
+missing_mapping_columns = [
+    column for column in required_mapping_columns if column not in mip_mapping.columns
+]
+
+if missing_mapping_columns:
+    raise ValueError(
+        "Colunas obrigatórias ausentes no arquivo de equivalência: "
+        f"{', '.join(missing_mapping_columns)}"
+    )
+
+mip_mapping = mip_mapping[required_mapping_columns].dropna(subset=required_mapping_columns)
+mip_mapping = mip_mapping.drop_duplicates(subset=required_mapping_columns)
+mip_mapping[CONSUMPTION_PARAMETERS["mip_expense_type_column"]] = mip_mapping[
+    CONSUMPTION_PARAMETERS["mip_expense_type_column"]
+].astype("string").str.strip()
 
 query = f"""
 select
@@ -51,6 +76,8 @@ with PostgresETL(
     schema=SOURCE_SCHEMA,
 ) as db:
     pof_data = db.download_data(query)
+
+pof_data["tipo_despesa"] = pof_data["tipo_despesa"].astype("string").str.strip()
 
 coefficients_data = build_consumption_coefficients(
     pof_data,
