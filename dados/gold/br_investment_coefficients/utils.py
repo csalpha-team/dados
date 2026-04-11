@@ -1,0 +1,31 @@
+import json
+from pathlib import Path
+
+import pandas as pd
+
+
+FINAL_COLUMNS = ["coeff_key", "coeff"]
+
+
+def load_investment_coefficients(json_path: Path) -> pd.DataFrame:
+    if not json_path.exists():
+        raise FileNotFoundError(f"Arquivo de coeficientes nao encontrado: {json_path}")
+
+    with json_path.open("r", encoding="utf-8") as file:
+        raw_data = json.load(file)
+
+    if not isinstance(raw_data, dict):
+        raise ValueError("investment_coefficients.json deve conter um objeto chave-valor")
+
+    coefficients = pd.DataFrame(
+        [
+            {"coeff_key": str(coeff_key), "coeff": value}
+            for coeff_key, value in raw_data.items()
+        ]
+    )
+
+    coefficients["coeff"] = pd.to_numeric(coefficients["coeff"], errors="coerce")
+    coefficients = coefficients.dropna(subset=["coeff_key", "coeff"]).copy()
+    coefficients = coefficients.sort_values("coeff_key").reset_index(drop=True)
+
+    return coefficients[FINAL_COLUMNS]
