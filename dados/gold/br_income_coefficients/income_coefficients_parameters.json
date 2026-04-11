@@ -1,0 +1,35 @@
+{
+  "forecast_config": {
+    "method": "linear",
+    "min_history": 2,
+    "clamp_non_negative": true,
+    "rolling_window": 3
+  },
+  "target_years": {
+    "start": 1995,
+    "end": 2023
+  },
+  "aa_production_values": {
+    "prod_mon_trab": 10.789,
+    "salario_medio": 0.068
+  },
+  "sector_mappings": {
+    "PAC_COMERCIO": {
+      "ACVarejoRural": ["4"],
+      "AHAtacado": ["3"],
+      "BHAtacado": ["3"],
+      "CHAtacado": ["3"],
+      "AIVarejoUrbano": ["4"],
+      "BIVarejoUrbano": ["4"],
+      "CIVarejoUrbano": ["4"]
+    },
+    "PIA_INDUSTRIA": {
+      "AFIndustBenef": ["10", "11", "12", "17", "19", "20", "24"],
+      "BFIndustBenef": ["10", "11", "12", "17", "19", "20", "24"],
+      "CFIndustBenef": ["10", "11", "12", "17", "19", "20", "24"],
+      "AGIndustTransf": ["13", "14", "15", "16", "18", "21", "22", "23", "25", "26", "27", "28", "29", "30", "31", "32", "33"],
+      "BGIndustTransf": ["13", "14", "15", "16", "18", "21", "22", "23", "25", "26", "27", "28", "29", "30", "31", "32", "33"],
+      "CGIndustTransf": ["13", "14", "15", "16", "18", "21", "22", "23", "25", "26", "27", "28", "29", "30", "31", "32", "33"]
+    }
+  }
+}
