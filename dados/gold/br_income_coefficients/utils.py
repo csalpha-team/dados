@@ -277,29 +277,13 @@ def prepare_income_coefficients_data(
     return final[FINAL_COLUMNS]
 
 
-def build_income_json_payload(coefficients_df: pd.DataFrame, tipo_coeff: str) -> dict[str, dict[str, float]]:
+def build_income_output_table(coefficients_df: pd.DataFrame, tipo_coeff: str) -> pd.DataFrame:
     filtered = coefficients_df.loc[coefficients_df["tipo_coeff"] == tipo_coeff].copy()
     if filtered.empty:
-        return {}
+        return pd.DataFrame(columns=["ano", "conta_alfa", "coeff"])
 
-    payload: dict[str, dict[str, float]] = {}
-    for year, group in filtered.groupby("ano", as_index=False):
-        payload[str(int(year))] = dict(zip(group["conta_alfa"], group["coeff"]))
-
-    return payload
-
-
-def save_income_json_outputs(coefficients_df: pd.DataFrame, output_dir: Path) -> None:
-    output_dir.mkdir(parents=True, exist_ok=True)
-
-    productivity_payload = build_income_json_payload(coefficients_df, "prod_mon_trab")
-    salary_payload = build_income_json_payload(coefficients_df, "salario_medio")
-
-    productivity_path = output_dir / "income_productivity.json"
-    salary_path = output_dir / "income_salary.json"
-
-    with productivity_path.open("w", encoding="utf-8") as file:
-        json.dump(productivity_payload, file, ensure_ascii=False, indent=2)
-
-    with salary_path.open("w", encoding="utf-8") as file:
-        json.dump(salary_payload, file, ensure_ascii=False, indent=2)
+    filtered = filtered[["ano", "conta_alfa", "coeff"]].copy()
+    filtered["ano"] = pd.to_numeric(filtered["ano"], errors="coerce").astype("Int64")
+    filtered["coeff"] = pd.to_numeric(filtered["coeff"], errors="coerce")
+    filtered = filtered.sort_values(["ano", "conta_alfa"]).reset_index(drop=True)
+    return filtered

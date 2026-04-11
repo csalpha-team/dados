@@ -4,9 +4,9 @@ from pathlib import Path
 
 from dados.raw.utils.postgres_interactions import PostgresETL
 from dados.gold.br_income_coefficients.utils import (
+    build_income_output_table,
     load_income_parameters,
     prepare_income_coefficients_data,
-    save_income_json_outputs,
 )
 
 
@@ -14,6 +14,8 @@ load_dotenv()
 
 DATASET_ID = "br_income_coefficients"
 TABLE_ID = "income_layer_data_preparation"
+PRODUCTIVITY_TABLE_ID = "income_productivity"
+SALARY_TABLE_ID = "income_salary"
 CONFIG_PATH = Path(__file__).with_name("income_coefficients_parameters.json")
 
 PIA_SOURCE_SCHEMA = os.getenv("INCOME_PIA_SOURCE_SCHEMA", "br_ibge_pia")
@@ -78,6 +80,9 @@ coefficients_data = prepare_income_coefficients_data(
     forecast_config=forecast_config,
 )
 
+productivity_data = build_income_output_table(coefficients_data, "prod_mon_trab")
+salary_data = build_income_output_table(coefficients_data, "salario_medio")
+
 with PostgresETL(
     host="localhost",
     database=os.getenv("DB_GOLD_ZONE"),
@@ -91,10 +96,15 @@ with PostgresETL(
         "tipo_coeff": "VARCHAR(255)",
         "coeff": "numeric",
     }
+    output_columns = {
+        "ano": "integer",
+        "conta_alfa": "VARCHAR(255)",
+        "coeff": "numeric",
+    }
 
     db.create_table(TABLE_ID, columns, drop_if_exists=True)
     db.load_data(TABLE_ID, coefficients_data, if_exists="replace")
-
-output_dir_env = os.getenv("INCOME_COEFFICIENTS_OUTPUT_DIR")
-if output_dir_env:
-    save_income_json_outputs(coefficients_data, Path(output_dir_env))
+    db.create_table(PRODUCTIVITY_TABLE_ID, output_columns, drop_if_exists=True)
+    db.load_data(PRODUCTIVITY_TABLE_ID, productivity_data, if_exists="replace")
+    db.create_table(SALARY_TABLE_ID, output_columns, drop_if_exists=True)
+    db.load_data(SALARY_TABLE_ID, salary_data, if_exists="replace")
