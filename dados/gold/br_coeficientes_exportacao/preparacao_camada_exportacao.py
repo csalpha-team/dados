@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 
 from dados.raw.utils.postgres_interactions import PostgresETL
-from dados.gold.br_export_coefficients.utils import (
+from dados.gold.br_coeficientes_exportacao.utils import (
     carregar_parametros_exportacao,
     construir_consulta_exportacao,
     preparar_dados_coeficientes_exportacao,

@@ -189,17 +189,17 @@
     {
       "produto": "AcaiFruto",
       "nome_ncm": "Sucos (sumo) de outras frutas, não fermentado, sem adição de açúcar",
-      "participacao": 0.89
+      "participacao": 0.87
     },
     {
       "produto": "AcaiFruto",
       "nome_ncm": "Outras frutas não cozidas ou cozidas em água ou vapor, congeladas, mesmo adicionadas de açúcar ou de outros edulcorantes",
-      "participacao": 0.89
+      "participacao": 0.87
     },
     {
       "produto": "AcaiFruto",
       "nome_ncm": "Outras frutas, partes de plantas, preparadas/conservadas de outro modo",
-      "participacao": 0.89
+      "participacao": 0.87
     }
   ]
 }

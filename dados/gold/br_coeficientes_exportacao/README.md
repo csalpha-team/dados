@@ -1,0 +1,112 @@
+# Coeficientes de exportacao
+
+Este modulo prepara coeficientes de exportacao para a zona gold a partir dos
+registros de comercio exterior da COMEXSTAT. O resultado final e uma tabela por
+ano e produto com:
+
+- `valor_fob_dolar`;
+- `valor_fob_real`;
+- `coeff`, calculado como a participacao do produto no valor total exportado do
+  ano considerado.
+
+A entrada principal da camada e o arquivo
+`parametros_coeficientes_exportacao.json`, que define quais descricoes de NCM
+devem ser associadas a cada produto e quais regras de reparticao especifica
+devem ser aplicadas quando a classificacao aduaneira e mais ampla do que o
+produto de interesse.
+
+## Origem metodologica
+
+Esta camada usa como referencia a metodologia empregada para estimar as
+exportacoes de derivados de acai no Para quando a base de comercio exterior nao
+identifica o produto com granularidade suficiente. A ideia central e a
+seguinte:
+
+1. o codigo NCM `20079921` corresponde especificamente a polpa de acai e, por
+   isso, entra integralmente no calculo;
+2. os codigos NCM `20098990`, `20089900` e `08119000` sao classificacoes mais
+   amplas, que incluem outros produtos;
+3. para o estado do Para, considera-se que o acai e seus derivados representam,
+   em media, 87% do volume e do valor observados nessas tres classificacoes;
+4. esse fator medio e aplicado para estimar a parcela do acai dentro desses
+   NCMs agregados.
+
+Essa regra e atribuida por Homma et al. (2017) e reaparece em nota tecnica
+mais recente sobre a economia do acai, usada aqui como referencia de apoio para
+descrever a parametrizacao adotada no modulo.
+
+## Como a logica entra em `parametros_coeficientes_exportacao.json`
+
+O JSON tem dois blocos centrais:
+
+- `preparacoes_produtos`: define o "de para" entre cada produto do modelo e as
+  descricoes de NCM encontradas na base;
+- `participacoes_especificas`: sobrescreve a divisao padrao quando um produto
+  precisa de um peso diferente de reparticao.
+
+No caso do acai, a logica funciona assim:
+
+1. `AcaiFruto` e associado em `preparacoes_produtos` a quatro descricoes de NCM:
+   `Purês de açaí (Euterpe oleracea)`,
+   `Sucos (sumo) de outras frutas, não fermentado, sem adição de açúcar`,
+   `Outras frutas não cozidas ou cozidas em água ou vapor, congeladas, mesmo adicionadas de açúcar ou de outros edulcorantes`
+   e `Outras frutas, partes de plantas, preparadas/conservadas de outro modo`.
+2. essas descricoes representam, na pratica, as classificacoes especifica e
+   genericas usadas para captar o acai e seus derivados na base de exportacao.
+3. em `participacoes_especificas`, a descricao especifica
+   `Purês de açaí (Euterpe oleracea)` recebe `1.0`, porque corresponde ao item
+   diretamente identificado como derivado de acai.
+4. as tres descricoes genericas recebem `0.87`, traduzindo a hipotese de que,
+   no Para, 87% do valor e da quantidade observados nessas classificacoes dizem
+   respeito ao acai e seus derivados.
+
+Em outras palavras, o JSON nao armazena os coeficientes finais de exportacao.
+Ele armazena as regras que permitem estimar a parte do valor exportado atribuida
+ao produto de interesse antes da normalizacao anual em `coeff`.
+
+## Fluxo da camada
+
+O fluxo implementado em `preparacao_camada_exportacao.py` e direto:
+
+1. carregar os parametros de `parametros_coeficientes_exportacao.json`;
+2. consultar a base de exportacao e obter `ano`, `id_ncm`,
+   `nome_ncm_portugues`, `sigla_uf_ncm` e `valor_fob_dolar`;
+3. filtrar os registros da UF alvo, hoje `PA`;
+4. agregar os valores por ano e NCM;
+5. projetar a serie anual com previsao linear quando necessario;
+6. distribuir os valores dos NCMs entre os produtos definidos no parametro;
+7. aplicar as `participacoes_especificas` quando houver regra explicita, como o
+   `0.87` do acai;
+8. converter o valor em dolar para real;
+9. calcular `coeff` como a participacao do produto no total do ano;
+10. gravar o resultado em `br_coeficientes_exportacao.preparacao_camada_exportacao`.
+
+## Observacoes de manutencao
+
+- Se a metodologia para o acai mudar, o ajuste deve ser feito primeiro em
+  `participacoes_especificas`.
+- Se uma nova descricao de NCM passar a representar o produto, ela precisa
+  entrar em `preparacoes_produtos`.
+- Se a base passar a identificar o produto de forma direta e suficiente, a
+  regra de estimacao por participacao media pode ser revista ou removida.
+- A documentacao desta camada assume a nomenclatura NCM tal como aparece na base
+  lida pela consulta de exportacao.
+
+## Referencias
+
+BENTES, E. dos S.; HOMMA, A. K. O.; SANTOS, C. A. N. dos. Exportacoes de polpa
+de acai do estado do Para: situacao atual e perspectivas. In: CONGRESSO DA
+SOCIEDADE BRASILEIRA DE ECONOMIA, ADMINISTRACAO E SOCIOLOGIA RURAL, 55., 2017,
+Santa Maria, RS. Anais [...]. Santa Maria: UFSM, 2017. Disponivel em:
+<https://www.embrapa.br/busca-de-publicacoes/-/publicacao/1074510/exportacoes-de-polpa-de-acai-do-estado-do-para-situacao-atual-e-perspectivas>.
+Acesso em: 17 abr. 2026.
+
+FUNDACAO AMAZONIA DE AMPARO A ESTUDOS E PESQUISAS DO PARA. Nota tecnica:
+Conjuntura da economia do acai. [s.l.: s.n.], [s.d.]. Disponivel em:
+<https://drive.google.com/file/d/1grGvWI6j2a0CPkhaf56_3XEj4_dWhyqT/view>.
+Acesso em: 17 abr. 2026.
+
+FUNDACAO AMAZONIA DE AMPARO A ESTUDOS E PESQUISAS DO PARA. O contexto economico
+e ambiental do acai. [s.l.: s.n.], 2026. Disponivel em:
+<https://portalamazonia.com/wp-content/uploads/2026/03/Nota-Tecnica-O-CONTEXTO-ECONOMICO-E-AMBIENTAL-DO-ACAI.VERSAO-PUBLICACAOdocx-1-1.pdf>.
+Acesso em: 17 abr. 2026.
