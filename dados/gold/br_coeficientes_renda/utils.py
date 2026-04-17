@@ -4,7 +4,7 @@ from typing import Any
 
 import pandas as pd
 
-from dados.gold.br_coeficientes_renda.previsao_renda import ForecastConfig, IncomeForecaster
+from dados.gold.br_coeficientes_renda.previsao_renda import ForecastConfig
 
 
 PIA_REQUIRED_COLUMNS = [
@@ -179,6 +179,148 @@ def _calcular_coeficientes_por_ano(data: pd.DataFrame, numerator_column: str, sa
     return result[["conta_alfa", "prod_mon_trab", "salario_medio"]]
 
 
+def _listar_anos_observados(data: pd.DataFrame) -> list[int]:
+    if "ano" not in data.columns:
+        return []
+
+    years = pd.to_numeric(data["ano"], errors="coerce").dropna().astype(int).unique().tolist()
+    return sorted(int(year) for year in years)
+
+
+def _derreter_coeficientes_renda(coefficients: pd.DataFrame, year: int) -> pd.DataFrame:
+    if coefficients.empty:
+        return pd.DataFrame(columns=FINAL_COLUMNS)
+
+    melted = coefficients.melt(
+        id_vars=["conta_alfa"],
+        value_vars=["prod_mon_trab", "salario_medio"],
+        var_name="tipo_coeff",
+        value_name="coeff",
+    )
+    melted["ano"] = int(year)
+    return melted[FINAL_COLUMNS]
+
+
+def _construir_coeficientes_observados(
+    data: pd.DataFrame,
+    observed_years: list[int],
+    mapping: dict[str, list[str]],
+    numeric_columns: list[str],
+    numerator_column: str,
+    salary_column: str,
+) -> pd.DataFrame:
+    rows = []
+    for year in observed_years:
+        aggregated = _agrupar_contas_por_ano(
+            data,
+            year,
+            mapping,
+            numeric_columns,
+        )
+        coefficients = _calcular_coeficientes_por_ano(
+            aggregated,
+            numerator_column,
+            salary_column,
+        )
+        if not coefficients.empty:
+            rows.append(_derreter_coeficientes_renda(coefficients, year))
+
+    if not rows:
+        return pd.DataFrame(columns=FINAL_COLUMNS)
+
+    return pd.concat(rows, ignore_index=True)
+
+
+def _completar_coeficientes_finais(
+    coefficients_df: pd.DataFrame,
+    years: list[int],
+    *,
+    clamp_non_negative: bool,
+) -> pd.DataFrame:
+    target_years = sorted({int(year) for year in years})
+    if coefficients_df.empty or not target_years:
+        return pd.DataFrame(columns=FINAL_COLUMNS)
+
+    completed_rows = []
+    grouped = coefficients_df.groupby(["conta_alfa", "tipo_coeff"], dropna=False)
+
+    for (account_name, coeff_type), group in grouped:
+        ordered = group.sort_values("ano").copy()
+        series = (
+            pd.Series(
+                pd.to_numeric(ordered["coeff"], errors="coerce").to_numpy(dtype=float),
+                index=ordered["ano"].astype(int).tolist(),
+                dtype=float,
+            )
+            .groupby(level=0)
+            .last()
+            .reindex(target_years)
+        )
+
+        observed = series.dropna()
+        if observed.empty:
+            continue
+
+        first_year = int(observed.index[0])
+        last_year = int(observed.index[-1])
+        first_value = float(observed.iloc[0])
+        last_value = float(observed.iloc[-1])
+
+        series.loc[series.index < first_year] = first_value
+        series.loc[series.index > last_year] = last_value
+        series = series.ffill().bfill()
+
+        if clamp_non_negative:
+            series = series.clip(lower=0.0)
+
+        for year, coeff in series.items():
+            completed_rows.append(
+                {
+                    "ano": int(year),
+                    "conta_alfa": str(account_name),
+                    "tipo_coeff": str(coeff_type),
+                    "coeff": float(coeff),
+                }
+            )
+
+    if not completed_rows:
+        return pd.DataFrame(columns=FINAL_COLUMNS)
+
+    completed = pd.DataFrame(completed_rows)
+    completed = completed.sort_values(["ano", "conta_alfa", "tipo_coeff"]).reset_index(drop=True)
+    return completed[FINAL_COLUMNS]
+
+
+def _construir_coeficientes_aa(
+    years: list[int],
+    aa_production_values: dict[str, float],
+) -> pd.DataFrame:
+    target_years = sorted({int(year) for year in years})
+    rows = []
+    for year in target_years:
+        rows.extend(
+            [
+                {
+                    "ano": year,
+                    "conta_alfa": "AAProdução",
+                    "tipo_coeff": "prod_mon_trab",
+                    "coeff": float(aa_production_values["prod_mon_trab"]),
+                },
+                {
+                    "ano": year,
+                    "conta_alfa": "AAProdução",
+                    "tipo_coeff": "salario_medio",
+                    "coeff": float(aa_production_values["salario_medio"]),
+                },
+            ]
+        )
+
+    if not rows:
+        return pd.DataFrame(columns=FINAL_COLUMNS)
+
+    return pd.DataFrame(rows, columns=FINAL_COLUMNS)
+
+
 def preparar_dados_coeficientes_renda(
     pia_df: pd.DataFrame,
     pac_df: pd.DataFrame,
@@ -192,88 +334,38 @@ def preparar_dados_coeficientes_renda(
 
     pia_cleaned = _forcar_colunas_numericas(pia_df, PIA_VALUE_COLUMNS)
     pac_cleaned = _forcar_colunas_numericas(pac_df, PAC_VALUE_COLUMNS)
-
-    pia_forecaster = IncomeForecaster(
-        year_col="ano",
-        label_cols="divisao_grupo_cnae_2",
-        value_cols=PIA_VALUE_COLUMNS,
-        config=forecast_config,
-    )
-    pac_forecaster = IncomeForecaster(
-        year_col="ano",
-        label_cols="divisao_grupo_cnae_2",
-        value_cols=PAC_VALUE_COLUMNS,
-        config=forecast_config,
-    )
-
-    pia_forecast = pia_forecaster.forecast(
-        pia_cleaned,
-        forecast_years=years,
-        include_history=True,
-    )
-    pac_forecast = pac_forecaster.forecast(
-        pac_cleaned,
-        forecast_years=years,
-        include_history=True,
-    )
-
-    rows = []
     pac_mapping = sector_mappings.get("PAC_COMERCIO", {})
     pia_mapping = sector_mappings.get("PIA_INDUSTRIA", {})
 
-    for year in years:
-        pia_aggregated = _agrupar_contas_por_ano(
-            pia_forecast,
-            year,
-            pia_mapping,
-            PIA_VALUE_COLUMNS,
-        )
-        pac_aggregated = _agrupar_contas_por_ano(
-            pac_forecast,
-            year,
-            pac_mapping,
-            PAC_VALUE_COLUMNS,
-        )
+    pia_observed_coefficients = _construir_coeficientes_observados(
+        pia_cleaned,
+        observed_years=_listar_anos_observados(pia_cleaned),
+        mapping=pia_mapping,
+        numeric_columns=PIA_VALUE_COLUMNS,
+        numerator_column="valor_bruto_producao_industrial",
+        salary_column="valor_salarios_remuneracoes",
+    )
+    pac_observed_coefficients = _construir_coeficientes_observados(
+        pac_cleaned,
+        observed_years=_listar_anos_observados(pac_cleaned),
+        mapping=pac_mapping,
+        numeric_columns=PAC_VALUE_COLUMNS,
+        numerator_column="valor_receita_bruta_revenda",
+        salary_column="valor_gastos_salarios_remuneracoes",
+    )
 
-        pia_coefficients = _calcular_coeficientes_por_ano(
-            pia_aggregated,
-            "valor_bruto_producao_industrial",
-            "valor_salarios_remuneracoes",
-        )
-        pac_coefficients = _calcular_coeficientes_por_ano(
-            pac_aggregated,
-            "valor_receita_bruta_revenda",
-            "valor_gastos_salarios_remuneracoes",
-        )
+    observed_coefficients = pd.concat(
+        [pia_observed_coefficients, pac_observed_coefficients],
+        ignore_index=True,
+    )
+    completed_coefficients = _completar_coeficientes_finais(
+        observed_coefficients,
+        years,
+        clamp_non_negative=forecast_config.clamp_non_negative,
+    )
+    aa_coefficients = _construir_coeficientes_aa(years, aa_production_values)
 
-        combined = pd.concat([pia_coefficients, pac_coefficients], ignore_index=True)
-
-        aa_row = pd.DataFrame(
-            [
-                {
-                    "conta_alfa": "AAProdução",
-                    "prod_mon_trab": float(aa_production_values["prod_mon_trab"]),
-                    "salario_medio": float(aa_production_values["salario_medio"]),
-                }
-            ]
-        )
-
-        combined = pd.concat([combined, aa_row], ignore_index=True)
-        combined = combined.sort_values("conta_alfa").reset_index(drop=True)
-
-        melted = combined.melt(
-            id_vars=["conta_alfa"],
-            value_vars=["prod_mon_trab", "salario_medio"],
-            var_name="tipo_coeff",
-            value_name="coeff",
-        )
-        melted["ano"] = year
-        rows.append(melted[FINAL_COLUMNS])
-
-    if not rows:
-        return pd.DataFrame(columns=FINAL_COLUMNS)
-
-    final = pd.concat(rows, ignore_index=True)
+    final = pd.concat([completed_coefficients, aa_coefficients], ignore_index=True)
     final["coeff"] = pd.to_numeric(final["coeff"], errors="coerce")
     final = final.sort_values(["ano", "conta_alfa", "tipo_coeff"]).reset_index(drop=True)
     return final[FINAL_COLUMNS]
