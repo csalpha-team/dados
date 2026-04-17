@@ -11,9 +11,10 @@ def carregar_coeficientes_investimento(json_path: Path) -> pd.DataFrame:
     """Converte o JSON versionado de investimento para o formato tabular final.
 
     O arquivo deve conter apenas pares `coeff_key -> coeff` porque os valores
-    ja chegam consolidados de uma pesquisa anterior, e nao de um calculo
-    reproduzido neste repositorio. A funcao so garante que o artefato esteja em
-    um formato simples, consistente e pronto para carga na zona gold.
+    ja chegam consolidados de uma pesquisa anterior como fracoes de custo por
+    unidade de producao microeconomica, e nao de um calculo reproduzido neste
+    repositorio. A funcao so garante que o artefato esteja em um formato
+    simples, consistente e pronto para carga na zona gold.
     """
     if not json_path.exists():
         raise FileNotFoundError(f"Arquivo de coeficientes não encontrado: {json_path}")
