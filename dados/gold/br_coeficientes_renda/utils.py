@@ -4,7 +4,7 @@ from typing import Any
 
 import pandas as pd
 
-from dados.gold.br_income_coefficients.income_forecast import ForecastConfig, IncomeForecaster
+from dados.gold.br_coeficientes_renda.previsao_renda import ForecastConfig, IncomeForecaster
 
 
 PIA_REQUIRED_COLUMNS = [
@@ -40,10 +40,10 @@ PAC_VALUE_COLUMNS = [
 FINAL_COLUMNS = ["ano", "conta_alfa", "tipo_coeff", "coeff"]
 
 
-def _build_years(config_value: Any) -> list[int]:
+def _construir_anos(config_value: Any) -> list[int]:
     if isinstance(config_value, dict):
-        start = int(config_value.get("start", 1995))
-        end = int(config_value.get("end", 2023))
+        start = int(config_value.get("start", config_value.get("inicio", 1995)))
+        end = int(config_value.get("end", config_value.get("fim", 2023)))
         if end < start:
             raise ValueError("target_years.end deve ser maior ou igual a target_years.start")
         return list(range(start, end + 1))
@@ -57,13 +57,13 @@ def _build_years(config_value: Any) -> list[int]:
     return list(range(1995, 2024))
 
 
-def load_income_parameters(
+def carregar_parametros_renda(
     config_path: Path,
 ) -> tuple[dict[str, dict[str, list[str]]], list[int], dict[str, float], ForecastConfig]:
     with config_path.open("r", encoding="utf-8") as file:
         config = json.load(file)
 
-    sector_mappings = config.get("sector_mappings", {})
+    sector_mappings = config.get("sector_mappings", config.get("mapa_setores", {}))
     if not isinstance(sector_mappings, dict):
         raise ValueError("sector_mappings deve ser um dicionario no arquivo de configuracao")
 
@@ -81,7 +81,9 @@ def load_income_parameters(
                 str(prefix).strip() for prefix in prefixes if str(prefix).strip()
             ]
 
-    aa_production_values = config.get("aa_production_values", {})
+    aa_production_values = config.get(
+        "aa_production_values", config.get("valores_producao_aa", {})
+    )
     if not isinstance(aa_production_values, dict):
         raise ValueError("aa_production_values deve ser um dicionario")
 
@@ -90,7 +92,7 @@ def load_income_parameters(
         "salario_medio": float(aa_production_values.get("salario_medio", 0.0)),
     }
 
-    forecast_config_raw = config.get("forecast_config", {})
+    forecast_config_raw = config.get("forecast_config", config.get("config_previsao", {}))
     if not isinstance(forecast_config_raw, dict):
         raise ValueError("forecast_config deve ser um dicionario")
 
@@ -101,12 +103,12 @@ def load_income_parameters(
         rolling_window=int(forecast_config_raw.get("rolling_window", 3)),
     )
 
-    years = _build_years(config.get("target_years"))
+    years = _construir_anos(config.get("target_years", config.get("anos_alvo")))
 
     return normalized_sector_mappings, years, normalized_aa_values, forecast_config
 
 
-def validate_input_columns(data: pd.DataFrame, required_columns: list[str], label: str) -> None:
+def validar_colunas_entrada(data: pd.DataFrame, required_columns: list[str], label: str) -> None:
     missing_columns = [column for column in required_columns if column not in data.columns]
     if missing_columns:
         raise ValueError(
@@ -114,7 +116,7 @@ def validate_input_columns(data: pd.DataFrame, required_columns: list[str], labe
         )
 
 
-def _coerce_numeric_columns(data: pd.DataFrame, numeric_columns: list[str]) -> pd.DataFrame:
+def _forcar_colunas_numericas(data: pd.DataFrame, numeric_columns: list[str]) -> pd.DataFrame:
     cleaned = data.copy()
     cleaned["ano"] = pd.to_numeric(cleaned["ano"], errors="coerce")
     cleaned["divisao_grupo_cnae_2"] = cleaned["divisao_grupo_cnae_2"].astype("string").str.strip()
@@ -127,7 +129,7 @@ def _coerce_numeric_columns(data: pd.DataFrame, numeric_columns: list[str]) -> p
     return cleaned
 
 
-def _match_accounts(codigo: str, mapping: dict[str, list[str]]) -> list[str]:
+def _combinar_contas(codigo: str, mapping: dict[str, list[str]]) -> list[str]:
     matched_accounts = []
     codigo_texto = str(codigo)
 
@@ -138,7 +140,7 @@ def _match_accounts(codigo: str, mapping: dict[str, list[str]]) -> list[str]:
     return matched_accounts
 
 
-def _aggregate_accounts_for_year(
+def _agrupar_contas_por_ano(
     forecast_df: pd.DataFrame,
     year: int,
     mapping: dict[str, list[str]],
@@ -149,7 +151,7 @@ def _aggregate_accounts_for_year(
         return pd.DataFrame(columns=["conta_alfa", *numeric_columns])
 
     year_data["conta_alfa"] = year_data["divisao_grupo_cnae_2"].apply(
-        lambda codigo: _match_accounts(codigo, mapping)
+        lambda codigo: _combinar_contas(codigo, mapping)
     )
     year_data = year_data[year_data["conta_alfa"].map(bool)].copy()
     if year_data.empty:
@@ -160,24 +162,24 @@ def _aggregate_accounts_for_year(
     return aggregated
 
 
-def _safe_divide(numerator: pd.Series, denominator: pd.Series) -> pd.Series:
+def _divisao_segura(numerator: pd.Series, denominator: pd.Series) -> pd.Series:
     result = pd.Series(0.0, index=numerator.index, dtype=float)
     valid = denominator.notna() & (denominator != 0)
     result.loc[valid] = numerator.loc[valid] / denominator.loc[valid]
     return result
 
 
-def _compute_coefficients_for_year(data: pd.DataFrame, numerator_column: str, salary_column: str) -> pd.DataFrame:
+def _calcular_coeficientes_por_ano(data: pd.DataFrame, numerator_column: str, salary_column: str) -> pd.DataFrame:
     if data.empty:
         return pd.DataFrame(columns=["conta_alfa", "prod_mon_trab", "salario_medio"])
 
     result = data.copy()
-    result["prod_mon_trab"] = _safe_divide(result[numerator_column], result["pessoal_ocupado_31_12"])
-    result["salario_medio"] = _safe_divide(result[salary_column], result["pessoal_ocupado_31_12"])
+    result["prod_mon_trab"] = _divisao_segura(result[numerator_column], result["pessoal_ocupado_31_12"])
+    result["salario_medio"] = _divisao_segura(result[salary_column], result["pessoal_ocupado_31_12"])
     return result[["conta_alfa", "prod_mon_trab", "salario_medio"]]
 
 
-def prepare_income_coefficients_data(
+def preparar_dados_coeficientes_renda(
     pia_df: pd.DataFrame,
     pac_df: pd.DataFrame,
     sector_mappings: dict[str, dict[str, list[str]]],
@@ -185,11 +187,11 @@ def prepare_income_coefficients_data(
     aa_production_values: dict[str, float],
     forecast_config: ForecastConfig,
 ) -> pd.DataFrame:
-    validate_input_columns(pia_df, PIA_REQUIRED_COLUMNS, "PIA")
-    validate_input_columns(pac_df, PAC_REQUIRED_COLUMNS, "PAC")
+    validar_colunas_entrada(pia_df, PIA_REQUIRED_COLUMNS, "PIA")
+    validar_colunas_entrada(pac_df, PAC_REQUIRED_COLUMNS, "PAC")
 
-    pia_cleaned = _coerce_numeric_columns(pia_df, PIA_VALUE_COLUMNS)
-    pac_cleaned = _coerce_numeric_columns(pac_df, PAC_VALUE_COLUMNS)
+    pia_cleaned = _forcar_colunas_numericas(pia_df, PIA_VALUE_COLUMNS)
+    pac_cleaned = _forcar_colunas_numericas(pac_df, PAC_VALUE_COLUMNS)
 
     pia_forecaster = IncomeForecaster(
         year_col="ano",
@@ -220,25 +222,25 @@ def prepare_income_coefficients_data(
     pia_mapping = sector_mappings.get("PIA_INDUSTRIA", {})
 
     for year in years:
-        pia_aggregated = _aggregate_accounts_for_year(
+        pia_aggregated = _agrupar_contas_por_ano(
             pia_forecast,
             year,
             pia_mapping,
             PIA_VALUE_COLUMNS,
         )
-        pac_aggregated = _aggregate_accounts_for_year(
+        pac_aggregated = _agrupar_contas_por_ano(
             pac_forecast,
             year,
             pac_mapping,
             PAC_VALUE_COLUMNS,
         )
 
-        pia_coefficients = _compute_coefficients_for_year(
+        pia_coefficients = _calcular_coeficientes_por_ano(
             pia_aggregated,
             "valor_bruto_producao_industrial",
             "valor_salarios_remuneracoes",
         )
-        pac_coefficients = _compute_coefficients_for_year(
+        pac_coefficients = _calcular_coeficientes_por_ano(
             pac_aggregated,
             "valor_receita_bruta_revenda",
             "valor_gastos_salarios_remuneracoes",
@@ -277,7 +279,7 @@ def prepare_income_coefficients_data(
     return final[FINAL_COLUMNS]
 
 
-def build_income_output_table(coefficients_df: pd.DataFrame, tipo_coeff: str) -> pd.DataFrame:
+def construir_tabela_saida_renda(coefficients_df: pd.DataFrame, tipo_coeff: str) -> pd.DataFrame:
     filtered = coefficients_df.loc[coefficients_df["tipo_coeff"] == tipo_coeff].copy()
     if filtered.empty:
         return pd.DataFrame(columns=["ano", "conta_alfa", "coeff"])

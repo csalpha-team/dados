@@ -27,15 +27,21 @@ def clean_region_name(name: str) -> str:
     return "".join(char for char in normalized_name if not unicodedata.combining(char))
 
 
-def load_cost_parameters(
+def carregar_parametros_custo(
     config_path: Path,
 ) -> tuple[list[tuple[str, tuple[str, ...]]], dict[str, str], str]:
     with config_path.open("r", encoding="utf-8") as file:
         config = json.load(file)
 
-    parameter_groups = config.get("parameter_groups", {})
-    region_rename_map = config.get("region_rename_map", {})
-    total_expense_label = config.get("total_expense_label", "Total")
+    parameter_groups = config.get(
+        "parameter_groups", config.get("grupos_parametros", {})
+    )
+    region_rename_map = config.get(
+        "region_rename_map", config.get("mapa_renomeacao_regiao", {})
+    )
+    total_expense_label = config.get(
+        "total_expense_label", config.get("rotulo_despesa_total", "Total")
+    )
 
     if not isinstance(parameter_groups, dict):
         raise ValueError("parameter_groups deve ser um dicionário no arquivo de configuração.")
@@ -58,7 +64,7 @@ def load_cost_parameters(
     return value_to_key_map, region_rename_map, total_expense_label
 
 
-def calculate_municipality_coefficients(
+def calcular_coeficientes_municipais(
     data: pd.DataFrame,
     total_expense_label: str = "Total",
 ) -> pd.DataFrame:
@@ -98,7 +104,7 @@ def calculate_municipality_coefficients(
     return grouped
 
 
-def expand_coefficients(
+def expandir_coeficientes(
     grouped_coefficients: pd.DataFrame,
     value_to_key_map: list[tuple[str, tuple[str, ...]]],
 ) -> pd.DataFrame:
@@ -116,7 +122,7 @@ def expand_coefficients(
     return pd.concat(rows, ignore_index=True)
 
 
-def aggregate_latest_regional_coefficients(coeff_df: pd.DataFrame) -> pd.DataFrame:
+def agregar_coeficientes_regional_mais_recente(coeff_df: pd.DataFrame) -> pd.DataFrame:
     if coeff_df.empty:
         return pd.DataFrame(columns=FINAL_COLUMNS)
 

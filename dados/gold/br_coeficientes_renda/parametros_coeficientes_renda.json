@@ -1,19 +1,19 @@
 {
-  "forecast_config": {
+  "config_previsao": {
     "method": "linear",
     "min_history": 2,
     "clamp_non_negative": true,
     "rolling_window": 3
   },
-  "target_years": {
+  "anos_alvo": {
     "start": 1995,
     "end": 2023
   },
-  "aa_production_values": {
+  "valores_producao_aa": {
     "prod_mon_trab": 10.789,
     "salario_medio": 0.068
   },
-  "sector_mappings": {
+  "mapa_setores": {
     "PAC_COMERCIO": {
       "ACVarejoRural": ["4"],
       "AHAtacado": ["3"],

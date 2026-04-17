@@ -3,32 +3,32 @@ import os
 from pathlib import Path
 
 from dados.raw.utils.postgres_interactions import PostgresETL
-from dados.gold.br_income_coefficients.utils import (
-    build_income_output_table,
-    load_income_parameters,
-    prepare_income_coefficients_data,
+from dados.gold.br_coeficientes_renda.utils import (
+    construir_tabela_saida_renda,
+    carregar_parametros_renda,
+    preparar_dados_coeficientes_renda,
 )
 
 
 load_dotenv()
 
-DATASET_ID = "br_income_coefficients"
-TABLE_ID = "income_layer_data_preparation"
-PRODUCTIVITY_TABLE_ID = "income_productivity"
-SALARY_TABLE_ID = "income_salary"
-CONFIG_PATH = Path(__file__).with_name("income_coefficients_parameters.json")
+DATASET_ID = "br_coeficientes_renda"
+TABLE_ID = "preparacao_camada_renda"
+PRODUCTIVITY_TABLE_ID = "renda_produtividade"
+SALARY_TABLE_ID = "renda_salario"
+CONFIG_PATH = Path(__file__).with_name("parametros_coeficientes_renda.json")
 
-PIA_SOURCE_SCHEMA = os.getenv("INCOME_PIA_SOURCE_SCHEMA", "br_ibge_pia")
-PIA_SOURCE_TABLE = os.getenv("INCOME_PIA_SOURCE_TABLE", "tbl_1849")
-PAC_SOURCE_SCHEMA = os.getenv("INCOME_PAC_SOURCE_SCHEMA", "br_ibge_pac")
-PAC_SOURCE_TABLE = os.getenv("INCOME_PAC_SOURCE_TABLE", "tbl_1407")
+PIA_SOURCE_SCHEMA = os.getenv("INCOME_PIA_SOURCE_SCHEMA", os.getenv("ESQUEMA_ORIGEM_PIA", "br_ibge_pia"))
+PIA_SOURCE_TABLE = os.getenv("INCOME_PIA_SOURCE_TABLE", os.getenv("TABELA_ORIGEM_PIA", "tbl_1849"))
+PAC_SOURCE_SCHEMA = os.getenv("INCOME_PAC_SOURCE_SCHEMA", os.getenv("ESQUEMA_ORIGEM_PAC", "br_ibge_pac"))
+PAC_SOURCE_TABLE = os.getenv("INCOME_PAC_SOURCE_TABLE", os.getenv("TABELA_ORIGEM_PAC", "tbl_1407"))
 
 (
     sector_mappings,
     years,
     aa_production_values,
     forecast_config,
-) = load_income_parameters(CONFIG_PATH)
+) = carregar_parametros_renda(CONFIG_PATH)
 
 pia_query = f"""
 select
@@ -71,7 +71,7 @@ with PostgresETL(
 ) as db:
     pac_data = db.download_data(pac_query)
 
-coefficients_data = prepare_income_coefficients_data(
+coefficients_data = preparar_dados_coeficientes_renda(
     pia_data,
     pac_data,
     sector_mappings=sector_mappings,
@@ -80,8 +80,8 @@ coefficients_data = prepare_income_coefficients_data(
     forecast_config=forecast_config,
 )
 
-productivity_data = build_income_output_table(coefficients_data, "prod_mon_trab")
-salary_data = build_income_output_table(coefficients_data, "salario_medio")
+productivity_data = construir_tabela_saida_renda(coefficients_data, "prod_mon_trab")
+salary_data = construir_tabela_saida_renda(coefficients_data, "salario_medio")
 
 with PostgresETL(
     host="localhost",

@@ -1,5 +1,5 @@
 {
-  "parameter_groups": {
+  "grupos_parametros": {
     "Custos": [
       {
         "coeff_keys": ["CombustíveisBenefEstad", "CombustíveisBenefLoc"],
@@ -77,9 +77,9 @@
       }
     ]
   },
-  "region_rename_map": {
+  "mapa_renomeacao_regiao": {
     "RioCapim": "Capim",
     "RioCaete": "Caete"
   },
-  "total_expense_label": "Total"
+  "rotulo_despesa_total": "Total"
 }

@@ -3,19 +3,21 @@ import os
 from pathlib import Path
 
 from dados.raw.utils.postgres_interactions import PostgresETL
-from dados.gold.br_investment_coefficients.utils import load_investment_coefficients
+from dados.gold.br_coeficientes_investimento.utils import carregar_coeficientes_investimento
 
 
 load_dotenv()
 
-DATASET_ID = "br_investment_coefficients"
-TABLE_ID = "investment_coefficients"
-DEFAULT_JSON_PATH = Path(__file__).with_name("investment_coefficients.json")
+DATASET_ID = "br_coeficientes_investimento"
+TABLE_ID = "coeficientes_investimento"
+DEFAULT_JSON_PATH = Path(__file__).with_name("coeficientes_investimento.json")
 
-json_path_env = os.getenv("INVESTMENT_COEFFICIENTS_JSON_PATH")
+json_path_env = os.getenv("INVESTMENT_COEFFICIENTS_JSON_PATH") or os.getenv(
+    "COEFICIENTES_INVESTIMENTO_JSON_PATH"
+)
 json_path = Path(json_path_env) if json_path_env else DEFAULT_JSON_PATH
 
-coefficients_data = load_investment_coefficients(json_path)
+coefficients_data = carregar_coeficientes_investimento(json_path)
 
 with PostgresETL(
     host="localhost",
