@@ -1,14 +1,14 @@
 """Publica coeficientes exogenos de investimento na zona gold.
 
 Os valores versionados em `coeficientes_investimento.json` nao sao calculados
-por este ETL. Eles sao parametros exogenos derivados de percentuais de custos
-estimados em pesquisa anterior conduzida pelo professor Francisco de Assis
-Costa. Esses percentuais expressam a necessidade de investimentos observada no
-balanco patrimonial, sobretudo em veiculos, construcao civil e benfeitorias, e
-maquinas e equipamentos.
+por este ETL. Eles sao parametros exogenos derivados de fracoes de custo por
+unidade de producao microeconomica estimadas em pesquisa anterior conduzida
+pelo professor Francisco de Assis Costa. Essas fracoes tratam da necessidade de
+investimentos observada no balanco patrimonial, sobretudo em veiculos,
+construcao civil e benfeitorias, e maquinas e equipamentos.
 
-Esta camada existe para versionar esses percentuais no repositorio, carrega-los
-como pares `coeff_key`/`coeff` e publica-los na tabela
+Esta camada existe para versionar essas fracoes no repositorio, carrega-las
+como pares `coeff_key`/`coeff` e publica-las na tabela
 `br_coeficientes_investimento.coeficientes_investimento`. O conjunto tambem
 preserva `InvestPlantio`, usado como coeficiente especifico em etapas que
 tratam formacao de plantio.
@@ -33,7 +33,7 @@ json_path_env = os.getenv("INVESTMENT_COEFFICIENTS_JSON_PATH") or os.getenv(
 )
 json_path = Path(json_path_env) if json_path_env else DEFAULT_JSON_PATH
 
-# O JSON eh a fonte versionada dos percentuais consolidados na pesquisa de
+# O JSON eh a fonte versionada das fracoes consolidadas na pesquisa de
 # referencia. Esta etapa apenas valida a estrutura e publica os coeficientes.
 coefficients_data = carregar_coeficientes_investimento(json_path)
 

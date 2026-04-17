@@ -8,14 +8,15 @@ como parametros fixos em `coeficientes_investimento.json` e carregados por
 
 ## Origem dos valores hardcoded
 
-Os numeros do JSON vem de percentuais de custos obtidos em pesquisa anterior
-conduzida pelo professor Francisco de Assis Costa. O pipeline atual nao
-reproduz esse calculo original. A responsabilidade desta etapa e bem mais
-simples: versionar esses percentuais, validar a estrutura do arquivo e
+Os numeros do JSON vem de fracoes de custo por unidade de producao
+microeconomica obtidas em pesquisa anterior conduzida pelo professor
+Francisco de Assis Costa. O pipeline atual nao reproduz esse calculo original.
+A responsabilidade desta etapa e bem mais simples: versionar essas fracoes,
+validar a estrutura do arquivo e
 disponibilizar o resultado na tabela
 `br_coeficientes_investimento.coeficientes_investimento`.
 
-Esses percentuais descrevem a necessidade de investimentos observada no balanco
+Essas fracoes tratam da necessidade de investimentos observada no balanco
 patrimonial, principalmente em tres grupos:
 
 - veiculos;
@@ -23,14 +24,14 @@ patrimonial, principalmente em tres grupos:
 - maquinas e equipamentos.
 
 No modelo, cada chave identifica um tipo de investimento e cada valor indica a
-parcela de referencia associada a essa necessidade de investimento segundo a
-pesquisa usada como base.
+fracao de custo por unidade de producao microeconomica associada a essa
+necessidade de investimento segundo a pesquisa usada como base.
 
 ## Por que os valores ficam hardcoded
 
 Os coeficientes estao hardcoded por desenho, nao por ausencia de implementacao.
 A logica de estimacao foi produzida fora deste repositorio, em estudo anterior.
-Como o dado que chega aqui ja e um percentual consolidado, esta camada apenas:
+Como o dado que chega aqui ja e uma fracao consolidada, esta camada apenas:
 
 1. le o JSON versionado no codigo;
 2. converte o conteudo para as colunas `coeff_key` e `coeff`;
@@ -71,6 +72,6 @@ O fluxo implementado em `preparacao_camada_investimento.py` e direto:
 4. transformar o conteudo em tabela com `coeff_key` e `coeff`;
 5. publicar o resultado no schema `br_coeficientes_investimento`.
 
-Em outras palavras: a camada de investimento nao gera os percentuais; ela
-formaliza, versiona e distribui percentuais ja definidos pela pesquisa de
-referencia.
+Em outras palavras: a camada de investimento nao gera essas fracoes; ela
+formaliza, versiona e distribui fracoes de custo por unidade de producao
+microeconomica ja definidas pela pesquisa de referencia.

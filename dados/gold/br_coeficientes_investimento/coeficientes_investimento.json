@@ -1,10 +1,10 @@
 {
-    "InvestConstCivilEstad": 0.0035435608734606,
-    "InvestConstCivilLoc": 0.0035435608734606,
-    "InvestConstEBenfeitorias": 0.00180697624015197,
-    "InvestConstEBenfeitoriasEstadual": 0.0015565,
-    "InvestMáqEVeículos": 0.00076631731982696,
-    "InvestMáqEVeículosEstad": 0.0087542742062036,
-    "InvestMaqEVeículosLoc": 0.0087542742062036,
-    "InvestPlantio": 0.0002686520856813
+    "InvestConstCivilEstad": 0.035435608734606,
+    "InvestConstCivilLoc": 0.035435608734606,
+    "InvestConstEBenfeitorias": 0.0180697624015197,
+    "InvestConstEBenfeitoriasEstadual": 0.015565,
+    "InvestMáqEVeículos": 0.0076631731982696,
+    "InvestMáqEVeículosEstad": 0.087542742062036,
+    "InvestMaqEVeículosLoc": 0.087542742062036,
+    "InvestPlantio": 0.002686520856813
 }
