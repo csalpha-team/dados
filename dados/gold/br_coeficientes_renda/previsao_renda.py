@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 
 ForecastValues = Mapping[int, float]
+NON_POSITIVE_TOLERANCE = 1e-9
 
 
 def _ensure_tuple(value: Union[str, Sequence[str]]) -> Tuple[str, ...]:
@@ -165,7 +166,52 @@ class IncomeForecaster:
             return self._predict_last_value(years, values, targets)
 
         slope, intercept = np.polyfit(years, values, 1)
-        return {int(year): float(intercept + slope * year) for year in targets}
+        predictions = {int(year): float(intercept + slope * year) for year in targets}
+        return self._stabilize_backward_linear_predictions(
+            predictions,
+            years=years,
+            values=values,
+            targets=targets,
+        )
+
+    def _stabilize_backward_linear_predictions(
+        self,
+        predictions: Dict[int, float],
+        *,
+        years: np.ndarray,
+        values: np.ndarray,
+        targets: Sequence[int],
+    ) -> Dict[int, float]:
+        if not self.config.clamp_non_negative or years.size == 0 or values.size == 0:
+            return predictions
+
+        first_observed_year = int(years[0])
+        first_observed_value = float(values[0])
+        last_positive_backcast: Optional[float] = None
+
+        # Walk backwards from the first missing year before the observed history.
+        # If the linear backcast crosses zero, keep the last positive value instead
+        # of letting the series collapse to zero/negative values in older years.
+        for year in sorted({int(year) for year in targets if int(year) < first_observed_year}, reverse=True):
+            current_value = predictions.get(year, np.nan)
+            if np.isnan(current_value):
+                continue
+            if current_value > 0 and not np.isclose(
+                current_value,
+                0.0,
+                atol=NON_POSITIVE_TOLERANCE,
+                rtol=0.0,
+            ):
+                last_positive_backcast = float(current_value)
+                continue
+
+            if last_positive_backcast is None:
+                fallback_value = max(first_observed_value, 0.0)
+                last_positive_backcast = float(fallback_value)
+
+            predictions[year] = last_positive_backcast
+
+        return predictions
 
     def _predict_cagr(
         self,
