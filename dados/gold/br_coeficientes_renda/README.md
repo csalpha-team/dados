@@ -32,41 +32,39 @@ extrapolacao.
 
 ## Solucao adotada
 
-Para resolver o problema, a camada passou a operar com uma regra mais
-conservadora:
+A camada voltou a usar `previsao_renda.py` como etapa central da preparacao,
+isto e, a imputacao acontece nas variaveis brutas de PIA e PAC antes do calculo
+dos coeficientes finais.
 
-1. os coeficientes finais sao calculados primeiro apenas com anos observados nas
-   bases;
-2. para anos anteriores ao primeiro valor observado de cada serie
-   (`conta_alfa` + `tipo_coeff`), aplica-se backcast constante ancorado no
-   primeiro ano observado;
-3. para anos posteriores ao ultimo valor observado da serie, mantem-se o ultimo
-   valor observado, tambem por criterio conservador.
+A regra atual e:
 
-Em outras palavras, a camada nao retroprojeta mais os dados brutos de receita,
-producao, ocupacao e massa salarial para anos muito anteriores ao inicio da
-base. O preenchimento agora acontece no nivel do coeficiente final, que e o
-objeto efetivamente consumido pelas matrizes.
+1. agregar as variaveis brutas por `ano` + `divisao_grupo_cnae_2`;
+2. projetar essas series agregadas com o
+   `IncomeForecaster`;
+3. manter o valor da regressao linear enquanto a retroprojecao permanecer
+   positiva;
+4. no primeiro ano em que a retroprojecao linear ficar `<= 0`, congelar a serie
+   para tras no ultimo valor retroprojetado positivo, em vez de zerar;
+5. agregar os dados projetados por `conta_alfa`;
+6. calcular `prod_mon_trab` e `salario_medio` a partir dessa base projetada;
+7. adicionar `AAProdução` como serie constante por pressuposto temporario.
 
-## Por que essa escolha e mais defensavel
+Em outras palavras, a camada continua retroprojetando as variaveis brutas, mas
+o forecaster nao deixa mais a serie colapsar para zero quando a regressao
+linear cruza o eixo.
 
-Com a cobertura atual dos dados, tentar extrapolar dez anos para tras por
-regressao linear simples exige assumir uma trajetoria temporal que a base nao
-consegue sustentar. Mesmo quando um metodo de interpolacao ou extrapolacao
-parece tecnicamente simples, ele entra em risco de produzir trajetorias
-irreais, porque o problema principal nao e a falta de tecnica de previsao, e
-sim a falta de observacoes historicas suficientes.
+## Implicacao metodologica
 
-Por isso, nesta camada:
+Essa abordagem preserva o trecho da regressao linear que ainda produz valores
+positivos e evita o artefato mais grave da implementacao antiga, que era zerar
+os numeradores de algumas razoes em anos antigos.
 
-- nao tratamos retroprojecao longa como substituto de dado real;
-- evitamos extrapolar os componentes brutos para anos sem observacao;
-- adotamos um criterio de preenchimento mais estavel e explicitamente
-  documentado.
-
-A conclusao metodologica e direta: para melhorar essa serie de forma robusta, e
-preciso ampliar a base historica. Nao basta escolher um metodo mais agressivo e
-extrapolar muitos anos para tras.
+Ao mesmo tempo, a limitacao estrutural continua valendo: como as bases
+observadas comecam apenas em `2007`, qualquer retroprojecao longa ainda depende
+de uma hipotese forte sobre a trajetoria historica. O ajuste atual melhora o
+comportamento do forecast, mas nao substitui a necessidade de ampliar a base
+historica se a intencao for sustentar inferencias mais fortes para anos muito
+anteriores.
 
 ## Caso especifico de `AAProdução`
 
@@ -74,6 +72,7 @@ A conta `AAProdução` continua sendo tratada por pressuposto temporario. Neste
 modulo, sua:
 
 - `prod_mon_trab` e mantida constante;
+- `salario_medio` e mantido constante.
 
 Essa decisao e provisoria e deve ser entendida como uma solucao de contorno
 enquanto nao houver uma integracao mais consistente com futuros dados sobre as
@@ -87,9 +86,10 @@ esta ordem:
 
 1. carregar os dados de PIA e PAC;
 2. limpar e padronizar colunas numericas;
-3. agregar as observacoes por `conta_alfa` e por ano observado;
-4. calcular os coeficientes finais observados;
-5. completar os anos alvo com backcast constante antes do primeiro observado e
-   manutencao constante depois do ultimo observado;
-6. adicionar `AAProdução` como serie constante por pressuposto temporario;
-7. publicar o resultado na zona gold.
+3. agregar as bases por `ano` + `divisao_grupo_cnae_2`;
+4. aplicar `IncomeForecaster` nessas series agregadas;
+5. usar a regra de estabilizacao retroativa quando a regressao ficar `<= 0`;
+6. agregar os dados projetados por `conta_alfa`;
+7. calcular os coeficientes finais para todos os anos alvo;
+8. adicionar `AAProdução` como serie constante por pressuposto temporario;
+9. publicar o resultado na zona gold.

@@ -23,3 +23,14 @@ exportar_tabelas.ipynb
 # ambientes virtuais
 .venv/
 venv/
+
+#notebooks exploratórios
+*.ipynb
+
+#relatórios gerados
+relatorio_*
+gerar_relatorio*
+
+# arquivos temporários/lock
+~lock.*
+*.lock
