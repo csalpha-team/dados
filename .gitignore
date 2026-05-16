@@ -34,3 +34,4 @@ gerar_relatorio*
 # arquivos temporários/lock
 ~lock.*
 *.lock
+!uv.lock
