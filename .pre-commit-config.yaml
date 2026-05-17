@@ -38,3 +38,4 @@ repos:
       - id: sqlfmt
         language_version: python
         additional_dependencies: ['.[jinjafmt]']
+        exclude: ^postgres/
