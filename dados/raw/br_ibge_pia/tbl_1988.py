@@ -11,7 +11,7 @@ import os
 import pandas as pd
 from dotenv import load_dotenv
 
-from dados.dicionarios_institucionais import uf_id_sigla
+from dados.raw.constants.geografia import UF_ID_SIGLA
 from dados.raw.br_ibge_pia.utils import download_json, parse_pia_json_to_table
 from dados.raw.utils.postgres_interactions import PostgresETL
 from dados.utils.logging import get_logger
@@ -48,7 +48,7 @@ log = get_logger(dataset_id=DATASET_ID, zone=ZONE)
 
 def extract() -> pd.DataFrame:
     log.info("extract.api.start", agregado="1988")
-    raw_jsons = download_json(URL, uf_id_sigla)
+    raw_jsons = download_json(URL, UF_ID_SIGLA)
     parsed = [parse_pia_json_to_table(j) for j in raw_jsons]
     df = pd.concat(parsed, ignore_index=True)
     log.info("extract.api.done", rows=len(df))

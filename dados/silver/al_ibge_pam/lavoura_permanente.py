@@ -14,7 +14,7 @@ from dotenv import load_dotenv
 
 from dados.raw.utils.postgres_interactions import PostgresETL
 from dados.silver.models.al_ibge_pam import AlIbgePamLavouraPermanente
-from dados.silver.padronizacao_produtos import dicionario_produtos_pam_permanente
+from dados.silver.constants.produtos import dicionario_produtos_pam_permanente
 from dados.silver.utils import currency_fix, fix_ibge_digits
 from dados.utils.logging import get_logger
 from dados.utils.pydantic_postgres import pydantic_to_postgres_columns
