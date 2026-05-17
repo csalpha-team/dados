@@ -1,10 +1,11 @@
 import aiohttp
 import os
 import json
+from pathlib import Path
 from tqdm.asyncio import tqdm
 from aiohttp import ClientTimeout, TCPConnector
 from tqdm import tqdm
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional, Union
 import asyncio
 import pandas as pd
 
@@ -83,9 +84,10 @@ async def async_crawler_ibge_municipio(
     api_url_base: str, 
     agregado: str, 
     nivel_geografico: str, 
-    localidades: pd.DataFrame, 
+    localidades: pd.DataFrame,
     classificacao: List[str],
-    nome_tabela: str
+    nome_tabela: str,
+    output_dir: Optional[Union[str, Path]] = None,
     ) -> None:
     """
     Faz requisições para a API para cada ano, variável e categoria, salvando as respostas em arquivos JSON.
@@ -95,7 +97,13 @@ async def async_crawler_ibge_municipio(
     """
     
     all_municipios = localidades['id_municipio'].tolist()
-        
+
+    # Resolve output directory. Callers should pass tmp_dir(dataset_id, "input")
+    # from dados.utils.paths. The legacy ../tmp default is kept only for
+    # backwards compatibility with scripts that have not been refactored yet.
+    out_dir = Path(output_dir) if output_dir is not None else Path("../tmp") / nome_tabela
+    out_dir.mkdir(parents=True, exist_ok=True)
+
     batch_size = 60
     
     for i in range(0, len(all_municipios), batch_size):
@@ -124,8 +132,7 @@ async def async_crawler_ibge_municipio(
             for localidade, future in tqdm(tasks, total=len(tasks)):
                 try:
                     response = await future
-                    os.makedirs(f'../tmp/{nome_tabela}', exist_ok=True)
-                    with open(f'../tmp/{nome_tabela}/{localidade}.json', 'w') as f:
+                    with open(out_dir / f"{localidade}.json", "w") as f:
                         json.dump(response, f)
                 except asyncio.TimeoutError:
                     print(f"Request timed out for municipality {localidade}")

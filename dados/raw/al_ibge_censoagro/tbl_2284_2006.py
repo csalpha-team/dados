@@ -1,7 +1,7 @@
-"""Raw flow: IBGE PPM — produção aquicultura (Amazônia Legal).
+"""Raw flow: IBGE Censo Agropecuário 2006 — tabela 2284 (destinação produção animal, PA).
 
-Source: IBGE Agregados API, agregado 3940, classificação 654 (aquicultura).
-Lands rows into ``$DB_RAW_ZONE.al_ibge_ppm.producao_aquicultura``.
+Source: IBGE Agregados API, agregado 2284, periodo 2006. Restrict to Pará.
+Lands rows into ``$DB_RAW_ZONE.al_ibge_censoagro.tbl_2284_2006``.
 """
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ import basedosdados as bd
 import pandas as pd
 from dotenv import load_dotenv
 
-from dados.raw.al_ibge_pam.utils import parse_pam_json
+from dados.raw.al_ibge_censoagro.utils import parse_agrocenso_destinacao
 from dados.raw.utils.ibge_api_crawler import async_crawler_ibge_municipio
 from dados.raw.utils.postgres_interactions import PostgresETL
 from dados.utils.logging import get_logger
@@ -21,21 +21,23 @@ from dados.utils.paths import tmp_dir
 
 load_dotenv()
 
-DATASET_ID = "al_ibge_ppm"
+DATASET_ID = "al_ibge_censoagro"
 ZONE = "raw"
-TABLE = "producao_aquicultura"
+TABLE = "tbl_2284_2006"
 
 API_URL_BASE = (
     "https://servicodados.ibge.gov.br/api/v3/agregados/{}/periodos/{}/variaveis/{}"
     "?localidades={}[{}]&classificacao={}"
 )
-AGREGADO = "3940"
-PERIODOS = "all"
-VARIAVEIS = "|".join(["4146", "215"])
+AGREGADO = "2284"
+PERIODOS = "2006"
+VARIAVEIS = "|".join(["183", "214", "1982", "215", "216"])
 NIVEL_GEOGRAFICO = "N6"
-CLASSIFICACAO = "654[all]"
-ID_PRODUTO_CLASSIFICACAO = "654"
-EXPECTED_MUNICIPIOS = 773
+CLASSIFICACAO = "226[all]|12763[0,117916,117917]|12764[0]|12896[all]"
+ID_PRODUTO_CLASSIFICACAO = "226"
+ID_TIPO_AGRICULTURA_CLASSIFICACAO = "12896"
+ID_CONSUMO_ESTOCADA_CLASSIFICACAO = "12763"
+ID_VENDIDA_ENTREGUE_CLASSIFICACAO = "12764"
 
 COLUMNS_DDL = {
     "id_variavel": "VARCHAR(255)",
@@ -43,6 +45,10 @@ COLUMNS_DDL = {
     "unidade_medida": "VARCHAR(255)",
     "id_produto": "VARCHAR(255)",
     "produto": "VARCHAR(255)",
+    "tipo_consumo_estocagem": "VARCHAR(255)",
+    "tipo_venda_entrega": "VARCHAR(255)",
+    "id_tipo_agricultura": "VARCHAR(255)",
+    "tipo_agricultura": "VARCHAR(255)",
     "nome_municipio": "VARCHAR(255)",
     "id_municipio": "VARCHAR(255)",
     "ano": "VARCHAR(255)",
@@ -62,11 +68,12 @@ def extract() -> pd.DataFrame:
         """
         SELECT id_municipio
         FROM `basedosdados.br_bd_diretorios_brasil.municipio`
-        WHERE amazonia_legal = 1
+        WHERE amazonia_legal = 1 and sigla_uf = 'PA'
         """,
         billing_project_id=billing_id,
     )
     log.info("extract.municipios.done", rows=len(municipios))
+    expected = len(municipios)
 
     log.info("extract.api.start", agregado=AGREGADO, variaveis=VARIAVEIS, output_dir=str(input_dir))
     asyncio.run(
@@ -84,15 +91,10 @@ def extract() -> pd.DataFrame:
     )
 
     files = os.listdir(input_dir)
-    if len(files) != EXPECTED_MUNICIPIOS:
-        log.error(
-            "extract.error",
-            expected=EXPECTED_MUNICIPIOS,
-            got=len(files),
-            input_dir=str(input_dir),
-        )
+    if len(files) != expected:
+        log.error("extract.error", expected=expected, got=len(files), input_dir=str(input_dir))
         raise AssertionError(
-            f"Expected {EXPECTED_MUNICIPIOS} JSON files in {input_dir}, got {len(files)}"
+            f"Expected {expected} JSON files in {input_dir}, got {len(files)}"
         )
     log.info("extract.api.done", files=len(files))
 
@@ -100,7 +102,15 @@ def extract() -> pd.DataFrame:
     for file in files:
         with open(input_dir / file) as f:
             data = json.load(f)
-        dfs.append(parse_pam_json(data, id_produto=ID_PRODUTO_CLASSIFICACAO))
+        dfs.append(
+            parse_agrocenso_destinacao(
+                data,
+                id_produto=ID_PRODUTO_CLASSIFICACAO,
+                id_tipo_agricultura=ID_TIPO_AGRICULTURA_CLASSIFICACAO,
+                id_consumo_estocada=ID_CONSUMO_ESTOCADA_CLASSIFICACAO,
+                id_vendida_entregue=ID_VENDIDA_ENTREGUE_CLASSIFICACAO,
+            )
+        )
     df = pd.concat(dfs, ignore_index=True)
     return df
 

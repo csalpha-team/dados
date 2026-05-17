@@ -1,35 +1,36 @@
-"""Raw flow: IBGE PIA — tabela 1988 (Pesquisa Industrial Anual, UF, série antiga).
+"""Raw flow: IBGE POF — tabela 6715, ano 2018.
 
-Source: IBGE Agregados API, table 1988 (1996-2007, CNAE 11939).
-Lands one row per (UF, categoria, ano, variavel) into
-``$DB_RAW_ZONE.br_ibge_pia.tbl_1988``.
+Source: IBGE Agregados API, table 6715, period 2018, classification 12190.
+Lands one row per (UF, categoria) into ``$DB_RAW_ZONE.br_ibge_pof.tbl_6715_2018``.
 """
 from __future__ import annotations
 
 import os
 
 import pandas as pd
+import requests
 from dotenv import load_dotenv
 
-from dados.dicionarios_institucionais import uf_id_sigla
-from dados.raw.br_ibge_pia.utils import download_json, parse_pia_json_to_table
 from dados.raw.utils.postgres_interactions import PostgresETL
 from dados.utils.logging import get_logger
 
 load_dotenv()
 
-DATASET_ID = "br_ibge_pia"
+DATASET_ID = "br_ibge_pof"
 ZONE = "raw"
-TABLE = "tbl_1988"
+TABLE = "tbl_6715_2018"
 
 URL = (
-    "https://servicodados.ibge.gov.br/api/v3/agregados/1988/periodos/"
-    "1996|1997|1998|1999|2000|2001|2002|2003|2004|2005|2006|2007"
-    "/variaveis/706|631|673|834|835|836|837|838|839|840|810|811"
-    "?localidades=N3[{}]&classificacao=11939[all]"
+    "https://servicodados.ibge.gov.br/api/v3/agregados/6715/periodos/2018"
+    "/variaveis/1201|1204?localidades=N3[11,12,13,14,15,16,17,21,51]"
+    "&classificacao=12190[all]"
 )
 
-COLUMNS_DDL = {
+# TODO: The original script (2018_tbl_6715.py) only issued the GET request and
+# never landed data — no compatible parser util exists for this table shape.
+# Wire a parse_* helper in `dados/raw/br_ibge_pof/utils.py` and update
+# COLUMNS_DDL before running this flow.
+COLUMNS_DDL: dict[str, str] = {
     "id_variavel": "VARCHAR(255)",
     "nome_variavel": "VARCHAR(255)",
     "unidade_medida": "VARCHAR(255)",
@@ -47,12 +48,14 @@ log = get_logger(dataset_id=DATASET_ID, zone=ZONE)
 
 
 def extract() -> pd.DataFrame:
-    log.info("extract.api.start", agregado="1988")
-    raw_jsons = download_json(URL, uf_id_sigla)
-    parsed = [parse_pia_json_to_table(j) for j in raw_jsons]
-    df = pd.concat(parsed, ignore_index=True)
-    log.info("extract.api.done", rows=len(df))
-    return df
+    log.info("extract.api.start", agregado="6715", periodo="2018")
+    _ = requests.get(url=URL).json()
+    # TODO: missing parser — original script left the JSON unparsed.
+    log.error("extract.todo", reason="no parser available for tbl_6715")
+    raise NotImplementedError(
+        "tbl_6715_2018: original script never parsed/landed data. "
+        "Implement a parser in dados/raw/br_ibge_pof/utils.py before running."
+    )
 
 
 def validate(df: pd.DataFrame) -> pd.DataFrame:

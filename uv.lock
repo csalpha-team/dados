@@ -511,6 +511,7 @@ source = { editable = "." }
 dependencies = [
     { name = "aiohttp" },
     { name = "basedosdados", extra = ["all"] },
+    { name = "loguru" },
     { name = "openpyxl" },
     { name = "pandas", version = "2.3.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "pandas", version = "3.0.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
@@ -525,6 +526,7 @@ dependencies = [
 requires-dist = [
     { name = "aiohttp", specifier = ">=3.11.14" },
     { name = "basedosdados", extras = ["all"], specifier = ">=2.0.0" },
+    { name = "loguru", specifier = ">=0.7.2" },
     { name = "openpyxl", specifier = ">=3.1.5" },
     { name = "pandas", specifier = ">=2.2.3" },
     { name = "psycopg2-binary", specifier = ">=2.9.10" },

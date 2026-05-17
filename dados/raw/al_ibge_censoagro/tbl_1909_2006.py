@@ -1,7 +1,8 @@
-"""Raw flow: IBGE PPM — produção aquicultura (Amazônia Legal).
+"""Raw flow: IBGE Censo Agropecuário 2006 — tabela 1909 (despesas por tipo de agricultura).
 
-Source: IBGE Agregados API, agregado 3940, classificação 654 (aquicultura).
-Lands rows into ``$DB_RAW_ZONE.al_ibge_ppm.producao_aquicultura``.
+Source: IBGE Agregados API, agregado 1909, periodo 2006.
+Lands one row per (municipio, despesa, tipo_agricultura, ano) into
+``$DB_RAW_ZONE.al_ibge_censoagro.tbl_1909_2006``.
 """
 from __future__ import annotations
 
@@ -13,7 +14,7 @@ import basedosdados as bd
 import pandas as pd
 from dotenv import load_dotenv
 
-from dados.raw.al_ibge_pam.utils import parse_pam_json
+from dados.raw.al_ibge_censoagro.utils import parse_agrocenso_json
 from dados.raw.utils.ibge_api_crawler import async_crawler_ibge_municipio
 from dados.raw.utils.postgres_interactions import PostgresETL
 from dados.utils.logging import get_logger
@@ -21,28 +22,31 @@ from dados.utils.paths import tmp_dir
 
 load_dotenv()
 
-DATASET_ID = "al_ibge_ppm"
+DATASET_ID = "al_ibge_censoagro"
 ZONE = "raw"
-TABLE = "producao_aquicultura"
+TABLE = "tbl_1909_2006"
 
 API_URL_BASE = (
     "https://servicodados.ibge.gov.br/api/v3/agregados/{}/periodos/{}/variaveis/{}"
     "?localidades={}[{}]&classificacao={}"
 )
-AGREGADO = "3940"
-PERIODOS = "all"
-VARIAVEIS = "|".join(["4146", "215"])
+AGREGADO = "1909"
+PERIODOS = "2006"
+VARIAVEIS = "|".join(["2", "1000002", "1996", "1001996"])
 NIVEL_GEOGRAFICO = "N6"
-CLASSIFICACAO = "654[all]"
-ID_PRODUTO_CLASSIFICACAO = "654"
+CLASSIFICACAO = "210[all]|12896[all]"
+ID_PRODUTO_CLASSIFICACAO = "210"
+ID_TIPO_AGRICULTURA_CLASSIFICACAO = "12896"
 EXPECTED_MUNICIPIOS = 773
 
 COLUMNS_DDL = {
     "id_variavel": "VARCHAR(255)",
     "nome_variavel": "VARCHAR(255)",
     "unidade_medida": "VARCHAR(255)",
-    "id_produto": "VARCHAR(255)",
-    "produto": "VARCHAR(255)",
+    "id_despesa": "VARCHAR(255)",
+    "despesa": "VARCHAR(255)",
+    "id_tipo_agricultura": "VARCHAR(255)",
+    "tipo_agricultura": "VARCHAR(255)",
     "nome_municipio": "VARCHAR(255)",
     "id_municipio": "VARCHAR(255)",
     "ano": "VARCHAR(255)",
@@ -100,8 +104,15 @@ def extract() -> pd.DataFrame:
     for file in files:
         with open(input_dir / file) as f:
             data = json.load(f)
-        dfs.append(parse_pam_json(data, id_produto=ID_PRODUTO_CLASSIFICACAO))
+        dfs.append(
+            parse_agrocenso_json(
+                data,
+                id_produto=ID_PRODUTO_CLASSIFICACAO,
+                id_tipo_agricultura=ID_TIPO_AGRICULTURA_CLASSIFICACAO,
+            )
+        )
     df = pd.concat(dfs, ignore_index=True)
+    df = df.rename(columns={"id_produto": "id_despesa", "produto": "despesa"})
     return df
 
 
