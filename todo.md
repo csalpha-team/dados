@@ -4,3 +4,6 @@
 
 2. Concentara validações de expectativas nos dados feitos na camada silver; 
 
+
+3. Estrutura de output clara que de match nos dados de inputl2
+

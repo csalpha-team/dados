@@ -4,6 +4,7 @@ Source: IBGE Agregados API, table 1987 (1996-2007, CNAE 11939).
 Lands one row per (UF, categoria, ano, variavel) into
 ``$DB_RAW_ZONE.br_ibge_pia.tbl_1987``.
 """
+
 from __future__ import annotations
 
 import os
@@ -85,10 +86,14 @@ def load(df: pd.DataFrame) -> None:
 def flow() -> None:
     log.info("flow.start", table=TABLE)
     try:
-        df = extract();    log.info("extract.done", rows=len(df))
-        df = validate(df); log.info("validate.done", rows=len(df))
-        df = transform(df);log.info("transform.done", rows=len(df))
-        load(df);          log.info("load.done", rows=len(df))
+        df = extract()
+        log.info("extract.done", rows=len(df))
+        df = validate(df)
+        log.info("validate.done", rows=len(df))
+        df = transform(df)
+        log.info("transform.done", rows=len(df))
+        load(df)
+        log.info("load.done", rows=len(df))
     except Exception as exc:
         log.exception("flow.error", error=str(exc))
         raise

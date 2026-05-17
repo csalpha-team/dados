@@ -6,6 +6,7 @@ REFACTORING.md §4 mandates that every column carries a Python type, a
 fails if any ``BaseModel`` subclass has a field missing either piece of
 metadata.
 """
+
 from __future__ import annotations
 
 import importlib

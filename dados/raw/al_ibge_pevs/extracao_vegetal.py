@@ -4,6 +4,7 @@ Source: IBGE Agregados API, table 289, classification 193 (produtos da extraçã
 Lands one row per (municipio, produto, ano, variavel) into
 ``$DB_RAW_ZONE.al_ibge_pevs.extracao_vegetal``.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -69,7 +70,12 @@ def extract() -> pd.DataFrame:
     )
     log.info("extract.municipios.done", rows=len(municipios))
 
-    log.info("extract.api.start", agregado=AGREGADO, variaveis=VARIAVEIS, output_dir=str(input_dir))
+    log.info(
+        "extract.api.start",
+        agregado=AGREGADO,
+        variaveis=VARIAVEIS,
+        output_dir=str(input_dir),
+    )
     asyncio.run(
         async_crawler_ibge_municipio(
             year=PERIODOS,
@@ -126,10 +132,14 @@ def load(df: pd.DataFrame) -> None:
 def flow() -> None:
     log.info("flow.start", table=TABLE)
     try:
-        df = extract();    log.info("extract.done", rows=len(df))
-        df = validate(df); log.info("validate.done", rows=len(df))
-        df = transform(df);log.info("transform.done", rows=len(df))
-        load(df);          log.info("load.done", rows=len(df))
+        df = extract()
+        log.info("extract.done", rows=len(df))
+        df = validate(df)
+        log.info("validate.done", rows=len(df))
+        df = transform(df)
+        log.info("transform.done", rows=len(df))
+        load(df)
+        log.info("load.done", rows=len(df))
     except Exception as exc:
         log.exception("flow.error", error=str(exc))
         raise

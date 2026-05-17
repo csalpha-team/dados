@@ -3,6 +3,7 @@
 Reads silver ``br_ibge_pof.tbl_6970`` directly (previously read from gold
 ``brasil_despesas_familiares`` — a gold→gold violation).
 """
+
 from __future__ import annotations
 
 import os
@@ -132,9 +133,12 @@ def flow() -> None:
     try:
         payload = extract()
         log.info("extract.done", rows=len(payload[0]))
-        df = transform(payload); log.info("transform.done", rows=len(df))
-        df = validate(df);       log.info("validate.done", rows=len(df))
-        load(df);                log.info("load.done", rows=len(df))
+        df = transform(payload)
+        log.info("transform.done", rows=len(df))
+        df = validate(df)
+        log.info("validate.done", rows=len(df))
+        load(df)
+        log.info("load.done", rows=len(df))
     except Exception as exc:
         log.exception("flow.error", error=str(exc))
         raise

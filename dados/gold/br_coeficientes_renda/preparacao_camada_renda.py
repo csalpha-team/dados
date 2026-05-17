@@ -4,6 +4,7 @@ Reads silver PIA (``tbl_1849``) and PAC (``tbl_1407``), runs the forecasting
 pipeline in :mod:`dados.gold.br_coeficientes_renda.utils`, and publishes three
 tables: ``preparacao_camada_renda``, ``renda_produtividade``, ``renda_salario``.
 """
+
 from __future__ import annotations
 
 import os
@@ -126,12 +127,11 @@ def _validate_one(
         raise ValueError(f"empty dataframe for {label}")
     dupes = df.duplicated(subset=pk_cols, keep=False)
     if dupes.any():
-        log.error("validate.error", reason="duplicate_pk", table=label,
-                  count=int(dupes.sum()))
+        log.error(
+            "validate.error", reason="duplicate_pk", table=label, count=int(dupes.sum())
+        )
         raise ValueError(f"{int(dupes.sum())} dupes in {label} on {pk_cols}")
-    df["coeff"] = df["coeff"].apply(
-        lambda v: None if pd.isna(v) else Decimal(str(v))
-    )
+    df["coeff"] = df["coeff"].apply(lambda v: None if pd.isna(v) else Decimal(str(v)))
     [model(**r) for r in df.to_dict("records")]
     return df
 

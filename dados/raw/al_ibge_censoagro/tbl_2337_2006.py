@@ -3,6 +3,7 @@
 Source: IBGE Agregados API, agregado 2237 (URL agregado), periodo 2006.
 Lands rows into ``$DB_RAW_ZONE.al_ibge_censoagro.tbl_2337_2006``.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -71,7 +72,12 @@ def extract() -> pd.DataFrame:
     )
     log.info("extract.municipios.done", rows=len(municipios))
 
-    log.info("extract.api.start", agregado=AGREGADO, variaveis=VARIAVEIS, output_dir=str(input_dir))
+    log.info(
+        "extract.api.start",
+        agregado=AGREGADO,
+        variaveis=VARIAVEIS,
+        output_dir=str(input_dir),
+    )
     asyncio.run(
         async_crawler_ibge_municipio(
             year=PERIODOS,
@@ -144,10 +150,14 @@ def load(df: pd.DataFrame) -> None:
 def flow() -> None:
     log.info("flow.start", table=TABLE)
     try:
-        df = extract();    log.info("extract.done", rows=len(df))
-        df = validate(df); log.info("validate.done", rows=len(df))
-        df = transform(df);log.info("transform.done", rows=len(df))
-        load(df);          log.info("load.done", rows=len(df))
+        df = extract()
+        log.info("extract.done", rows=len(df))
+        df = validate(df)
+        log.info("validate.done", rows=len(df))
+        df = transform(df)
+        log.info("transform.done", rows=len(df))
+        load(df)
+        log.info("load.done", rows=len(df))
     except Exception as exc:
         log.exception("flow.error", error=str(exc))
         raise

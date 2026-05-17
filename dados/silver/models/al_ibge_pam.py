@@ -1,4 +1,5 @@
 """Silver schemas for IBGE PAM (Produção Agrícola Municipal) — Amazônia Legal."""
+
 from __future__ import annotations
 
 from decimal import Decimal

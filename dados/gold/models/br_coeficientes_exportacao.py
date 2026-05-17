@@ -1,4 +1,5 @@
 """Gold schemas for br_coeficientes_exportacao."""
+
 from __future__ import annotations
 
 from decimal import Decimal

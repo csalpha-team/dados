@@ -1,4 +1,5 @@
 """Gold schemas for pa_servicos_industria_comercio (Pará regional cuts)."""
+
 from __future__ import annotations
 
 from decimal import Decimal

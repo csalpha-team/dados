@@ -1,8 +1,6 @@
 import aiohttp
-import os
 import json
 from pathlib import Path
-from tqdm.asyncio import tqdm
 from aiohttp import ClientTimeout, TCPConnector
 from tqdm import tqdm
 from typing import Dict, Any, List, Optional, Union
@@ -27,7 +25,7 @@ async def fetch(session: aiohttp.ClientSession, url: str) -> Dict[str, Any]:
     """
     max_retries = 3
     retry_count = 0
-    
+
     while retry_count < max_retries:
         try:
             async with session.get(url) as response:
@@ -36,7 +34,9 @@ async def fetch(session: aiohttp.ClientSession, url: str) -> Dict[str, Any]:
                     # Erro do servidor (5xx)
                     retry_count += 1
                     if retry_count < max_retries:
-                        print(f"Recebido status {response.status} para {url}. Tentando novamente em 6 segundos... (Tentativa {retry_count}/{max_retries})")
+                        print(
+                            f"Recebido status {response.status} para {url}. Tentando novamente em 6 segundos... (Tentativa {retry_count}/{max_retries})"
+                        )
                         await asyncio.sleep(6)
                         continue
                     else:
@@ -47,88 +47,97 @@ async def fetch(session: aiohttp.ClientSession, url: str) -> Dict[str, Any]:
                             status=response.status,
                             message=f"Falha após {max_retries} tentativas com status {response.status}",
                         )
-                
+
                 # Verifica se o status é de sucesso
                 response.raise_for_status()  # Levanta exceção para status codes 4xx ou 5xx
-                
+
                 # Retorna o JSON se tudo estiver OK
                 return await response.json()
-        
+
         except aiohttp.ClientResponseError as e:
             # Já tratamos os erros 5xx acima, então aqui lidamos apenas com outros erros
             if 500 <= e.status < 600 and retry_count < max_retries:
                 retry_count += 1
-                print(f"Erro de conexão com status {e.status} para {url}. Tentando novamente em 6 segundos... (Tentativa {retry_count}/{max_retries})")
+                print(
+                    f"Erro de conexão com status {e.status} para {url}. Tentando novamente em 6 segundos... (Tentativa {retry_count}/{max_retries})"
+                )
                 await asyncio.sleep(6)
             else:
                 # Outros erros ou esgotou as tentativas para 5xx
                 print(f"Erro: {e} para {url}")
                 raise
-                
+
         except (aiohttp.ClientError, asyncio.TimeoutError) as e:
             # Erros de conexão ou timeout
             retry_count += 1
             if retry_count < max_retries:
-                print(f"Erro de conexão: {str(e)} para {url}. Tentando novamente em 6 segundos... (Tentativa {retry_count}/{max_retries})")
+                print(
+                    f"Erro de conexão: {str(e)} para {url}. Tentando novamente em 6 segundos... (Tentativa {retry_count}/{max_retries})"
+                )
                 await asyncio.sleep(6)
             else:
                 print(f"Falha após {max_retries} tentativas: {str(e)} para {url}")
                 raise
-    
+
     # Não deveria chegar aqui, mas por segurança:
     raise Exception(f"Falha ao buscar {url} após múltiplas tentativas")
 
+
 async def async_crawler_ibge_municipio(
-    year: List[int], 
+    year: List[int],
     variables: List[str],
-    api_url_base: str, 
-    agregado: str, 
-    nivel_geografico: str, 
+    api_url_base: str,
+    agregado: str,
+    nivel_geografico: str,
     localidades: pd.DataFrame,
     classificacao: List[str],
     nome_tabela: str,
     output_dir: Optional[Union[str, Path]] = None,
-    ) -> None:
+) -> None:
     """
     Faz requisições para a API para cada ano, variável e categoria, salvando as respostas em arquivos JSON.
     Processa municípios em grupos de 20 para otimizar as requisições.
     Este crawler foi idealizado para extrair dados por município. Essa foi a forma mais geral utilizada
-    para contornar a limitação da API do IBGE. 
+    para contornar a limitação da API do IBGE.
     """
-    
-    all_municipios = localidades['id_municipio'].tolist()
+
+    all_municipios = localidades["id_municipio"].tolist()
 
     # Resolve output directory. Callers should pass tmp_dir(dataset_id, "input")
     # from dados.utils.paths. The legacy ../tmp default is kept only for
     # backwards compatibility with scripts that have not been refactored yet.
-    out_dir = Path(output_dir) if output_dir is not None else Path("../tmp") / nome_tabela
+    out_dir = (
+        Path(output_dir) if output_dir is not None else Path("../tmp") / nome_tabela
+    )
     out_dir.mkdir(parents=True, exist_ok=True)
 
     batch_size = 60
-    
+
     for i in range(0, len(all_municipios), batch_size):
-        batch_municipios = all_municipios[i:i+batch_size]
-        print(f'Consultando dados dos municípios: {i+1}-{min(i+batch_size, len(all_municipios))} de {len(all_municipios)}')
-        
+        batch_municipios = all_municipios[i : i + batch_size]
+        print(
+            f"Consultando dados dos municípios: {i + 1}-{min(i + batch_size, len(all_municipios))} de {len(all_municipios)}"
+        )
+
         async with aiohttp.ClientSession(
-            connector=TCPConnector(limit=100, force_close=True), 
-            timeout=ClientTimeout(total=1200)
+            connector=TCPConnector(limit=100, force_close=True),
+            timeout=ClientTimeout(total=1200),
         ) as session:
             tasks = []
-            
+
             for localidade in batch_municipios:
                 url = api_url_base.format(
-                    agregado, 
-                    year, 
-                    variables, 
-                    nivel_geografico, 
+                    agregado,
+                    year,
+                    variables,
+                    nivel_geografico,
                     localidade,
-                    classificacao, 
+                    classificacao,
                 )
-                #print(f"URL for municipio {localidade}: {url}")
+                # print(f"URL for municipio {localidade}: {url}")
                 task = fetch(session, url)
                 tasks.append((localidade, asyncio.ensure_future(task)))
-            
+
             for localidade, future in tqdm(tasks, total=len(tasks)):
                 try:
                     response = await future
@@ -138,5 +147,5 @@ async def async_crawler_ibge_municipio(
                     print(f"Request timed out for municipality {localidade}")
                 except Exception as e:
                     print(f"Error processing municipality {localidade}: {str(e)}")
-        
+
         await asyncio.sleep(1)
