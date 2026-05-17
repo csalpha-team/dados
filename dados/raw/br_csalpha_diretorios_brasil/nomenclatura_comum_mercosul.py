@@ -1,121 +1,97 @@
-import basedosdados as bd
-import os
-from dotenv import load_dotenv
-from dados.raw.utils.postgres_interactions import PostgresETL
+"""Raw flow: BR diretorios — Nomenclatura Comum do Mercosul (NCM).
 
-print('Loading environment variables...')
-# Loading .env file
+Source: BigQuery ``basedosdados.br_bd_diretorios_mundo.nomenclatura_comum_mercosul``.
+Lands into ``$DB_RAW_ZONE.br_csalpha_diretorios_brasil.nomenclatura_comum_mercosul``.
+"""
+from __future__ import annotations
+
+import os
+
+import basedosdados as bd
+import pandas as pd
+from dotenv import load_dotenv
+
+from dados.raw.utils.postgres_interactions import PostgresETL
+from dados.utils.logging import get_logger
+
 load_dotenv()
 
-# setting up env vars
-ID = os.getenv("BASEDOSDADADOS_PROJECT_ID")
-ROOT_DIR = os.getenv("ROOT_DIR")
-os.chdir(ROOT_DIR)
+DATASET_ID = "br_csalpha_diretorios_brasil"
+ZONE = "raw"
+TABLE = "nomenclatura_comum_mercosul"
 
-# Querying data
-#NOTE: faz sentido selecionar a tbl completa e filtrar essa para a zona agregada;
-#o diretorios precisam ser completos. 
-#! modificar aqui
-query = """
-select
- *
+QUERY = """
+select *
 FROM basedosdados.br_bd_diretorios_mundo.nomenclatura_comum_mercosul;
-
 """
 
+COLUMNS_DDL = {
+    "id_ncm": "VARCHAR(256)",
+    "id_unidade": "VARCHAR(256)",
+    "id_sh6": "VARCHAR(256)",
+    "id_ppe": "VARCHAR(256)",
+    "id_ppi": "VARCHAR(256)",
+    "id_fator_agregado_ncm": "VARCHAR(256)",
+    "id_cgce_n3": "VARCHAR(256)",
+    "id_isic_classe": "VARCHAR(256)",
+    "id_siit": "VARCHAR(256)",
+    "id_cuci_item": "VARCHAR(256)",
+    "nome_unidade": "TEXT",
+    "nome_ncm_portugues": "TEXT",
+    "nome_ncm_espanhol": "TEXT",
+    "nome_ncm_ingles": "TEXT",
+}
+
+log = get_logger(dataset_id=DATASET_ID, zone=ZONE)
 
 
-print('Downloading data...')
-
-df = bd.read_sql(
-    query = query,
-    billing_project_id=ID
-)
-
-print('loading data to postgres')
--- Nova estrutura incluindo prodlist da pesca
-WITH industria_pesca AS (
-    SELECT 
-        cnae.classe, 
-        cnae.descricao_classe, 
-        cnae.subclasse, 
-        cnae.descricao_subclasse, 
-        cnae.divisao, 
-        cnae.descricao_divisao,
-        prodlist.id_prodlist,
-        prodlist.descricao_prodlist,
-        prodlist.id_ncm
-    FROM br_csalpha_diretorios_brasil.cnae_2_bioeconomia AS cnae
-    INNER JOIN (
-        SELECT id_prodlist, descricao_prodlist, id_ncm, id_cnae
-        FROM br_csalpha_diretorios_brasil.prodlist_industria
-        UNION ALL
-        SELECT id_prodlist, descricao_prodlist, id_ncm, id_cnae_classe AS id_cnae
-        FROM br_csalpha_diretorios_brasil.prodlist_pesca
-    ) AS prodlist
-    ON cnae.classe = prodlist.id_cnae
-)
-SELECT
-	distinct
-    industria_pesca.*,
-    ncm.nome_ncm_portugues AS descricao_ncm_portugues
-FROM industria_pesca
-INNER JOIN br_csalpha_diretorios_brasil.nomenclatura_comum_mercosul AS ncm
-ON industria_pesca.id_ncm = ncm.id_ncm;
+def extract() -> pd.DataFrame:
+    billing_id = os.getenv("BASEDOSDADADOS_PROJECT_ID")
+    log.info("extract.bq.start")
+    df = bd.read_sql(query=QUERY, billing_project_id=billing_id)
+    log.info("extract.bq.done", rows=len(df))
+    return df
 
 
--- União dos resultados das consultas pelos produtos CNAE (indústria, pesca e agro)
-WITH industria AS (
-    SELECT * FROM br_csalpha_diretorios_brasil.nomenclatura_comum_mercosul
-    WHERE id_ncm IN (
-        SELECT id_ncm FROM br_csalpha_diretorios_brasil.prodlist_industria
-        WHERE id_cnae IN (
-            SELECT classe FROM br_csalpha_diretorios_brasil.cnae_2_bioeconomia
-        )
-    )
-),
-pesca_agro AS (
-    SELECT * FROM br_csalpha_diretorios_brasil.nomenclatura_comum_mercosul
-    WHERE id_ncm IN (
-        SELECT id_ncm FROM br_csalpha_diretorios_brasil.prodlist_pesca
-        WHERE id_cnae_classe IN (
-            SELECT classe FROM br_csalpha_diretorios_brasil.cnae_2_bioeconomia
-        )
-    )
-)
-SELECT * FROM industria
-UNION
-SELECT * FROM pesca_agro;
-
-with PostgresETL(
-  host='localhost', 
-  database=os.getenv("DB_TRUSTED_ZONE"), 
-  user=os.getenv("POSTGRES_USER"), 
-  password=os.getenv("POSTGRES_PASSWORD"),
-  schema='br_csalpha_diretorios_brasil') as db:
-    
-    columns = {
-        "id_ncm": "VARCHAR(256)",
-        "id_unidade": "VARCHAR(256)",
-        "id_sh6": "VARCHAR(256)",
-        "id_ppe": "VARCHAR(256)",
-        "id_ppi": "VARCHAR(256)",
-        "id_fator_agregado_ncm": "VARCHAR(256)",
-        "id_cgce_n3": "VARCHAR(256)",
-        "id_isic_classe": "VARCHAR(256)",
-        "id_siit": "VARCHAR(256)",
-        "id_cuci_item": "VARCHAR(256)",
-        "nome_unidade": "TEXT",
-        "nome_ncm_portugues": "TEXT",
-        "nome_ncm_espanhol": "TEXT",
-        "nome_ncm_ingles": "TEXT"
-    }
-          
-    db.create_table('nomenclatura_comum_mercosul', columns, if_not_exists=True)
-    
-    db.load_data('nomenclatura_comum_mercosul', df, if_exists='append')
+def validate(df: pd.DataFrame) -> pd.DataFrame:
+    if df.empty:
+        log.error("validate.error", reason="empty_dataframe")
+        raise ValueError("extract produced an empty dataframe")
+    missing = set(COLUMNS_DDL.keys()) - set(df.columns)
+    if missing:
+        log.error("validate.error", missing_columns=sorted(missing))
+        raise ValueError(f"Missing required columns: {sorted(missing)}")
+    return df
 
 
-print('Data loaded')
+def transform(df: pd.DataFrame) -> pd.DataFrame:
+    return df[list(COLUMNS_DDL.keys())]
 
 
+def load(df: pd.DataFrame) -> None:
+    with PostgresETL(
+        host="localhost",
+        database=os.getenv("DB_RAW_ZONE"),
+        user=os.getenv("POSTGRES_USER"),
+        password=os.getenv("POSTGRES_PASSWORD"),
+        schema=DATASET_ID,
+    ) as db:
+        db.create_table(TABLE, COLUMNS_DDL, if_not_exists=True)
+        db.load_data(TABLE, df, if_exists="replace")
+
+
+def flow() -> None:
+    log.info("flow.start", table=TABLE)
+    try:
+        df = extract();    log.info("extract.done", rows=len(df))
+        df = validate(df); log.info("validate.done", rows=len(df))
+        df = transform(df);log.info("transform.done", rows=len(df))
+        load(df);          log.info("load.done", rows=len(df))
+    except Exception as exc:
+        log.exception("flow.error", error=str(exc))
+        raise
+    log.info("flow.end", rows=len(df))
+
+
+if __name__ == "__main__":
+    flow()

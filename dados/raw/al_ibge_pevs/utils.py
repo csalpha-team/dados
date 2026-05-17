@@ -4,7 +4,7 @@ import pandas as pd
 from pathlib import Path
 
 
-def currency_fix(row):
+def currency_fix_by_unit(row):
     if row['unidade'] == 'Mil Cruzados':
         return row['valor'] / (1000**2 * 2750)
     elif row['unidade'] == 'Mil Cruzados Novos':
@@ -26,7 +26,7 @@ def transform_df(df):
     
     df_valor["valor"] = df_valor["valor"].apply(lambda x: x if x not in ("..", "...", "-") else None)
     df_valor["valor"] = df_valor["valor"].astype("Float64")
-    df_valor["valor"] = df_valor.apply(currency_fix, axis=1)
+    df_valor["valor"] = df_valor.apply(currency_fix_by_unit, axis=1)
     df_valor["valor"] = df_valor["valor"].astype("Float64")
     df_valor.drop(columns=["unidade"], inplace=True)
     

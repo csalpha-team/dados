@@ -1,135 +1,122 @@
-from dados.raw.utils.postgres_interactions import (
-    PostgresETL,
-)
-from dados.silver.utils import (
-    currency_fix,
-    fix_ibge_digits,
-    check_duplicates,
-)
+"""Silver flow: IBGE PAM — lavoura permanente (Amazônia Legal).
 
-#1. para pesquisas conjunturais
+Pivots the long-form raw landing into one row per (id_municipio, ano, produto)
+with one column per indicator, applies the IBGE non-numeric digit fix and the
+currency deflator, then lands at ``$DB_SILVER_ZONE.al_ibge_pam.lavoura_permanente``.
+"""
+from __future__ import annotations
 
-
-#1. 2233 censo 2006 - extracao vegetal
-#2. quantidade estabelecimentos, valor producao....
-
-#1. X .. -....
-#1. tudo que nao é X, é convertido 0
-#2. identifica onde, municipio, tipo_agricultura, produto, ano tem valores X
-#3. se é conjuntural
-#3.1 calcula média dos valores de cada municipio pra essa mesma agregacao - ano passado ano fututuo media, 
-# o valor mínimo de dados preenchidos na série determina a possibilidade de execução/ verificar se é possível ancorar crescimento por taxa média
-# o valor precisa ser comparado com as estatisticas do agredado (dado a nível de UF)
-# situacoes de quebra longas podem nao corresponder as series reais do agregadao/ 
-#3.2 estrutural
-#se existe X
-#1. calcula a
-
-#conjuntural - nao tem media legitima
-#estrutural - tem média legitima encontrada a partir do valor e frequencia (erro controlado p/ variancia)
-
-#sobre as diferenças estruturais
-#se considera que ambos agentes estão submetidos a mesma dinâmica do território/
-
-
-#Primeiro ver a 
-
-
-from dotenv import load_dotenv
 import os
+from decimal import Decimal
+
 import pandas as pd
-from dados.silver.padronizacao_produtos import (
-    dicionario_produtos_pam_permanente
-)
+from dotenv import load_dotenv
 
-
-
-
-
-
+from dados.raw.utils.postgres_interactions import PostgresETL
+from dados.silver.models.al_ibge_pam import AlIbgePamLavouraPermanente
+from dados.silver.constants.produtos import dicionario_produtos_pam_permanente
+from dados.silver.utils import currency_fix, fix_ibge_digits
+from dados.utils.logging import get_logger
+from dados.utils.pydantic_postgres import pydantic_to_postgres_columns
 
 load_dotenv()
 
-#TODO: Refatorar lógica do código para processar a pipe inteira em chunks 
+DATASET_ID = "al_ibge_pam"
+ZONE = "silver"
+TABLE = "lavoura_permanente"
 
-query = """
-select
-nome_variavel,
-produto,
-id_municipio,
-cast(ano as integer) as ano,
-valor
-from al_ibge_pam.lavoura_permanente
-where id_municipio like '15%';
-"""
+PK_COLS = ["id_municipio", "ano", "produto"]
+METRIC_COLS = [
+    "quantidade_produzida",
+    "valor_producao",
+    "area_destinada_colheita",
+    "area_colhida",
+    "rendimento_medio_producao",
+]
 
-with PostgresETL(
-    host='localhost', 
-    database=os.getenv("DB_RAW_ZONE"), 
-    user=os.getenv("POSTGRES_USER"), 
-    password=os.getenv("POSTGRES_PASSWORD"),
-    schema='al_ibge_pam') as db:
-    
-    data = db.download_data(query)
-    
-
-# Checar existência de duplicatas por segurança
-columns_index = ["id_municipio", "ano", "produto", "nome_variavel"]
-
-check_duplicates(data, columns_index)
-
-#pivotar tabela
-data = data.pivot_table(
-    index=columns_index[0:3],
-    columns=["nome_variavel"],
-    values="valor",
-    aggfunc="sum"
-).reset_index()
-
-cols = {
-    "Área colhida": "area_colhida",
-    "Área destinada à colheita": "area_destinada_colheita",
-    "Quantidade produzida" : "quantidade_produzida",
-    "Rendimento médio da produção": "rendimento_medio_producao",
-    "Valor da produção" : "valor_producao"
-}
+log = get_logger(dataset_id=DATASET_ID, zone=ZONE)
 
 
-data.rename(columns=cols, inplace=True)    
-print(data.columns)
+def extract() -> pd.DataFrame:
+    # Pivot in SQL: keeps memory bounded and preserves X/.. sentinels for fix_ibge_digits.
+    query = f"""
+        SELECT
+            CAST(ano AS INTEGER) AS ano,
+            id_municipio,
+            produto,
+            MAX(CASE WHEN nome_variavel = 'Quantidade produzida' THEN valor END) AS quantidade_produzida,
+            MAX(CASE WHEN nome_variavel = 'Valor da produção' THEN valor END) AS valor_producao,
+            MAX(CASE WHEN nome_variavel = 'Área destinada à colheita' THEN valor END) AS area_destinada_colheita,
+            MAX(CASE WHEN nome_variavel = 'Área colhida' THEN valor END) AS area_colhida,
+            MAX(CASE WHEN nome_variavel = 'Rendimento médio da produção' THEN valor END) AS rendimento_medio_producao
+        FROM {DATASET_ID}.{TABLE}
+        GROUP BY ano, id_municipio, produto
+    """
+    with PostgresETL(
+        host="localhost",
+        database=os.getenv("DB_RAW_ZONE"),
+        user=os.getenv("POSTGRES_USER"),
+        password=os.getenv("POSTGRES_PASSWORD"),
+        schema=DATASET_ID,
+    ) as db:
+        return db.download_data(query)
 
-#Padroniza nome de produtos
-data["produto"] = data["produto"].map(dicionario_produtos_pam_permanente)
 
-# conserta dígitos do IBGE
-data = fix_ibge_digits(data,list(cols.values()), columns_index[0:3])
+def transform(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.copy()
+    df["produto"] = df["produto"].map(dicionario_produtos_pam_permanente)
 
-# Aplica correção monetária
-data["valor_producao"] = data["valor_producao"].astype("float")
-data["valor_producao"] = data["valor_producao"].apply(lambda x: currency_fix(x) if isinstance(x, str) else x)
+    df = fix_ibge_digits(df, METRIC_COLS, PK_COLS)
 
-data = data[['ano', 'id_municipio', 'produto', 'quantidade_produzida', 'valor_producao', 
-            'area_destinada_colheita',  'area_colhida', 'rendimento_medio_producao']]
+    df["valor_producao"] = df["valor_producao"].astype("float")
+    df["valor_producao"] = df["valor_producao"].apply(
+        lambda x: currency_fix(x) if isinstance(x, str) else x
+    )
+    return df[list(AlIbgePamLavouraPermanente.model_fields.keys())]
 
-with PostgresETL(
-    host='localhost', 
-    database=os.getenv("DB_SILVER_ZONE"), 
-    user=os.getenv("POSTGRES_USER"), 
-    password=os.getenv("POSTGRES_PASSWORD"),
-    schema='al_ibge_pam') as db:
-        
-        
-        columns = {
-            'ano': 'integer',
-            'id_municipio': 'VARCHAR(7)',
-            'produto': 'VARCHAR(255)',
-            'quantidade_produzida': 'numeric',
-            'valor_producao': 'numeric',
-            'area_destinada_colheita' : 'numeric',
-            'area_colhida' : 'numeric',
-            'rendimento_medio_producao' : 'numeric',
-        }
 
-        db.create_table('lavoura_permanente', columns, drop_if_exists=True)
-        
-        db.load_data('lavoura_permanente', data, if_exists='replace')
+def validate(df: pd.DataFrame) -> pd.DataFrame:
+    if df.empty:
+        log.error("validate.error", reason="empty_dataframe")
+        raise ValueError("transform produced an empty dataframe")
+
+    dupes = df.duplicated(subset=PK_COLS, keep=False)
+    if dupes.any():
+        log.error("validate.error", reason="duplicate_pk", count=int(dupes.sum()))
+        raise ValueError(f"Found {int(dupes.sum())} rows duplicating PK {PK_COLS}")
+
+    for col in METRIC_COLS:
+        df[col] = df[col].apply(lambda v: None if pd.isna(v) else Decimal(str(v)))
+
+    [AlIbgePamLavouraPermanente(**r) for r in df.to_dict("records")]
+    return df
+
+
+def load(df: pd.DataFrame) -> None:
+    columns = pydantic_to_postgres_columns(AlIbgePamLavouraPermanente)
+    with PostgresETL(
+        host="localhost",
+        database=os.getenv("DB_SILVER_ZONE"),
+        user=os.getenv("POSTGRES_USER"),
+        password=os.getenv("POSTGRES_PASSWORD"),
+        schema=DATASET_ID,
+    ) as db:
+        db.create_table(TABLE, columns, drop_if_exists=True)
+        db.load_data(TABLE, df, if_exists="append")
+
+
+def flow() -> None:
+    log.info("flow.start", table=TABLE)
+    try:
+        df = extract();    log.info("extract.done", rows=len(df))
+        df = transform(df);log.info("transform.done", rows=len(df))
+        df = validate(df); log.info("validate.done", rows=len(df))
+        load(df);          log.info("load.done", rows=len(df))
+    except Exception as exc:
+        log.exception("flow.error", error=str(exc))
+        raise
+    log.info("flow.end", rows=len(df))
+
+
+if __name__ == "__main__":
+    flow()

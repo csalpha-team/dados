@@ -1,19 +1,35 @@
-from dotenv import load_dotenv
+"""Gold flow: br_coeficientes_consumo — coeficientes de consumo a partir da POF.
+
+Reads silver ``br_ibge_pof.tbl_6970`` directly (previously read from gold
+``brasil_despesas_familiares`` — a gold→gold violation).
+"""
+from __future__ import annotations
+
 import os
+from decimal import Decimal
 from pathlib import Path
+
 import pandas as pd
-from dados.raw.utils.postgres_interactions import PostgresETL
+from dotenv import load_dotenv
+
 from dados.gold.br_coeficientes_consumo.utils import (
     construir_coeficientes_consumo,
 )
-
+from dados.gold.models.br_coeficientes_consumo import (
+    BrCoeficientesConsumoPreparacaoCamadaConsumo,
+)
+from dados.raw.utils.postgres_interactions import PostgresETL
+from dados.utils.logging import get_logger
+from dados.utils.pydantic_postgres import pydantic_to_postgres_columns
 
 load_dotenv()
 
 DATASET_ID = "br_coeficientes_consumo"
-TABLE_ID = "preparacao_camada_consumo"
-SOURCE_SCHEMA = "brasil_despesas_familiares"
-SOURCE_TABLE = "pof_2018_despesas_familiares_situacao_domicilio"
+ZONE = "gold"
+TABLE = "preparacao_camada_consumo"
+
+SILVER_SCHEMA = "br_ibge_pof"
+SILVER_TABLE = "tbl_6970"
 DEFAULT_EQUIVALENCE_PATH = Path(__file__).with_name("equivalencia_despesas.json")
 
 PARAMETROS_CONSUMO = {
@@ -26,79 +42,104 @@ PARAMETROS_CONSUMO = {
     "padrao_estado": "Estad|Estadual",
 }
 
-equivalence_path_env = os.getenv(
-    "CONSUMPTION_EQUIVALENCE_FILE_PATH"
-) or os.getenv("CAMINHO_ARQUIVO_EQUIVALENCIA_CONSUMO")
-equivalence_path = (
-    Path(equivalence_path_env) if equivalence_path_env else DEFAULT_EQUIVALENCE_PATH
-)
+MODEL = BrCoeficientesConsumoPreparacaoCamadaConsumo
+PK_COLS = ["ano", "coeff_key"]
 
-if not equivalence_path.exists():
-    raise FileNotFoundError(
-        f"Arquivo de equivalência de despesas não encontrado: {equivalence_path}"
+log = get_logger(dataset_id=DATASET_ID, zone=ZONE)
+
+
+def _resolve_equivalence_path() -> Path:
+    override = os.getenv("CONSUMPTION_EQUIVALENCE_FILE_PATH") or os.getenv(
+        "CAMINHO_ARQUIVO_EQUIVALENCIA_CONSUMO"
     )
+    return Path(override) if override else DEFAULT_EQUIVALENCE_PATH
 
-mip_mapping = pd.read_json(equivalence_path)
-required_mapping_columns = [
-    PARAMETROS_CONSUMO["coluna_chave_mip"],
-    PARAMETROS_CONSUMO["coluna_tipo_despesa_mip"],
-]
-missing_mapping_columns = [
-    column for column in required_mapping_columns if column not in mip_mapping.columns
-]
 
-if missing_mapping_columns:
-    raise ValueError(
-        "Colunas obrigatórias ausentes no arquivo de equivalência: "
-        f"{', '.join(missing_mapping_columns)}"
-    )
+def _load_mip_mapping() -> pd.DataFrame:
+    path = _resolve_equivalence_path()
+    if not path.exists():
+        raise FileNotFoundError(f"Arquivo de equivalência não encontrado: {path}")
 
-mip_mapping = mip_mapping[required_mapping_columns].dropna(subset=required_mapping_columns)
-mip_mapping = mip_mapping.drop_duplicates(subset=required_mapping_columns)
-mip_mapping[PARAMETROS_CONSUMO["coluna_tipo_despesa_mip"]] = mip_mapping[
-    PARAMETROS_CONSUMO["coluna_tipo_despesa_mip"]
-].astype("string").str.strip()
+    mapping = pd.read_json(path)
+    required = [
+        PARAMETROS_CONSUMO["coluna_chave_mip"],
+        PARAMETROS_CONSUMO["coluna_tipo_despesa_mip"],
+    ]
+    missing = [c for c in required if c not in mapping.columns]
+    if missing:
+        raise ValueError(f"Colunas obrigatórias ausentes na equivalência: {missing}")
 
-query = f"""
-select
-    ano,
-    variavel,
-    situacao_domicilio,
-    tipo_despesa,
-    valor,
-    unidade_medida
-from {SOURCE_SCHEMA}.{SOURCE_TABLE}
-"""
+    mapping = mapping[required].dropna(subset=required).drop_duplicates(subset=required)
+    coluna_tipo = PARAMETROS_CONSUMO["coluna_tipo_despesa_mip"]
+    mapping[coluna_tipo] = mapping[coluna_tipo].astype("string").str.strip()
+    return mapping
 
-with PostgresETL(
-    host="localhost",
-    database=os.getenv("DB_GOLD_ZONE"),
-    user=os.getenv("POSTGRES_USER"),
-    password=os.getenv("POSTGRES_PASSWORD"),
-    schema=SOURCE_SCHEMA,
-) as db:
-    pof_data = db.download_data(query)
 
-pof_data["tipo_despesa"] = pof_data["tipo_despesa"].astype("string").str.strip()
+def extract() -> tuple[pd.DataFrame, pd.DataFrame]:
+    query = f"""
+        SELECT ano, variavel, situacao_domicilio, tipo_despesa, valor, unidade_medida
+        FROM {SILVER_SCHEMA}.{SILVER_TABLE}
+    """
+    with PostgresETL(
+        host="localhost",
+        database=os.getenv("DB_SILVER_ZONE"),
+        user=os.getenv("POSTGRES_USER"),
+        password=os.getenv("POSTGRES_PASSWORD"),
+        schema=SILVER_SCHEMA,
+    ) as db:
+        pof_data = db.download_data(query)
 
-coefficients_data = construir_coeficientes_consumo(
-    pof_data,
-    mip_mapping,
-    PARAMETROS_CONSUMO,
-)
+    pof_data["tipo_despesa"] = pof_data["tipo_despesa"].astype("string").str.strip()
+    return pof_data, _load_mip_mapping()
 
-with PostgresETL(
-    host="localhost",
-    database=os.getenv("DB_GOLD_ZONE"),
-    user=os.getenv("POSTGRES_USER"),
-    password=os.getenv("POSTGRES_PASSWORD"),
-    schema=DATASET_ID,
-) as db:
-    columns = {
-        "ano": "integer",
-        "coeff_key": "VARCHAR(255)",
-        "coeff": "numeric",
-    }
 
-    db.create_table(TABLE_ID, columns, drop_if_exists=True)
-    db.load_data(TABLE_ID, coefficients_data, if_exists="replace")
+def transform(payload: tuple[pd.DataFrame, pd.DataFrame]) -> pd.DataFrame:
+    pof_data, mip_mapping = payload
+    df = construir_coeficientes_consumo(pof_data, mip_mapping, PARAMETROS_CONSUMO)
+    return df[list(MODEL.model_fields.keys())].copy()
+
+
+def validate(df: pd.DataFrame) -> pd.DataFrame:
+    if df.empty:
+        log.error("validate.error", reason="empty_dataframe")
+        raise ValueError("transform produced empty dataframe")
+
+    dupes = df.duplicated(subset=PK_COLS, keep=False)
+    if dupes.any():
+        log.error("validate.error", reason="duplicate_pk", count=int(dupes.sum()))
+        raise ValueError(f"Found {int(dupes.sum())} rows duplicating PK {PK_COLS}")
+
+    df["coeff"] = df["coeff"].apply(lambda v: None if pd.isna(v) else Decimal(str(v)))
+    [MODEL(**r) for r in df.to_dict("records")]
+    return df
+
+
+def load(df: pd.DataFrame) -> None:
+    columns = pydantic_to_postgres_columns(MODEL)
+    with PostgresETL(
+        host="localhost",
+        database=os.getenv("DB_GOLD_ZONE"),
+        user=os.getenv("POSTGRES_USER"),
+        password=os.getenv("POSTGRES_PASSWORD"),
+        schema=DATASET_ID,
+    ) as db:
+        db.create_table(TABLE, columns, drop_if_exists=True)
+        db.load_data(TABLE, df, if_exists="append")
+
+
+def flow() -> None:
+    log.info("flow.start", table=TABLE)
+    try:
+        payload = extract()
+        log.info("extract.done", rows=len(payload[0]))
+        df = transform(payload); log.info("transform.done", rows=len(df))
+        df = validate(df);       log.info("validate.done", rows=len(df))
+        load(df);                log.info("load.done", rows=len(df))
+    except Exception as exc:
+        log.exception("flow.error", error=str(exc))
+        raise
+    log.info("flow.end", rows=len(df))
+
+
+if __name__ == "__main__":
+    flow()

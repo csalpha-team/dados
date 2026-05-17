@@ -1,107 +1,92 @@
+"""Gold flow: pa_indexadores_producao_rural — Censo Agro 2006, extração vegetal."""
+from __future__ import annotations
+
+import pandas as pd
 from dotenv import load_dotenv
-import os
-import basedosdados as bd
-from dados.raw.utils.postgres_interactions import PostgresETL
-from dados.gold.pa_indexadores_producao_rural.utils import (
-    dicionario_regioes_integracao,
+
+from dados.gold.models.pa_indexadores_producao_rural import (
+    PaIndexadoresExtracaoVegetalCenso2006,
+)
+from dados.gold.pa_indexadores_producao_rural._common import (
+    coerce_decimal,
+    enrich_with_regiao,
+    extract_silver,
+    load_gold,
+    log,
 )
 
 load_dotenv()
-billing_id = os.getenv("BASEDOSDADADOS_PROJECT_ID")
 
-query = """
-SELECT
-    ano,
-    id_municipio,
-    tipo_agricultura,
-    produto,
-    -- Métricas Originais (Totais)
-    quantidade_estabelecimentos,
-    quantidade_produzida,
-    quantidade_vendida,
-    valor_producao,
-    valor_venda,
-    -- Métricas de Autoconsumo (Já existentes na Silver)
-    autoconsumo_quantidade_estabelecimentos,
-    autoconsumo_quantidade_produzida,
-    autoconsumo_quantidade_vendida,
-    autoconsumo_valor_producao,
-    autoconsumo_valor_venda,
-    -- Métricas de Comércio (Já existentes na Silver)
-    comercio_quantidade_estabelecimentos,
-    comercio_quantidade_produzida,
-    comercio_quantidade_vendida,
-    comercio_valor_producao,
-    comercio_valor_venda
-FROM al_ibge_censoagro.tbl_2233_2006
-WHERE id_municipio LIKE '15%';
-"""
+TABLE = "extracao_vegetal_censo_2006"
+SILVER_SCHEMA = "al_ibge_censoagro"
+SILVER_TABLE = "tbl_2233_2006"
 
-with PostgresETL(
-        host='localhost', 
-        database=os.getenv("DB_SILVER_ZONE"), 
-        user=os.getenv("POSTGRES_USER"), 
-        password=os.getenv("POSTGRES_PASSWORD"),
-        schema='al_ibge_censoagro') as db:
-    
-    data = db.download_data(query)
+MODEL = PaIndexadoresExtracaoVegetalCenso2006
+NON_NUMERIC = {
+    "ano", "id_municipio", "nome", "nome_regiao_integracao", "sigla_uf",
+    "tipo_agricultura", "produto",
+}
+NUMERIC_COLS = [c for c in MODEL.model_fields if c not in NON_NUMERIC]
 
-print('------ Baixando tabela de municipios ------')
-municipios = bd.read_sql(
+
+def extract() -> pd.DataFrame:
+    query = f"""
+        SELECT
+            ano,
+            id_municipio,
+            tipo_agricultura,
+            produto,
+            quantidade_estabelecimentos,
+            quantidade_produzida,
+            quantidade_vendida,
+            valor_producao,
+            valor_venda,
+            autoconsumo_quantidade_estabelecimentos,
+            autoconsumo_quantidade_produzida,
+            autoconsumo_quantidade_vendida,
+            autoconsumo_valor_producao,
+            autoconsumo_valor_venda,
+            comercio_quantidade_estabelecimentos,
+            comercio_quantidade_produzida,
+            comercio_quantidade_vendida,
+            comercio_valor_producao,
+            comercio_valor_venda
+        FROM {SILVER_SCHEMA}.{SILVER_TABLE}
+        WHERE id_municipio LIKE '15%'
     """
-    SELECT id_municipio, nome, sigla_uf 
-    FROM `basedosdados.br_bd_diretorios_brasil.municipio`
-    WHERE sigla_uf = 'PA'
-    """,
-    billing_project_id=billing_id,
-)
+    return extract_silver(query, SILVER_SCHEMA)
 
-data = data.merge(municipios, on='id_municipio', how='left')
 
-# Mapeamento da região de integração
-data['nome_regiao_integracao'] = data['id_municipio'].map(dicionario_regioes_integracao)
+def transform(df: pd.DataFrame) -> pd.DataFrame:
+    df = enrich_with_regiao(df)
+    return df[list(MODEL.model_fields.keys())].copy()
 
-with PostgresETL(
-        host='localhost', 
-        database=os.getenv("DB_GOLD_ZONE"), 
-        user=os.getenv("POSTGRES_USER"), 
-        password=os.getenv("POSTGRES_PASSWORD"),
-        schema='pa_indexadores_producao_rural') as db:
-    
-    columns = {
-            'ano': 'integer',
-            'id_municipio': 'VARCHAR(7)',
-            'nome': 'VARCHAR(255)',
-            'nome_regiao_integracao': 'VARCHAR(255)',
-            'sigla_uf': 'VARCHAR(2)',
-            'produto': 'VARCHAR(255)',
-            'tipo_agricultura': 'VARCHAR(255)',
-            
-            # Totais
-            'quantidade_estabelecimentos': 'integer',
-            'quantidade_produzida': 'numeric',
-            'quantidade_vendida': 'numeric',
-            'valor_producao': 'numeric',
-            'valor_venda': 'numeric',
-            
-            # Autoconsumo
-            'autoconsumo_quantidade_estabelecimentos': 'integer',
-            'autoconsumo_quantidade_produzida': 'numeric',
-            'autoconsumo_quantidade_vendida': 'numeric',
-            'autoconsumo_valor_producao': 'numeric',
-            'autoconsumo_valor_venda': 'numeric',
-            
-            # Comércio
-            'comercio_quantidade_estabelecimentos': 'integer',
-            'comercio_quantidade_produzida': 'numeric',
-            'comercio_quantidade_vendida': 'numeric',
-            'comercio_valor_producao': 'numeric',
-            'comercio_valor_venda': 'numeric',
-        }
 
-    cols_to_load = list(columns.keys())
-    data = data[cols_to_load]
+def validate(df: pd.DataFrame) -> pd.DataFrame:
+    if df.empty:
+        log.error("validate.error", reason="empty_dataframe", table=TABLE)
+        raise ValueError(f"transform produced empty dataframe for {TABLE}")
+    df = coerce_decimal(df, NUMERIC_COLS)
+    [MODEL(**r) for r in df.to_dict("records")]
+    return df
 
-    db.create_table('extracao_vegetal_censo_2006', columns, drop_if_exists=True)
-    
-    db.load_data('extracao_vegetal_censo_2006', data, if_exists='replace')
+
+def load(df: pd.DataFrame) -> None:
+    load_gold(TABLE, df, MODEL)
+
+
+def flow() -> None:
+    log.info("flow.start", table=TABLE)
+    try:
+        df = extract();    log.info("extract.done", rows=len(df), table=TABLE)
+        df = transform(df);log.info("transform.done", rows=len(df), table=TABLE)
+        df = validate(df); log.info("validate.done", rows=len(df), table=TABLE)
+        load(df);          log.info("load.done", rows=len(df), table=TABLE)
+    except Exception as exc:
+        log.exception("flow.error", error=str(exc), table=TABLE)
+        raise
+    log.info("flow.end", rows=len(df), table=TABLE)
+
+
+if __name__ == "__main__":
+    flow()

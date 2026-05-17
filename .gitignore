@@ -35,3 +35,7 @@ gerar_relatorio*
 ~lock.*
 *.lock
 !uv.lock
+
+# scratch space for pipelines (see REFACTORING.md §4.1)
+tmp_data/
+logs/

@@ -1,87 +1,108 @@
-from dotenv import load_dotenv
+"""Gold flow: pa_indexadores_valor_producao_rural — pessoal ocupado Censo 2017."""
+from __future__ import annotations
+
 import os
-import basedosdados as bd
-from dados.raw.utils.postgres_interactions import PostgresETL
-from dados.gold.pa_indexadores_producao_rural.utils import (
-    dicionario_regioes_integracao,
+
+import pandas as pd
+from dotenv import load_dotenv
+
+from dados.gold.models.pa_indexadores_valor_producao_rural import (
+    PaIndexadoresPessoalOcupadoCenso2017,
 )
-
-#Não existe uma tabela com equivalencia no censo de 2006/ por isso essa é somente 2007
-
+from dados.gold.pa_indexadores_producao_rural._common import (
+    coerce_decimal,
+    enrich_with_regiao,
+)
+from dados.raw.utils.postgres_interactions import PostgresETL
+from dados.utils.logging import get_logger
+from dados.utils.pydantic_postgres import pydantic_to_postgres_columns
 
 load_dotenv()
-billing_id = os.getenv("BASEDOSDADADOS_PROJECT_ID")
 
-SILVER_TABLE1="tbl_6885_2017"
-DATASET_ID="pa_indexadores_valor_producao_rural"
-TABLE_ID="censo_2017_pessoal_ocupado_producao_rural"
+DATASET_ID = "pa_indexadores_valor_producao_rural"
+ZONE = "gold"
+TABLE = "censo_2017_pessoal_ocupado_producao_rural"
 
-query = f"""
-select
-ano,
-id_municipio,
-tipo_agricultura,
-pessoal_total_ocupado,
-quantidade_total_estabecimentos,
-pessoal_ocupado_familia,
-quantidade_estabecimentos_pessoal_ocupado_familia,
-pessoal_ocupado_fora_familia,
-quantidade_estabecimentos_pessoal_ocupado_fora_familia
-from al_ibge_censoagro.{SILVER_TABLE1}
-where id_municipio like '15%'
-"""
+SILVER_SCHEMA = "al_ibge_censoagro"
+SILVER_TABLE = "tbl_6885_2017"
 
-with PostgresETL(
-        host='localhost', 
-        database=os.getenv("DB_SILVER_ZONE"), 
-        user=os.getenv("POSTGRES_USER"), 
-        password=os.getenv("POSTGRES_PASSWORD"),
-        schema='al_ibge_censoagro') as db:
-    
-    data = db.download_data(query)
-    
-print('------ Baixando tabela de municipios ------')
-municipios = bd.read_sql(
+MODEL = PaIndexadoresPessoalOcupadoCenso2017
+NUMERIC_COLS = [
+    "pessoal_total_ocupado",
+    "quantidade_total_estabecimentos",
+    "pessoal_ocupado_familia",
+    "quantidade_estabecimentos_pessoal_ocupado_familia",
+    "pessoal_ocupado_fora_familia",
+    "quantidade_estabecimentos_pessoal_ocupado_fora_familia",
+]
+
+log = get_logger(dataset_id=DATASET_ID, zone=ZONE)
+
+
+def extract() -> pd.DataFrame:
+    query = f"""
+        SELECT
+            ano,
+            id_municipio,
+            tipo_agricultura,
+            pessoal_total_ocupado,
+            quantidade_total_estabecimentos,
+            pessoal_ocupado_familia,
+            quantidade_estabecimentos_pessoal_ocupado_familia,
+            pessoal_ocupado_fora_familia,
+            quantidade_estabecimentos_pessoal_ocupado_fora_familia
+        FROM {SILVER_SCHEMA}.{SILVER_TABLE}
+        WHERE id_municipio LIKE '15%'
     """
-    SELECT id_municipio, nome, sigla_uf, 
-    FROM `basedosdados.br_bd_diretorios_brasil.municipio`
-    WHERE amazonia_legal = 1
-    """,
-    billing_project_id=billing_id,
-)
-
-#left join com a tabela de municipios
-data = data.merge(municipios, on='id_municipio', how='left')
-
-data['nome_regiao_integracao'] = data['id_municipio'].map(dicionario_regioes_integracao)
-
-with PostgresETL(
-        host='localhost', 
-        database=os.getenv("DB_GOLD_ZONE"), 
-        user=os.getenv("POSTGRES_USER"), 
+    with PostgresETL(
+        host="localhost",
+        database=os.getenv("DB_SILVER_ZONE"),
+        user=os.getenv("POSTGRES_USER"),
         password=os.getenv("POSTGRES_PASSWORD"),
-        schema=DATASET_ID) as db:
-    
-    columns = {
-        'ano': 'integer',
-        'id_municipio': 'VARCHAR(7)',
-        'nome': 'VARCHAR(255)',
-        'nome_regiao_integracao': 'VARCHAR(255)',
-        'sigla_uf': 'VARCHAR(2)',
-        'tipo_agricultura': 'VARCHAR(255)',
-        'pessoal_total_ocupado': 'INTEGER',
-        'quantidade_total_estabecimentos': 'INTEGER',
-        'pessoal_ocupado_familia': 'INTEGER',
-        'quantidade_estabecimentos_pessoal_ocupado_familia' : 'INTEGER',
-        'pessoal_ocupado_fora_familia' : 'INTEGER',
-        'quantidade_estabecimentos_pessoal_ocupado_fora_familia' : 'INTEGER'
-    }
+        schema=SILVER_SCHEMA,
+    ) as db:
+        return db.download_data(query)
 
-    db.create_table(TABLE_ID, columns, drop_if_exists=True)
-    
-    db.load_data(TABLE_ID, data, if_exists='replace')
 
-    
+def transform(df: pd.DataFrame) -> pd.DataFrame:
+    df = enrich_with_regiao(df)
+    return df[list(MODEL.model_fields.keys())].copy()
 
-        
-      
+
+def validate(df: pd.DataFrame) -> pd.DataFrame:
+    if df.empty:
+        log.error("validate.error", reason="empty_dataframe", table=TABLE)
+        raise ValueError(f"transform produced empty dataframe for {TABLE}")
+    df = coerce_decimal(df, NUMERIC_COLS)
+    [MODEL(**r) for r in df.to_dict("records")]
+    return df
+
+
+def load(df: pd.DataFrame) -> None:
+    columns = pydantic_to_postgres_columns(MODEL)
+    with PostgresETL(
+        host="localhost",
+        database=os.getenv("DB_GOLD_ZONE"),
+        user=os.getenv("POSTGRES_USER"),
+        password=os.getenv("POSTGRES_PASSWORD"),
+        schema=DATASET_ID,
+    ) as db:
+        db.create_table(TABLE, columns, drop_if_exists=True)
+        db.load_data(TABLE, df, if_exists="append")
+
+
+def flow() -> None:
+    log.info("flow.start", table=TABLE)
+    try:
+        df = extract();    log.info("extract.done", rows=len(df), table=TABLE)
+        df = transform(df);log.info("transform.done", rows=len(df), table=TABLE)
+        df = validate(df); log.info("validate.done", rows=len(df), table=TABLE)
+        load(df);          log.info("load.done", rows=len(df), table=TABLE)
+    except Exception as exc:
+        log.exception("flow.error", error=str(exc), table=TABLE)
+        raise
+    log.info("flow.end", rows=len(df), table=TABLE)
+
+
+if __name__ == "__main__":
+    flow()

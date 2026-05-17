@@ -1,78 +1,112 @@
-from dotenv import load_dotenv
-import os
-from dados.raw.utils.postgres_interactions import PostgresETL
+"""Silver flow: IBGE POF — table 2393 (annual per-capita food acquisition by UF)."""
+from __future__ import annotations
 
+import os
+from decimal import Decimal
+
+import pandas as pd
+from dotenv import load_dotenv
+
+from dados.raw.utils.postgres_interactions import PostgresETL
+from dados.silver.models.br_ibge_pof import BrIbgePofTbl2393
+from dados.utils.logging import get_logger
+from dados.utils.pydantic_postgres import pydantic_to_postgres_columns
 
 load_dotenv()
-TABLE="tbl_2393"
 
-query = f"""
-select
-nome_variavel,
-unidade_medida,
-classificacao_nome,
-nome_categoria,
-nome_localidade,
-nivel_nome,
-cast(ano as integer) as ano,
-valor
-from br_ibge_pof.{TABLE}
-"""
+DATASET_ID = "br_ibge_pof"
+ZONE = "silver"
+TABLE = "tbl_2393"
+
+PK_COLS = ["ano", "uf", "categoria_alimento", "unidade_medida"]
+
+log = get_logger(dataset_id=DATASET_ID, zone=ZONE)
 
 
-with PostgresETL(
-        host='localhost', 
-        database=os.getenv("DB_RAW_ZONE"), 
-        user=os.getenv("POSTGRES_USER"), 
+def extract() -> pd.DataFrame:
+    query = f"""
+        SELECT
+            nome_variavel,
+            unidade_medida,
+            nome_categoria,
+            nome_localidade,
+            CAST(ano AS INTEGER) AS ano,
+            valor
+        FROM {DATASET_ID}.{TABLE}
+    """
+    with PostgresETL(
+        host="localhost",
+        database=os.getenv("DB_RAW_ZONE"),
+        user=os.getenv("POSTGRES_USER"),
         password=os.getenv("POSTGRES_PASSWORD"),
-        schema='br_ibge_pof') as db:
-    
-    data = db.download_data(query)
-    
-    
-
-# Checar existência de duplicatas por segurança
-
-#pivotar tabela
-data = data.pivot_table(
-    index=['ano','unidade_medida', 'nome_categoria', 'nome_localidade' ],
-    columns=["nome_variavel"],
-    values="valor",
-    aggfunc="sum"
-).reset_index()
+        schema=DATASET_ID,
+    ) as db:
+        return db.download_data(query)
 
 
-# renomear colunas
-cols = {
-    "Aquisição alimentar domiciliar per capita anual": "quantidade_aquisicao_alimentar_per_capta",
-    "nome_categoria": "categoria_alimento",
-    "nome_localidade": "uf",
-}
+def transform(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.pivot_table(
+        index=["ano", "unidade_medida", "nome_categoria", "nome_localidade"],
+        columns="nome_variavel",
+        values="valor",
+        aggfunc="sum",
+    ).reset_index()
+    df.columns.name = None
 
-data.rename(columns=cols, inplace=True)    
+    df = df.rename(columns={
+        "Aquisição alimentar domiciliar per capita anual": "quantidade_aquisicao_alimentar_per_capta",
+        "nome_categoria": "categoria_alimento",
+        "nome_localidade": "uf",
+    })
+    df["quantidade_aquisicao_alimentar_per_capta"] = df[
+        "quantidade_aquisicao_alimentar_per_capta"
+    ].apply(lambda x: None if str(x) in ("..", "...", "-", "X") else x)
+    return df[list(BrIbgePofTbl2393.model_fields.keys())]
 
 
-data = data[['ano', 'uf',  'categoria_alimento', 'quantidade_aquisicao_alimentar_per_capta',
-       'unidade_medida',]]
-    
-with PostgresETL(
-    host='localhost', 
-    database=os.getenv("DB_SILVER_ZONE"), 
-    user=os.getenv("POSTGRES_USER"), 
-    password=os.getenv("POSTGRES_PASSWORD"),
-    schema='br_ibge_pof') as db:
-        
-        
-        columns = {
-            'ano': 'integer',
-            'uf': 'VARCHAR(255)',
-            'categoria_alimento': 'VARCHAR(255)',
-            'quantidade_aquisicao_alimentar_per_capta': 'VARCHAR(255)',
-            'unidade_medida': 'VARCHAR(255)',
-        }
-            
-        db.create_table(f'{TABLE}', columns, drop_if_exists=True)
-        
-        db.load_data(f'{TABLE}', data, if_exists='replace')
-      
-https://www.iadb.org/document.cfm?id=EZIDB0001365-866096730-21
+def validate(df: pd.DataFrame) -> pd.DataFrame:
+    if df.empty:
+        log.error("validate.error", reason="empty_dataframe")
+        raise ValueError("transform produced an empty dataframe")
+
+    dupes = df.duplicated(subset=PK_COLS, keep=False)
+    if dupes.any():
+        log.error("validate.error", reason="duplicate_pk", count=int(dupes.sum()))
+        raise ValueError(f"Found {int(dupes.sum())} rows duplicating PK {PK_COLS}")
+
+    df["quantidade_aquisicao_alimentar_per_capta"] = df[
+        "quantidade_aquisicao_alimentar_per_capta"
+    ].apply(lambda v: None if pd.isna(v) else Decimal(str(v)))
+
+    [BrIbgePofTbl2393(**r) for r in df.to_dict("records")]
+    return df
+
+
+def load(df: pd.DataFrame) -> None:
+    columns = pydantic_to_postgres_columns(BrIbgePofTbl2393)
+    with PostgresETL(
+        host="localhost",
+        database=os.getenv("DB_SILVER_ZONE"),
+        user=os.getenv("POSTGRES_USER"),
+        password=os.getenv("POSTGRES_PASSWORD"),
+        schema=DATASET_ID,
+    ) as db:
+        db.create_table(TABLE, columns, drop_if_exists=True)
+        db.load_data(TABLE, df, if_exists="append")
+
+
+def flow() -> None:
+    log.info("flow.start", table=TABLE)
+    try:
+        df = extract();    log.info("extract.done", rows=len(df))
+        df = transform(df);log.info("transform.done", rows=len(df))
+        df = validate(df); log.info("validate.done", rows=len(df))
+        load(df);          log.info("load.done", rows=len(df))
+    except Exception as exc:
+        log.exception("flow.error", error=str(exc))
+        raise
+    log.info("flow.end", rows=len(df))
+
+
+if __name__ == "__main__":
+    flow()

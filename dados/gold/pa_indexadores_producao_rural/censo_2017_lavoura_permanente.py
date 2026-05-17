@@ -1,96 +1,88 @@
-from dotenv import load_dotenv
-import os
-import basedosdados as bd
-from dados.raw.utils.postgres_interactions import PostgresETL
-from dados.gold.pa_indexadores_producao_rural.utils import (
-    dicionario_regioes_integracao,
-)
+"""Gold flow: pa_indexadores_producao_rural — Censo Agro 2017, lavoura permanente."""
+from __future__ import annotations
 
+import pandas as pd
+from dotenv import load_dotenv
+
+from dados.gold.models.pa_indexadores_producao_rural import (
+    PaIndexadoresLavouraPermanenteCenso2017,
+)
+from dados.gold.pa_indexadores_producao_rural._common import (
+    coerce_decimal,
+    enrich_with_regiao,
+    extract_silver,
+    load_gold,
+    log,
+)
 
 load_dotenv()
-billing_id = os.getenv("BASEDOSDADADOS_PROJECT_ID")
 
-TABLE="tbl_6955_2017"
+TABLE = "lavoura_permanente_censo_2017"
+SILVER_SCHEMA = "al_ibge_censoagro"
+SILVER_TABLE = "tbl_6955_2017"
 
-query = f"""
-select
-ano,
-id_municipio,
-tipo_agricultura,
-produto,
-quantidade_estabelecimentos,
-quantidade_estabelecimentos,
-quantidade_produzida,
-quantidade_vendida as comercio_quantidade_produzida,
-quantidade_produzida - quantidade_vendida as autoconsumo_quantidade_vendida,
-valor_producao,
-valor_venda as comercio_valor_producao,
-valor_producao - valor_venda as autoconsumo_valor_producao,
+MODEL = PaIndexadoresLavouraPermanenteCenso2017
+NON_NUMERIC = {
+    "ano", "id_municipio", "nome", "nome_regiao_integracao", "sigla_uf",
+    "tipo_agricultura", "produto",
+}
+NUMERIC_COLS = [c for c in MODEL.model_fields if c not in NON_NUMERIC]
 
-area_colhida,
-area_plantada
-from al_ibge_censoagro.{TABLE}
-where id_municipio like '15%';
 
-"""
-
-with PostgresETL(
-        host='localhost', 
-        database=os.getenv("DB_SILVER_ZONE"), 
-        user=os.getenv("POSTGRES_USER"), 
-        password=os.getenv("POSTGRES_PASSWORD"),
-        schema='al_ibge_censoagro') as db:
-    
-    data = db.download_data(query)
-    
-print('------ Baixando tabela de municipios ------')
-municipios = bd.read_sql(
+def extract() -> pd.DataFrame:
+    query = f"""
+        SELECT
+            ano,
+            id_municipio,
+            tipo_agricultura,
+            produto,
+            quantidade_estabelecimentos,
+            quantidade_produzida,
+            quantidade_vendida,
+            quantidade_vendida AS comercio_quantidade_produzida,
+            quantidade_produzida::numeric - quantidade_vendida::numeric AS autoconsumo_quantidade_vendida,
+            valor_producao,
+            valor_venda,
+            valor_venda AS comercio_valor_producao,
+            valor_producao::numeric - valor_venda::numeric AS autoconsumo_valor_producao,
+            area_colhida,
+            area_plantada
+        FROM {SILVER_SCHEMA}.{SILVER_TABLE}
+        WHERE id_municipio LIKE '15%'
     """
-    SELECT id_municipio, nome, sigla_uf, 
-    FROM `basedosdados.br_bd_diretorios_brasil.municipio`
-    WHERE amazonia_legal = 1
-    """,
-    billing_project_id=billing_id,
-)
+    return extract_silver(query, SILVER_SCHEMA)
 
-#left join com a tabela de municipios
-data = data.merge(municipios, on='id_municipio', how='left')
 
-data['nome_regiao_integracao'] = data['id_municipio'].map(dicionario_regioes_integracao)
+def transform(df: pd.DataFrame) -> pd.DataFrame:
+    df = enrich_with_regiao(df)
+    return df[list(MODEL.model_fields.keys())].copy()
 
-with PostgresETL(
-        host='localhost', 
-        database=os.getenv("DB_GOLD_ZONE"), 
-        user=os.getenv("POSTGRES_USER"), 
-        password=os.getenv("POSTGRES_PASSWORD"),
-        schema='pa_indexadores_producao_rural') as db:
-    
-    columns = {
-            'ano': 'integer',
-            'id_municipio': 'VARCHAR(7)',
-            'nome': 'VARCHAR(255)',
-            'nome_regiao_integracao': 'VARCHAR(255)',
-            'sigla_uf': 'VARCHAR(2)',
-            'produto': 'VARCHAR(255)',
-            'tipo_agricultura': 'VARCHAR(255)',
-            'quantidade_estabelecimentos': 'numeric',
-            'quantidade_produzida': 'numeric',
-            'comercio_quantidade_produzida' : 'numeric',
-            'autoconsumo_quantidade_vendida' : 'numeric',
-            'quantidade_vendida': 'numeric',
-            'comercio_valor_producao' : 'numeric',
-            'autoconsumo_valor_producao' : 'numeric',
-            'valor_producao': 'numeric',
-            'valor_venda': 'numeric',
-            'area_colhida': 'numeric',
-            'area_plantada': 'numeric',
-        }
 
-    db.create_table('lavoura_permanente_censo_2017', columns, drop_if_exists=True)
-    
-    db.load_data('lavoura_permanente_censo_2017', data, if_exists='replace')
+def validate(df: pd.DataFrame) -> pd.DataFrame:
+    if df.empty:
+        log.error("validate.error", reason="empty_dataframe", table=TABLE)
+        raise ValueError(f"transform produced empty dataframe for {TABLE}")
+    df = coerce_decimal(df, NUMERIC_COLS)
+    [MODEL(**r) for r in df.to_dict("records")]
+    return df
 
-    
 
-        
-      
+def load(df: pd.DataFrame) -> None:
+    load_gold(TABLE, df, MODEL)
+
+
+def flow() -> None:
+    log.info("flow.start", table=TABLE)
+    try:
+        df = extract();    log.info("extract.done", rows=len(df), table=TABLE)
+        df = transform(df);log.info("transform.done", rows=len(df), table=TABLE)
+        df = validate(df); log.info("validate.done", rows=len(df), table=TABLE)
+        load(df);          log.info("load.done", rows=len(df), table=TABLE)
+    except Exception as exc:
+        log.exception("flow.error", error=str(exc), table=TABLE)
+        raise
+    log.info("flow.end", rows=len(df), table=TABLE)
+
+
+if __name__ == "__main__":
+    flow()
