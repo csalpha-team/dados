@@ -1,7 +1,7 @@
 """Gold flow: br_coeficientes_exportacao — coeficientes FOB de exportação.
 
 NOTE: still reads NCM/Comex tables directly from the raw zone. A silver layer
-for ``al_me_comex_stat`` / ``br_csalpha_diretorios_brasil`` does not yet exist;
+for ``pa_me_comex_stat`` / ``br_csalpha_diretorios_brasil`` does not yet exist;
 when it does, switch the extract over and drop the raw-zone fallback.
 """
 from __future__ import annotations
@@ -38,10 +38,10 @@ DATABASE_ORIGEM = (
     or os.getenv("DB_RAW_ZONE")
 )
 ESQUEMA_ORIGEM = os.getenv("ESQUEMA_ORIGEM_EXPORTACAO") or os.getenv(
-    "EXPORT_SOURCE_SCHEMA", "al_me_comex_stat"
+    "EXPORT_SOURCE_SCHEMA", "pa_me_comex_stat"
 )
 TABELA_ORIGEM = os.getenv("TABELA_ORIGEM_EXPORTACAO") or os.getenv(
-    "EXPORT_SOURCE_TABLE", "comex_stat"
+    "EXPORT_SOURCE_TABLE", "ncm_exportacao"
 )
 ESQUEMA_NCM = os.getenv("ESQUEMA_NCM_EXPORTACAO") or os.getenv(
     "EXPORT_NCM_SCHEMA", "br_csalpha_diretorios_brasil"

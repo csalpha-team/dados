@@ -39,10 +39,10 @@ def extract() -> pd.DataFrame:
             quantidade_estabelecimentos,
             quantidade_produzida,
             quantidade_vendida AS comercio_quantidade_produzida,
-            quantidade_produzida - quantidade_vendida AS autoconsumo_quantidade_vendida,
+            quantidade_produzida::numeric - quantidade_vendida::numeric AS autoconsumo_quantidade_vendida,
             valor_producao,
             valor_venda AS comercio_valor_producao,
-            valor_producao - valor_venda AS autoconsumo_valor_producao
+            valor_producao::numeric - valor_venda::numeric AS autoconsumo_valor_producao
         FROM {SILVER_SCHEMA}.{SILVER_TABLE}
         WHERE id_municipio LIKE '15%'
     """

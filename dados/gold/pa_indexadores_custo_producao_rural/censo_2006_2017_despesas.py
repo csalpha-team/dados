@@ -38,14 +38,14 @@ def extract() -> pd.DataFrame:
         SELECT
             ano, id_municipio, tipo_agricultura, tipo_despesa,
             quantidade_estabelecimentos_fizeram_despesa,
-            ROUND(valor_despesa, 2) AS valor_despesa
+            ROUND(valor_despesa::numeric, 2) AS valor_despesa
         FROM {SILVER_SCHEMA}.{SILVER_TABLE_2006}
         WHERE id_municipio LIKE '15%'
         UNION ALL
         SELECT
             ano, id_municipio, tipo_agricultura, tipo_despesa,
             quantidade_estabelecimentos_fizeram_despesa,
-            ROUND(valor_despesa, 2) AS valor_despesa
+            ROUND(valor_despesa::numeric, 2) AS valor_despesa
         FROM {SILVER_SCHEMA}.{SILVER_TABLE_2017}
         WHERE id_municipio LIKE '15%'
     """

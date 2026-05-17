@@ -1,7 +1,7 @@
 """Raw flow: ME Comex Stat — NCM exportação (Pará subset).
 
 Source: BigQuery ``basedosdados.br_me_comex_stat.ncm_exportacao``.
-Lands into ``$DB_RAW_ZONE.al_me_comex_stat.ncm_exportacao``.
+Lands into ``$DB_RAW_ZONE.pa_me_comex_stat.ncm_exportacao``.
 """
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ from dados.utils.logging import get_logger
 
 load_dotenv()
 
-DATASET_ID = "al_me_comex_stat"
+DATASET_ID = "pa_me_comex_stat"
 ZONE = "raw"
 TABLE = "ncm_exportacao"
 
@@ -24,9 +24,7 @@ QUERY = """
 select *
 from basedosdados.br_me_comex_stat.ncm_exportacao
 where
-  sigla_uf_ncm = 'PA' and
-  id_ncm IN ('11062000', '19030000')
-  and ano = 2023;
+  sigla_uf_ncm = 'PA'
 """
 
 COLUMNS_DDL = {

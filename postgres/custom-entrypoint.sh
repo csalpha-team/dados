@@ -11,6 +11,7 @@ if [ -n "$PG_SHARED_BUFFERS" ] || [ -n "$PG_WORK_MEM" ] || [ -n "$PG_MAINTENANCE
 shared_buffers = ${PG_SHARED_BUFFERS:-128MB}
 work_mem = ${PG_WORK_MEM:-4MB}
 maintenance_work_mem = ${PG_MAINTENANCE_WORK_MEM:-64MB}
+track_commit_timestamp = on
 EOF
     
     # Apply the custom configuration
