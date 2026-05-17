@@ -3,6 +3,7 @@
 Source: IBGE Agregados API, table 6715, period 2018, classification 12190.
 Lands one row per (UF, categoria) into ``$DB_RAW_ZONE.br_ibge_pof.tbl_6715_2018``.
 """
+
 from __future__ import annotations
 
 import os
@@ -88,10 +89,14 @@ def load(df: pd.DataFrame) -> None:
 def flow() -> None:
     log.info("flow.start", table=TABLE)
     try:
-        df = extract();    log.info("extract.done", rows=len(df))
-        df = validate(df); log.info("validate.done", rows=len(df))
-        df = transform(df);log.info("transform.done", rows=len(df))
-        load(df);          log.info("load.done", rows=len(df))
+        df = extract()
+        log.info("extract.done", rows=len(df))
+        df = validate(df)
+        log.info("validate.done", rows=len(df))
+        df = transform(df)
+        log.info("transform.done", rows=len(df))
+        load(df)
+        log.info("load.done", rows=len(df))
     except Exception as exc:
         log.exception("flow.error", error=str(exc))
         raise

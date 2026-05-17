@@ -23,7 +23,9 @@ def carregar_coeficientes_investimento(json_path: Path) -> pd.DataFrame:
         raw_data = json.load(file)
 
     if not isinstance(raw_data, dict):
-        raise ValueError("coeficientes_investimento.json deve conter um objeto chave-valor")
+        raise ValueError(
+            "coeficientes_investimento.json deve conter um objeto chave-valor"
+        )
 
     coefficients = pd.DataFrame(
         [

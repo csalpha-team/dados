@@ -23,15 +23,23 @@ def construir_cenario_coeficientes_unitarios(
     with config_path.open("r", encoding="utf-8") as file:
         config = json.load(file)
 
-    parameter_groups = config.get("parameter_groups", config.get("grupos_parametros", {}))
-    total_expense_label = config.get("total_expense_label", config.get("rotulo_despesa_total", "Total"))
+    parameter_groups = config.get(
+        "parameter_groups", config.get("grupos_parametros", {})
+    )
+    total_expense_label = config.get(
+        "total_expense_label", config.get("rotulo_despesa_total", "Total")
+    )
 
     expense_types: list[str] = []
     coeff_keys: list[str] = []
     for mappings in parameter_groups.values():
         for mapping in mappings:
-            expense_types.extend(str(value).strip() for value in mapping.get("expense_types", []))
-            coeff_keys.extend(str(value).strip() for value in mapping.get("coeff_keys", []))
+            expense_types.extend(
+                str(value).strip() for value in mapping.get("expense_types", [])
+            )
+            coeff_keys.extend(
+                str(value).strip() for value in mapping.get("coeff_keys", [])
+            )
 
     rows = [
         {
@@ -61,7 +69,9 @@ def construir_cenario_coeficientes_unitarios(
         )
 
     data = pd.DataFrame(rows)
-    data["nome_regiao_integracao"] = data["nome_regiao_integracao"].apply(clean_region_name)
+    data["nome_regiao_integracao"] = data["nome_regiao_integracao"].apply(
+        clean_region_name
+    )
     expected_keys = sorted(dict.fromkeys(coeff_keys))
     return data, expected_keys
 
@@ -69,14 +79,20 @@ def construir_cenario_coeficientes_unitarios(
 def validar_cenario_coeficientes_unitarios(
     config_path: Path = DEFAULT_CONFIG_PATH,
 ) -> tuple[pd.DataFrame, list[str]]:
-    cost_df, expected_keys = construir_cenario_coeficientes_unitarios(config_path=config_path)
-    value_to_key_map, rename_map, total_expense_label = carregar_parametros_custo(config_path)
+    cost_df, expected_keys = construir_cenario_coeficientes_unitarios(
+        config_path=config_path
+    )
+    value_to_key_map, rename_map, total_expense_label = carregar_parametros_custo(
+        config_path
+    )
 
     grouped = calcular_coeficientes_municipais(
         cost_df,
         total_expense_label=total_expense_label,
     )
-    grouped["nome_regiao_integracao"] = grouped["nome_regiao_integracao"].replace(rename_map)
+    grouped["nome_regiao_integracao"] = grouped["nome_regiao_integracao"].replace(
+        rename_map
+    )
 
     expanded = expandir_coeficientes(grouped, value_to_key_map)
     coefficients = agregar_coeficientes_regional_mais_recente(expanded)
@@ -89,7 +105,9 @@ def construir_cenario_coeficientes_normalizados(
     with config_path.open("r", encoding="utf-8") as file:
         config = json.load(file)
 
-    parameter_groups = config.get("parameter_groups", config.get("grupos_parametros", {}))
+    parameter_groups = config.get(
+        "parameter_groups", config.get("grupos_parametros", {})
+    )
     total_expense_label = config.get(
         "total_expense_label",
         config.get("rotulo_despesa_total", "Total"),
@@ -99,8 +117,12 @@ def construir_cenario_coeficientes_normalizados(
     coeff_keys: list[str] = []
     for mappings in parameter_groups.values():
         for mapping in mappings:
-            expense_types.extend(str(value).strip() for value in mapping.get("expense_types", []))
-            coeff_keys.extend(str(value).strip() for value in mapping.get("coeff_keys", []))
+            expense_types.extend(
+                str(value).strip() for value in mapping.get("expense_types", [])
+            )
+            coeff_keys.extend(
+                str(value).strip() for value in mapping.get("coeff_keys", [])
+            )
 
     unique_expense_types = list(dict.fromkeys(expense_types))
     base_expense_value = 100.0
@@ -134,7 +156,9 @@ def construir_cenario_coeficientes_normalizados(
         )
 
     data = pd.DataFrame(rows)
-    data["nome_regiao_integracao"] = data["nome_regiao_integracao"].apply(clean_region_name)
+    data["nome_regiao_integracao"] = data["nome_regiao_integracao"].apply(
+        clean_region_name
+    )
 
     expected_expense_types = sorted(unique_expense_types)
     expected_coeff_keys = sorted(dict.fromkeys(coeff_keys))
@@ -156,7 +180,9 @@ def validar_cenario_soma_coeficientes_unitaria(
         cost_df,
         total_expense_label=total_expense_label,
     )
-    grouped["nome_regiao_integracao"] = grouped["nome_regiao_integracao"].replace(rename_map)
+    grouped["nome_regiao_integracao"] = grouped["nome_regiao_integracao"].replace(
+        rename_map
+    )
 
     expanded = expandir_coeficientes(grouped, value_to_key_map)
     coefficients = agregar_coeficientes_regional_mais_recente(expanded)

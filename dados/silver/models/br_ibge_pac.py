@@ -1,4 +1,5 @@
 """Silver schemas for IBGE PAC (Pesquisa Anual de Comércio)."""
+
 from __future__ import annotations
 
 from decimal import Decimal

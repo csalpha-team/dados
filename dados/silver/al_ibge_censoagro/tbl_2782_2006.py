@@ -1,4 +1,5 @@
 """Silver flow: Censo Agropecuário 2006 — table 2782 (family workforce)."""
+
 from __future__ import annotations
 
 from dotenv import load_dotenv
@@ -50,9 +51,7 @@ def extract() -> pd.DataFrame:
 def transform(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
     df["tipo_agricultura"] = df["tipo_agricultura"].map(TIPO_AGRICULTURA_2006)
-    df = fix_ibge_digits(
-        df, METRIC_COLS, ["id_municipio", "ano", "tipo_agricultura"]
-    )
+    df = fix_ibge_digits(df, METRIC_COLS, ["id_municipio", "ano", "tipo_agricultura"])
     return df[list(AlIbgeCensoagroTbl27822006.model_fields.keys())]
 
 
@@ -68,10 +67,14 @@ def validate(df: pd.DataFrame) -> pd.DataFrame:
 def flow() -> None:
     log.info("flow.start", table=TABLE)
     try:
-        df = extract();    log.info("extract.done", rows=len(df))
-        df = transform(df);log.info("transform.done", rows=len(df))
-        df = validate(df); log.info("validate.done", rows=len(df))
-        write_silver(TABLE, df, AlIbgeCensoagroTbl27822006); log.info("load.done", rows=len(df))
+        df = extract()
+        log.info("extract.done", rows=len(df))
+        df = transform(df)
+        log.info("transform.done", rows=len(df))
+        df = validate(df)
+        log.info("validate.done", rows=len(df))
+        write_silver(TABLE, df, AlIbgeCensoagroTbl27822006)
+        log.info("load.done", rows=len(df))
     except Exception as exc:
         log.exception("flow.error", error=str(exc))
         raise

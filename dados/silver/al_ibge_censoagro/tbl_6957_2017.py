@@ -1,4 +1,5 @@
 """Silver flow: Censo Agropecuário 2017 — table 6957 (lavoura temporária)."""
+
 from __future__ import annotations
 
 from dotenv import load_dotenv
@@ -79,10 +80,14 @@ def validate(df: pd.DataFrame) -> pd.DataFrame:
 def flow() -> None:
     log.info("flow.start", table=TABLE)
     try:
-        df = extract();    log.info("extract.done", rows=len(df))
-        df = transform(df);log.info("transform.done", rows=len(df))
-        df = validate(df); log.info("validate.done", rows=len(df))
-        write_silver(TABLE, df, AlIbgeCensoagroTbl69572017); log.info("load.done", rows=len(df))
+        df = extract()
+        log.info("extract.done", rows=len(df))
+        df = transform(df)
+        log.info("transform.done", rows=len(df))
+        df = validate(df)
+        log.info("validate.done", rows=len(df))
+        write_silver(TABLE, df, AlIbgeCensoagroTbl69572017)
+        log.info("load.done", rows=len(df))
     except Exception as exc:
         log.exception("flow.error", error=str(exc))
         raise

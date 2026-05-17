@@ -44,13 +44,19 @@ def carregar_parametros_custo(
     )
 
     if not isinstance(parameter_groups, dict):
-        raise ValueError("parameter_groups deve ser um dicionário no arquivo de configuração.")
+        raise ValueError(
+            "parameter_groups deve ser um dicionário no arquivo de configuração."
+        )
 
     if not isinstance(region_rename_map, dict):
-        raise ValueError("region_rename_map deve ser um dicionário no arquivo de configuração.")
+        raise ValueError(
+            "region_rename_map deve ser um dicionário no arquivo de configuração."
+        )
 
     if not isinstance(total_expense_label, str):
-        raise ValueError("total_expense_label deve ser uma string no arquivo de configuração.")
+        raise ValueError(
+            "total_expense_label deve ser uma string no arquivo de configuração."
+        )
 
     value_to_key_map = []
     for mappings in parameter_groups.values():
@@ -95,7 +101,9 @@ def calcular_coeficientes_municipais(
     grouped["valor_despesa"] = pd.to_numeric(grouped["valor_despesa"], errors="coerce")
     grouped["total_despesa"] = pd.to_numeric(grouped["total_despesa"], errors="coerce")
 
-    valid_denominator = grouped["total_despesa"].notna() & (grouped["total_despesa"] != 0)
+    valid_denominator = grouped["total_despesa"].notna() & (
+        grouped["total_despesa"] != 0
+    )
     grouped["coeff"] = pd.NA
     grouped.loc[valid_denominator, "coeff"] = (
         grouped.loc[valid_denominator, "valor_despesa"]
@@ -110,7 +118,9 @@ def expandir_coeficientes(
 ) -> pd.DataFrame:
     rows = []
     for expense_type, coeff_keys in value_to_key_map:
-        temp = grouped_coefficients[grouped_coefficients["tipo_despesa"] == expense_type].copy()
+        temp = grouped_coefficients[
+            grouped_coefficients["tipo_despesa"] == expense_type
+        ].copy()
         for coeff_key in coeff_keys:
             temp_copy = temp.copy()
             temp_copy["tipo_coeff"] = coeff_key
@@ -126,9 +136,9 @@ def agregar_coeficientes_regional_mais_recente(coeff_df: pd.DataFrame) -> pd.Dat
     if coeff_df.empty:
         return pd.DataFrame(columns=FINAL_COLUMNS)
 
-    regional_coefficients = coeff_df.groupby(REGIONAL_GROUP_COLUMNS, as_index=False).agg(
-        {"coeff": "mean"}
-    )
+    regional_coefficients = coeff_df.groupby(
+        REGIONAL_GROUP_COLUMNS, as_index=False
+    ).agg({"coeff": "mean"})
 
     ordered_coefficients = regional_coefficients.sort_values(by="ano", ascending=False)
     latest_coefficients = ordered_coefficients.drop_duplicates(

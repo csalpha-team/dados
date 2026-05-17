@@ -1,4 +1,5 @@
 """Silver schemas for IBGE PEVS (Produção da Extração Vegetal e Silvicultura) — Amazônia Legal."""
+
 from __future__ import annotations
 
 from decimal import Decimal

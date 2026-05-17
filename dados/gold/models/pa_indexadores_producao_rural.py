@@ -1,4 +1,5 @@
 """Gold schemas for pa_indexadores_producao_rural."""
+
 from __future__ import annotations
 
 from decimal import Decimal
@@ -64,7 +65,8 @@ class PaIndexadoresLavouraTemporariaCenso2006_2284(_BaseRow):
     tipo_agricultura: str | None = _TIPO_AGRI
     produto: str | None = _PRODUTO
     quantidade_estabelecimentos: Decimal | None = Field(
-        description="Total number of establishments", json_schema_extra={"unit": "head_count"}
+        description="Total number of establishments",
+        json_schema_extra={"unit": "head_count"},
     )
     quantidade_produzida: Decimal | None = Field(
         description="Total quantity produced", json_schema_extra={"unit": "ton"}
@@ -277,7 +279,8 @@ class PaIndexadoresExtracaoVegetalCenso2006(_BaseRow):
         json_schema_extra={"unit": "BRL"},
     )
     comercio_quantidade_estabelecimentos: Decimal | None = Field(
-        description="Establishments reporting commerce", json_schema_extra={"unit": "head_count"}
+        description="Establishments reporting commerce",
+        json_schema_extra={"unit": "head_count"},
     )
     comercio_quantidade_produzida: Decimal | None = Field(
         description="Quantity produced for commerce", json_schema_extra={"unit": "ton"}
@@ -345,10 +348,12 @@ class PaIndexadoresDespesasCenso2006_2017(_BaseRow):
 class PaIndexadoresLavouraPermanentePam(_BaseRow):
     produto: str | None = _PRODUTO
     quantidade_produzida: Decimal | None = Field(
-        description="Quantity produced (PAM permanente)", json_schema_extra={"unit": "ton"}
+        description="Quantity produced (PAM permanente)",
+        json_schema_extra={"unit": "ton"},
     )
     valor_producao: Decimal | None = Field(
-        description="Production value (PAM permanente)", json_schema_extra={"unit": "BRL"}
+        description="Production value (PAM permanente)",
+        json_schema_extra={"unit": "BRL"},
     )
     area_destinada_colheita: Decimal | None = Field(
         description="Area destined for harvest", json_schema_extra={"unit": "hectare"}
@@ -357,17 +362,20 @@ class PaIndexadoresLavouraPermanentePam(_BaseRow):
         description="Harvested area", json_schema_extra={"unit": "hectare"}
     )
     rendimento_medio_producao: Decimal | None = Field(
-        description="Average production yield", json_schema_extra={"unit": "dimensionless"}
+        description="Average production yield",
+        json_schema_extra={"unit": "dimensionless"},
     )
 
 
 class PaIndexadoresLavouraTemporariaPam(_BaseRow):
     produto: str | None = _PRODUTO
     quantidade_produzida: Decimal | None = Field(
-        description="Quantity produced (PAM temporária)", json_schema_extra={"unit": "ton"}
+        description="Quantity produced (PAM temporária)",
+        json_schema_extra={"unit": "ton"},
     )
     valor_producao: Decimal | None = Field(
-        description="Production value (PAM temporária)", json_schema_extra={"unit": "BRL"}
+        description="Production value (PAM temporária)",
+        json_schema_extra={"unit": "BRL"},
     )
     area_plantada: Decimal | None = Field(
         description="Planted area", json_schema_extra={"unit": "hectare"}
@@ -376,7 +384,8 @@ class PaIndexadoresLavouraTemporariaPam(_BaseRow):
         description="Harvested area", json_schema_extra={"unit": "hectare"}
     )
     rendimento_medio_producao: Decimal | None = Field(
-        description="Average production yield", json_schema_extra={"unit": "dimensionless"}
+        description="Average production yield",
+        json_schema_extra={"unit": "dimensionless"},
     )
 
 

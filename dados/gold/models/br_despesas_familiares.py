@@ -1,4 +1,5 @@
 """Gold schemas for br_despesas_familiares."""
+
 from __future__ import annotations
 
 from decimal import Decimal

@@ -1,4 +1,5 @@
 """Silver schemas for IBGE POF (Pesquisa de Orçamentos Familiares)."""
+
 from __future__ import annotations
 
 from decimal import Decimal

@@ -1,4 +1,5 @@
 """Silver schemas for IBGE PIA (Pesquisa Industrial Anual)."""
+
 from __future__ import annotations
 
 from decimal import Decimal

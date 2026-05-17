@@ -4,6 +4,7 @@ NOTE: still reads NCM/Comex tables directly from the raw zone. A silver layer
 for ``pa_me_comex_stat`` / ``br_csalpha_diretorios_brasil`` does not yet exist;
 when it does, switch the extract over and drop the raw-zone fallback.
 """
+
 from __future__ import annotations
 
 import os
@@ -135,9 +136,9 @@ def load(df: pd.DataFrame) -> None:
         db.create_table(TABLE, columns, drop_if_exists=True)
         db.load_data(TABLE, df, if_exists="append")
 
-    output_json_path = os.getenv("CAMINHO_SAIDA_JSON_COEFICIENTES_EXPORTACAO") or os.getenv(
-        "EXPORT_COEFFICIENTS_OUTPUT_JSON_PATH"
-    )
+    output_json_path = os.getenv(
+        "CAMINHO_SAIDA_JSON_COEFICIENTES_EXPORTACAO"
+    ) or os.getenv("EXPORT_COEFFICIENTS_OUTPUT_JSON_PATH")
     if output_json_path:
         salvar_json_coeficientes_exportacao(df, Path(output_json_path))
 
@@ -147,9 +148,12 @@ def flow() -> None:
     try:
         payload = extract()
         log.info("extract.done", rows=len(payload[0]))
-        df = transform(payload); log.info("transform.done", rows=len(df))
-        df = validate(df);       log.info("validate.done", rows=len(df))
-        load(df);                log.info("load.done", rows=len(df))
+        df = transform(payload)
+        log.info("transform.done", rows=len(df))
+        df = validate(df)
+        log.info("validate.done", rows=len(df))
+        load(df)
+        log.info("load.done", rows=len(df))
     except Exception as exc:
         log.exception("flow.error", error=str(exc))
         raise

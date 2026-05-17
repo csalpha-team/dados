@@ -14,6 +14,7 @@ The three ``*_incidence.json`` files and ``l2_input_schemas_examples.md``
 already living in ``gold_export/`` are exogenous configuration — this flow
 leaves them in place and packages them as-is into the final zip.
 """
+
 from __future__ import annotations
 
 import json
@@ -122,8 +123,12 @@ def export_export_coefficients() -> Path:
         payload[str(int(ano))] = [
             {
                 "produto": r["produto"],
-                "valor_fob_dolar": float(r["valor_fob_dolar"]) if r["valor_fob_dolar"] is not None else None,
-                "valor_fob_real": float(r["valor_fob_real"]) if r["valor_fob_real"] is not None else None,
+                "valor_fob_dolar": float(r["valor_fob_dolar"])
+                if r["valor_fob_dolar"] is not None
+                else None,
+                "valor_fob_real": float(r["valor_fob_real"])
+                if r["valor_fob_real"] is not None
+                else None,
             }
             for _, r in grp.iterrows()
         ]

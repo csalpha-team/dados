@@ -4,6 +4,7 @@ REFACTORING.md §4: silver/gold flows derive Postgres column types from their
 pydantic schema rather than maintaining a parallel ``{'col': 'VARCHAR(255)'}``
 dict. The DDL produced here is the format ``PostgresETL.create_table`` expects.
 """
+
 from __future__ import annotations
 
 from datetime import date, datetime

@@ -6,6 +6,7 @@ SQL-pivot it into one row per PK with one column per indicator, map
 validate against a pydantic model, and write to silver. Keeping the shared
 plumbing here avoids 13× copies of the same scaffolding.
 """
+
 from __future__ import annotations
 
 import os

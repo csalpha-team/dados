@@ -65,16 +65,24 @@ def products_weight_ratio_fix(row):
     if row["ano"] >= 2001:
         return row
 
-    if (pd.isna(row["quantidade_produzida"]) or pd.isna(row["area_colhida"])
-        or row["quantidade_produzida"] == 0 or row["area_colhida"] == 0):
+    if (
+        pd.isna(row["quantidade_produzida"])
+        or pd.isna(row["area_colhida"])
+        or row["quantidade_produzida"] == 0
+        or row["area_colhida"] == 0
+    ):
         return row
 
     if row["produto"] not in DICIONARIO_DE_PROPORCOES.keys():
         return row
 
-    quantidade_produzida = row["quantidade_produzida"] * DICIONARIO_DE_PROPORCOES[row["produto"]]
+    quantidade_produzida = (
+        row["quantidade_produzida"] * DICIONARIO_DE_PROPORCOES[row["produto"]]
+    )
 
-    rendimento_medio_producao = quantidade_produzida / row["area_colhida"] * 1000  # kg / ha
+    rendimento_medio_producao = (
+        quantidade_produzida / row["area_colhida"] * 1000
+    )  # kg / ha
 
     row["quantidade_produzida"] = quantidade_produzida
     row["rendimento_medio_producao"] = rendimento_medio_producao

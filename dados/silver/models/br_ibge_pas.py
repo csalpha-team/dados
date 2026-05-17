@@ -1,4 +1,5 @@
 """Silver schemas for IBGE PAS (Pesquisa Anual de Serviços)."""
+
 from __future__ import annotations
 
 from decimal import Decimal

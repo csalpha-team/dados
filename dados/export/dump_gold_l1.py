@@ -19,9 +19,9 @@ The payload is a Pydantic-validated hierarchical map:
 
 PEVS/PAM tables don't publish comercio_* columns; those leaves are 0.0.
 """
+
 from __future__ import annotations
 
-import json
 import os
 import zipfile
 from contextlib import contextmanager
@@ -64,10 +64,16 @@ HAS_COMERCIO = set(CENSITARIA_TABLES)
 
 
 class VetoresProducaoRuralBase(BaseModel):
-    quantidade_produzida: float = Field(..., description="Quantidade total produzida na unidade de medida")
+    quantidade_produzida: float = Field(
+        ..., description="Quantidade total produzida na unidade de medida"
+    )
     valor_producao: float = Field(..., description="Valor financeiro da produção")
-    comercio_quantidade_produzida: float = Field(..., description="Quantidade produzida destinada ao comércio")
-    comercio_valor_producao: float = Field(..., description="Valor financeiro da produção destinada ao comércio")
+    comercio_quantidade_produzida: float = Field(
+        ..., description="Quantidade produzida destinada ao comércio"
+    )
+    comercio_valor_producao: float = Field(
+        ..., description="Valor financeiro da produção destinada ao comércio"
+    )
 
 
 AnoMap = Dict[str, VetoresProducaoRuralBase]
@@ -109,7 +115,7 @@ def _query(table_name: str, has_comercio: bool) -> str:
         "ROUND(SUM(comercio_valor_producao), 2) AS comercio_valor_producao"
         if has_comercio
         else "0::numeric AS comercio_quantidade_produzida, "
-             "0::numeric AS comercio_valor_producao"
+        "0::numeric AS comercio_valor_producao"
     )
     return (
         "SELECT ano, nome_regiao_integracao, produto, "
@@ -146,7 +152,9 @@ def _accumulate(
         leaf[ano] = VetoresProducaoRuralBase(
             quantidade_produzida=float(getattr(row, "quantidade_produzida")),
             valor_producao=float(getattr(row, "valor_producao")),
-            comercio_quantidade_produzida=float(getattr(row, "comercio_quantidade_produzida")),
+            comercio_quantidade_produzida=float(
+                getattr(row, "comercio_quantidade_produzida")
+            ),
             comercio_valor_producao=float(getattr(row, "comercio_valor_producao")),
         )
 

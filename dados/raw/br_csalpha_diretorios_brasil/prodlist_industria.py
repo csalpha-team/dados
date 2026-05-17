@@ -3,6 +3,7 @@
 Source: local xlsx ``prodlist_industria.xlsx`` staged under ``tmp_data/<dataset>/input/``.
 Lands into ``$DB_RAW_ZONE.br_csalpha_diretorios_brasil.prodlist_industria``.
 """
+
 from __future__ import annotations
 
 import os
@@ -84,7 +85,11 @@ def extract() -> pd.DataFrame:
     df["id_ncm"] = df["id_ncm"].str.split("+")
     df["id_ncm"] = df["id_ncm"].apply(process_ncm_codes)
     df = df.explode("id_ncm")
-    df["id_cnae"] = df["id_cnae"].str.replace(".", "", regex=False).str.replace("-", "", regex=False)
+    df["id_cnae"] = (
+        df["id_cnae"]
+        .str.replace(".", "", regex=False)
+        .str.replace("-", "", regex=False)
+    )
     df["id_ncm"] = df["id_ncm"].str.replace(".", "", regex=False)
     df["id_prodlist"] = df["id_prodlist"].str.replace(".", "", regex=False)
     log.info("extract.read.done", rows=len(df))
@@ -121,10 +126,14 @@ def load(df: pd.DataFrame) -> None:
 def flow() -> None:
     log.info("flow.start", table=TABLE)
     try:
-        df = extract();    log.info("extract.done", rows=len(df))
-        df = validate(df); log.info("validate.done", rows=len(df))
-        df = transform(df);log.info("transform.done", rows=len(df))
-        load(df);          log.info("load.done", rows=len(df))
+        df = extract()
+        log.info("extract.done", rows=len(df))
+        df = validate(df)
+        log.info("validate.done", rows=len(df))
+        df = transform(df)
+        log.info("transform.done", rows=len(df))
+        load(df)
+        log.info("load.done", rows=len(df))
     except Exception as exc:
         log.exception("flow.error", error=str(exc))
         raise

@@ -5,6 +5,7 @@ Every flow in this dataset reads a silver table filtered to Pará municipalities
 from Base dos Dados (BigQuery), and maps the result onto the integration
 region (``RI``) dictionary in :mod:`dados.gold.pa_indexadores_producao_rural.utils`.
 """
+
 from __future__ import annotations
 
 import os
@@ -67,9 +68,7 @@ def enrich_with_regiao(data: pd.DataFrame) -> pd.DataFrame:
 def coerce_decimal(df: pd.DataFrame, cols: Iterable[str]) -> pd.DataFrame:
     for col in cols:
         if col in df.columns:
-            df[col] = df[col].apply(
-                lambda v: None if pd.isna(v) else Decimal(str(v))
-            )
+            df[col] = df[col].apply(lambda v: None if pd.isna(v) else Decimal(str(v)))
     return df
 
 

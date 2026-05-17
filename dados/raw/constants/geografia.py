@@ -6,7 +6,8 @@ from enum import Enum
 
 class UF(Enum):
     """Unidades da Federação com código IBGE, sigla e nome."""
-    #NOTE: são utilizadas para gerar os headers das requisições de ingestão da API de Geoserviços do IBGE;
+
+    # NOTE: são utilizadas para gerar os headers das requisições de ingestão da API de Geoserviços do IBGE;
 
     RO = (11, "RO", "Rondônia")
     AC = (12, "AC", "Acre")

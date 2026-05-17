@@ -5,6 +5,7 @@ setting was enabled (or whose xmin has been frozen by vacuum) return NULL.
 
 Run: uv run python -m scripts.last_update_report
 """
+
 from __future__ import annotations
 
 import os
@@ -34,9 +35,9 @@ ORDER BY schemaname, tablename;
 
 
 def last_commit(cur, schema: str, table: str):
-    q = sql.SQL(
-        "SELECT max(pg_xact_commit_timestamp(xmin)) FROM {}.{}"
-    ).format(sql.Identifier(schema), sql.Identifier(table))
+    q = sql.SQL("SELECT max(pg_xact_commit_timestamp(xmin)) FROM {}.{}").format(
+        sql.Identifier(schema), sql.Identifier(table)
+    )
     cur.execute(q)
     return cur.fetchone()[0]
 

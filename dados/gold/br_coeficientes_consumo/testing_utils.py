@@ -53,7 +53,9 @@ def construir_cenario_coeficientes_unitarios(
         )
 
     pof_df = pd.DataFrame(rows)
-    expected_keys = sorted(mapping[params["coluna_chave_mip"]].astype(str).str.strip().unique())
+    expected_keys = sorted(
+        mapping[params["coluna_chave_mip"]].astype(str).str.strip().unique()
+    )
     return pof_df, mapping, params, expected_keys
 
 
@@ -119,9 +121,11 @@ def validar_cenario_soma_coeficientes_unitaria(
     equivalence_path: Path = DEFAULT_EQUIVALENCE_PATH,
     parametros: dict | None = None,
 ) -> tuple[pd.DataFrame, list[str]]:
-    pof_df, mapping, params, expected_keys = construir_cenario_coeficientes_normalizados(
-        equivalence_path=equivalence_path,
-        parametros=parametros,
+    pof_df, mapping, params, expected_keys = (
+        construir_cenario_coeficientes_normalizados(
+            equivalence_path=equivalence_path,
+            parametros=parametros,
+        )
     )
     coefficients = construir_coeficientes_consumo(pof_df, mapping, params)
     return coefficients, expected_keys

@@ -23,7 +23,9 @@ class CoefficientIdentityTests(unittest.TestCase):
         key_column: str,
         expected_keys: list[str],
     ) -> None:
-        self.assertFalse(data.empty, "O DataFrame de coeficientes nao deveria estar vazio.")
+        self.assertFalse(
+            data.empty, "O DataFrame de coeficientes nao deveria estar vazio."
+        )
 
         actual_keys = sorted(data[key_column].dropna().astype(str).unique().tolist())
         self.assertEqual(actual_keys, sorted(expected_keys))
@@ -48,7 +50,9 @@ class CoefficientIdentityTests(unittest.TestCase):
         *,
         delta: float = 1e-9,
     ) -> None:
-        self.assertFalse(data.empty, "O DataFrame de coeficientes nao deveria estar vazio.")
+        self.assertFalse(
+            data.empty, "O DataFrame de coeficientes nao deveria estar vazio."
+        )
 
         coefficients = pd.to_numeric(data["coeff"], errors="raise")
         self.assertTrue(
@@ -71,14 +75,19 @@ class CoefficientIdentityTests(unittest.TestCase):
         self.assert_coefficients_sum_to_one(coefficients)
 
     def test_cost_base_coefficients_sum_to_one_in_balanced_scenario(self) -> None:
-        grouped_coefficients, final_coefficients, expected_expense_types, expected_keys = (
-            validar_soma_custo()
-        )
+        (
+            grouped_coefficients,
+            final_coefficients,
+            expected_expense_types,
+            expected_keys,
+        ) = validar_soma_custo()
         mapped_coefficients = grouped_coefficients[
             grouped_coefficients["tipo_despesa"].isin(expected_expense_types)
         ].copy()
 
-        self.assert_expected_keys(mapped_coefficients, "tipo_despesa", expected_expense_types)
+        self.assert_expected_keys(
+            mapped_coefficients, "tipo_despesa", expected_expense_types
+        )
         self.assert_coefficients_sum_to_one(mapped_coefficients)
         self.assert_expected_keys(final_coefficients, "tipo_coeff", expected_keys)
 

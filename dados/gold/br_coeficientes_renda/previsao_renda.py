@@ -3,7 +3,17 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, Iterable, List, Mapping, MutableMapping, Optional, Sequence, Tuple, Union
+from typing import (
+    Dict,
+    Iterable,
+    List,
+    Mapping,
+    MutableMapping,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+)
 
 import numpy as np
 import pandas as pd
@@ -67,7 +77,9 @@ class IncomeForecaster:
         required_columns = {self.year_col, *self.label_cols, *self.value_cols}
         missing_columns = required_columns.difference(cleaned.columns)
         if missing_columns:
-            raise KeyError(f"Missing columns in input DataFrame: {sorted(missing_columns)}")
+            raise KeyError(
+                f"Missing columns in input DataFrame: {sorted(missing_columns)}"
+            )
 
         cleaned = cleaned[list(required_columns)].dropna(subset=[self.year_col]).copy()
         cleaned[self.year_col] = cleaned[self.year_col].astype(int)
@@ -106,7 +118,9 @@ class IncomeForecaster:
                     row[label_name] = labels[index]
                 for column in self.value_cols:
                     value = predictions_by_column[column].get(year, np.nan)
-                    row[column] = _clean_forecast_value(value, self.config.clamp_non_negative)
+                    row[column] = _clean_forecast_value(
+                        value, self.config.clamp_non_negative
+                    )
                 rows.append(row)
 
             forecast_frames.append(pd.DataFrame(rows))
@@ -192,7 +206,10 @@ class IncomeForecaster:
         # Walk backwards from the first missing year before the observed history.
         # If the linear backcast crosses zero, keep the last positive value instead
         # of letting the series collapse to zero/negative values in older years.
-        for year in sorted({int(year) for year in targets if int(year) < first_observed_year}, reverse=True):
+        for year in sorted(
+            {int(year) for year in targets if int(year) < first_observed_year},
+            reverse=True,
+        ):
             current_value = predictions.get(year, np.nan)
             if np.isnan(current_value):
                 continue

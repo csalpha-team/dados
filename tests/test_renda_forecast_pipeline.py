@@ -4,12 +4,17 @@ import unittest
 
 import pandas as pd
 
-from dados.gold.br_coeficientes_renda.previsao_renda import ForecastConfig, IncomeForecaster
+from dados.gold.br_coeficientes_renda.previsao_renda import (
+    ForecastConfig,
+    IncomeForecaster,
+)
 from dados.gold.br_coeficientes_renda.utils import preparar_dados_coeficientes_renda
 
 
 class IncomeForecasterTests(unittest.TestCase):
-    def test_linear_backcast_repeats_last_positive_projection_after_crossing_zero(self) -> None:
+    def test_linear_backcast_repeats_last_positive_projection_after_crossing_zero(
+        self,
+    ) -> None:
         data = pd.DataFrame(
             {
                 "ano": [2007, 2008, 2009],
@@ -74,14 +79,20 @@ class RendaPreparationTests(unittest.TestCase):
             forecast_config=ForecastConfig(method="linear", clamp_non_negative=True),
         )
 
-        conta_teste = coefficients.loc[coefficients["conta_alfa"] == "ContaTeste"].copy()
+        conta_teste = coefficients.loc[
+            coefficients["conta_alfa"] == "ContaTeste"
+        ].copy()
         productivity = (
-            conta_teste.loc[conta_teste["tipo_coeff"] == "prod_mon_trab", ["ano", "coeff"]]
+            conta_teste.loc[
+                conta_teste["tipo_coeff"] == "prod_mon_trab", ["ano", "coeff"]
+            ]
             .set_index("ano")["coeff"]
             .to_dict()
         )
         salary = (
-            conta_teste.loc[conta_teste["tipo_coeff"] == "salario_medio", ["ano", "coeff"]]
+            conta_teste.loc[
+                conta_teste["tipo_coeff"] == "salario_medio", ["ano", "coeff"]
+            ]
             .set_index("ano")["coeff"]
             .to_dict()
         )
@@ -133,14 +144,20 @@ class RendaPreparationTests(unittest.TestCase):
             forecast_config=ForecastConfig(method="linear", clamp_non_negative=True),
         )
 
-        conta_teste = coefficients.loc[coefficients["conta_alfa"] == "ContaTeste"].copy()
+        conta_teste = coefficients.loc[
+            coefficients["conta_alfa"] == "ContaTeste"
+        ].copy()
         productivity = (
-            conta_teste.loc[conta_teste["tipo_coeff"] == "prod_mon_trab", ["ano", "coeff"]]
+            conta_teste.loc[
+                conta_teste["tipo_coeff"] == "prod_mon_trab", ["ano", "coeff"]
+            ]
             .set_index("ano")["coeff"]
             .to_dict()
         )
         salary = (
-            conta_teste.loc[conta_teste["tipo_coeff"] == "salario_medio", ["ano", "coeff"]]
+            conta_teste.loc[
+                conta_teste["tipo_coeff"] == "salario_medio", ["ano", "coeff"]
+            ]
             .set_index("ano")["coeff"]
             .to_dict()
         )

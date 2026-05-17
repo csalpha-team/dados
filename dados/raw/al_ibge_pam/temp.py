@@ -3,7 +3,7 @@ import os
 from dotenv import load_dotenv
 from raw.utils.postgres_interactions import PostgresETL
 
-print('Loading environment variables...')
+print("Loading environment variables...")
 # Loading .env file
 load_dotenv()
 
@@ -11,9 +11,9 @@ load_dotenv()
 ID = os.getenv("BASEDOSDADADOS_PROJECT_ID")
 ROOT_DIR = os.getenv("ROOT_DIR")
 os.chdir(ROOT_DIR)
-SCHEMA = 'br_ibge_pam'
+SCHEMA = "br_ibge_pam"
 
-print('working with lavoura temporaria table')
+print("working with lavoura temporaria table")
 
 query = """
 select
@@ -34,39 +34,36 @@ where id_municipio IN (
 
 """
 
-print('Downloading data...')
+print("Downloading data...")
 
-df = bd.read_sql(
-    query = query,
-    billing_project_id=ID
-)
+df = bd.read_sql(query=query, billing_project_id=ID)
 
-print('loading data to postgres')
+print("loading data to postgres")
 
 with PostgresETL(
-  host='localhost', 
-  database=os.getenv("DB_RAW_ZONE"), 
-  user=os.getenv("POSTGRES_USER"), 
-  password=os.getenv("POSTGRES_PASSWORD"),
-  schema=SCHEMA) as db:
-    
+    host="localhost",
+    database=os.getenv("DB_RAW_ZONE"),
+    user=os.getenv("POSTGRES_USER"),
+    password=os.getenv("POSTGRES_PASSWORD"),
+    schema=SCHEMA,
+) as db:
     columns = {
-      'ano' : 'INTEGER',
-      'id_municipio' : 'VARCHAR(7)',
-      'produto' : 'VARCHAR(100)',
-      'area_plantada' : 'FLOAT',
-      'area_colhida' : 'FLOAT',
-      'quantidade_produzida' : 'FLOAT',
-      'rendimento_medio_producao' : 'FLOAT',
-      'valor_producao' : 'FLOAT',
+        "ano": "INTEGER",
+        "id_municipio": "VARCHAR(7)",
+        "produto": "VARCHAR(100)",
+        "area_plantada": "FLOAT",
+        "area_colhida": "FLOAT",
+        "quantidade_produzida": "FLOAT",
+        "rendimento_medio_producao": "FLOAT",
+        "valor_producao": "FLOAT",
     }
-          
-    db.create_table('lavoura_temporaria', columns, if_not_exists=True)
-    
-    db.load_data('lavoura_temporaria', df, if_exists='replace')
+
+    db.create_table("lavoura_temporaria", columns, if_not_exists=True)
+
+    db.load_data("lavoura_temporaria", df, if_exists="replace")
 
 
-print('Data loaded')
+print("Data loaded")
 del df
 
 query = """
@@ -89,36 +86,33 @@ where id_municipio IN (
 
 """
 
-print('Downloading data...')
+print("Downloading data...")
 
-df = bd.read_sql(
-    query = query,
-    billing_project_id=ID
-)
+df = bd.read_sql(query=query, billing_project_id=ID)
 
-print('loading data to postgres')
+print("loading data to postgres")
 
 with PostgresETL(
-  host='localhost', 
-  database=os.getenv("DB_RAW_ZONE"), 
-  user=os.getenv("POSTGRES_USER"), 
-  password=os.getenv("POSTGRES_PASSWORD"),
-  schema=SCHEMA) as db:
-    
+    host="localhost",
+    database=os.getenv("DB_RAW_ZONE"),
+    user=os.getenv("POSTGRES_USER"),
+    password=os.getenv("POSTGRES_PASSWORD"),
+    schema=SCHEMA,
+) as db:
     columns = {
-      'ano' : 'INTEGER',
-      'id_municipio' : 'VARCHAR(7)',
-      'produto' : 'VARCHAR(100)',
-      'area_destinada_colheita' : 'FLOAT',
-      'area_colhida' : 'FLOAT',
-      'quantidade_produzida' : 'FLOAT',
-      'rendimento_medio_producao' : 'FLOAT',
-      'valor_producao' : 'FLOAT',
+        "ano": "INTEGER",
+        "id_municipio": "VARCHAR(7)",
+        "produto": "VARCHAR(100)",
+        "area_destinada_colheita": "FLOAT",
+        "area_colhida": "FLOAT",
+        "quantidade_produzida": "FLOAT",
+        "rendimento_medio_producao": "FLOAT",
+        "valor_producao": "FLOAT",
     }
-          
-    db.create_table('lavoura_permanente', columns, if_not_exists=True)
-    
-    db.load_data('lavoura_permanente', df, if_exists='replace')
+
+    db.create_table("lavoura_permanente", columns, if_not_exists=True)
+
+    db.load_data("lavoura_permanente", df, if_exists="replace")
 
 
-print('Data loaded')
+print("Data loaded")

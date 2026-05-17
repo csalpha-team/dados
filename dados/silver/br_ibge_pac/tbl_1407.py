@@ -4,6 +4,7 @@ Pivots the long-form raw landing into one row per ``(ano, unidade_geografica,
 divisao_grupo_cnae_2)`` with one column per indicator, and lands the result at
 ``$DB_SILVER_ZONE.br_ibge_pac.tbl_1407``.
 """
+
 from __future__ import annotations
 
 import os
@@ -29,16 +30,11 @@ NULL_TOKENS = ("..", "...", "-", "X")
 COLUMN_RENAME = {
     "nome_categoria_comercio": "divisao_grupo_cnae_2",
     "nome_categoria_regiao": "unidade_geografica",
-    "Gastos com salários, retiradas e outras remunerações em empresas comerciais":
-        "valor_gastos_salarios_remuneracoes",
-    "Margem de comercialização em empresas comerciais":
-        "margem_comercializacao",
-    "Número de unidades locais com receita de revenda":
-        "quantidade_unidades_empresas_receita_revenda",
-    "Pessoal ocupado em 31/12 em empresas comerciais":
-        "pessoal_ocupado_31_12",
-    "Receita bruta de revenda de mercadorias":
-        "valor_receita_bruta_revenda",
+    "Gastos com salários, retiradas e outras remunerações em empresas comerciais": "valor_gastos_salarios_remuneracoes",
+    "Margem de comercialização em empresas comerciais": "margem_comercializacao",
+    "Número de unidades locais com receita de revenda": "quantidade_unidades_empresas_receita_revenda",
+    "Pessoal ocupado em 31/12 em empresas comerciais": "pessoal_ocupado_31_12",
+    "Receita bruta de revenda de mercadorias": "valor_receita_bruta_revenda",
 }
 
 log = get_logger(dataset_id=DATASET_ID, zone=ZONE)
@@ -90,10 +86,7 @@ def validate(df: pd.DataFrame) -> pd.DataFrame:
         log.error("validate.error", reason="duplicate_pk", count=int(dupes.sum()))
         raise ValueError(f"Found {int(dupes.sum())} rows duplicating PK {PK_COLS}")
 
-    decimal_cols = [
-        c for c in df.columns
-        if c not in PK_COLS
-    ]
+    decimal_cols = [c for c in df.columns if c not in PK_COLS]
     for col in decimal_cols:
         df[col] = df[col].apply(lambda v: None if pd.isna(v) else Decimal(str(v)))
 
@@ -118,10 +111,14 @@ def load(df: pd.DataFrame) -> None:
 def flow() -> None:
     log.info("flow.start", table=TABLE)
     try:
-        df = extract();    log.info("extract.done", rows=len(df))
-        df = transform(df);log.info("transform.done", rows=len(df))
-        df = validate(df); log.info("validate.done", rows=len(df))
-        load(df);          log.info("load.done", rows=len(df))
+        df = extract()
+        log.info("extract.done", rows=len(df))
+        df = transform(df)
+        log.info("transform.done", rows=len(df))
+        df = validate(df)
+        log.info("validate.done", rows=len(df))
+        load(df)
+        log.info("load.done", rows=len(df))
     except Exception as exc:
         log.exception("flow.error", error=str(exc))
         raise

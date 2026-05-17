@@ -4,6 +4,7 @@ Source: IBGE Agregados API, table 1612, classification 81 (temporary crops).
 Lands one row per (municipio, produto, ano, variavel) into
 ``$DB_RAW_ZONE.al_ibge_pam.lavoura_temporaria``.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -32,9 +33,18 @@ API_URL_BASE = (
 )
 AGREGADO = "1612"
 PERIODOS = "all"
-VARIAVEIS = "|".join([
-    "109", "1000109", "216", "1000216", "214", "112", "215", "1000215",
-])
+VARIAVEIS = "|".join(
+    [
+        "109",
+        "1000109",
+        "216",
+        "1000216",
+        "214",
+        "112",
+        "215",
+        "1000215",
+    ]
+)
 NIVEL_GEOGRAFICO = "N6"
 CLASSIFICACAO = "81[all]"
 ID_PRODUTO_CLASSIFICACAO = "81"
@@ -71,7 +81,12 @@ def extract() -> pd.DataFrame:
     )
     log.info("extract.municipios.done", rows=len(municipios))
 
-    log.info("extract.api.start", agregado=AGREGADO, variaveis=VARIAVEIS, output_dir=str(input_dir))
+    log.info(
+        "extract.api.start",
+        agregado=AGREGADO,
+        variaveis=VARIAVEIS,
+        output_dir=str(input_dir),
+    )
     asyncio.run(
         async_crawler_ibge_municipio(
             year=PERIODOS,
@@ -138,10 +153,14 @@ def load(df: pd.DataFrame) -> None:
 def flow() -> None:
     log.info("flow.start", table=TABLE)
     try:
-        df = extract();    log.info("extract.done", rows=len(df))
-        df = validate(df); log.info("validate.done", rows=len(df))
-        df = transform(df);log.info("transform.done", rows=len(df))
-        load(df);          log.info("load.done", rows=len(df))
+        df = extract()
+        log.info("extract.done", rows=len(df))
+        df = validate(df)
+        log.info("validate.done", rows=len(df))
+        df = transform(df)
+        log.info("transform.done", rows=len(df))
+        load(df)
+        log.info("load.done", rows=len(df))
     except Exception as exc:
         log.exception("flow.error", error=str(exc))
         raise

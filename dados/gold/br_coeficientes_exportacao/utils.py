@@ -53,7 +53,9 @@ def construir_consulta_exportacao(
 ) -> str:
     colunas_origem = listar_colunas_tabela(db, esquema_origem, tabela_origem)
     if not colunas_origem:
-        raise ValueError(f"Tabela de origem nao encontrada: {esquema_origem}.{tabela_origem}")
+        raise ValueError(
+            f"Tabela de origem nao encontrada: {esquema_origem}.{tabela_origem}"
+        )
 
     colunas_obrigatorias_origem = {"ano", "id_ncm", "sigla_uf_ncm", "valor_fob_dolar"}
     colunas_faltantes_origem = sorted(colunas_obrigatorias_origem - colunas_origem)
@@ -77,8 +79,7 @@ def construir_consulta_exportacao(
             )
 
         clausula_join = (
-            f"left join {esquema_ncm}.{tabela_ncm} as n "
-            "on c.id_ncm = n.id_ncm"
+            f"left join {esquema_ncm}.{tabela_ncm} as n on c.id_ncm = n.id_ncm"
         )
         expressao_nome = "nullif(trim(n.nome_ncm_portugues), '')"
 
@@ -99,10 +100,14 @@ def construir_consulta_exportacao(
 
 def _construir_anos_previsao(valor_configuracao: Any) -> list[int]:
     if isinstance(valor_configuracao, dict):
-        inicio = int(valor_configuracao.get("start", valor_configuracao.get("inicio", 1995)))
+        inicio = int(
+            valor_configuracao.get("start", valor_configuracao.get("inicio", 1995))
+        )
         fim = int(valor_configuracao.get("end", valor_configuracao.get("fim", 2023)))
         if fim < inicio:
-            raise ValueError("anos_previsao.fim deve ser maior ou igual a anos_previsao.inicio")
+            raise ValueError(
+                "anos_previsao.fim deve ser maior ou igual a anos_previsao.inicio"
+            )
         return list(range(inicio, fim + 1))
 
     if isinstance(valor_configuracao, list):
@@ -125,7 +130,9 @@ def carregar_parametros_exportacao(
         config.get("products_preparations", {}),
     )
     if not isinstance(preparacoes_produtos_raw, dict):
-        raise ValueError("preparacoes_produtos deve ser um dicionario no arquivo de configuracao")
+        raise ValueError(
+            "preparacoes_produtos deve ser um dicionario no arquivo de configuracao"
+        )
 
     preparacoes_produtos: dict[str, list[str]] = {}
     for produto, nomes_ncm in preparacoes_produtos_raw.items():
@@ -144,12 +151,16 @@ def carregar_parametros_exportacao(
         config.get("specific_shares", []),
     )
     if not isinstance(participacoes_especificas_raw, list):
-        raise ValueError("participacoes_especificas deve ser uma lista no arquivo de configuracao")
+        raise ValueError(
+            "participacoes_especificas deve ser uma lista no arquivo de configuracao"
+        )
 
     participacoes_especificas: dict[tuple[str, str], float] = {}
     for item in participacoes_especificas_raw:
         if not isinstance(item, dict):
-            raise ValueError("Cada item de participacoes_especificas deve ser um objeto")
+            raise ValueError(
+                "Cada item de participacoes_especificas deve ser um objeto"
+            )
 
         produto = str(item.get("produto", item.get("product", ""))).strip()
         nome_ncm = str(item.get("nome_ncm", item.get("ncm_name", ""))).strip()
@@ -162,7 +173,9 @@ def carregar_parametros_exportacao(
 
         participacao = float(item.get("participacao", item.get("share", 0.0)))
         if participacao < 0 or participacao > 1:
-            raise ValueError("Os valores de participacao devem estar no intervalo [0, 1]")
+            raise ValueError(
+                "Os valores de participacao devem estar no intervalo [0, 1]"
+            )
 
         participacoes_especificas[(produto, nome_ncm)] = participacao
 
@@ -171,12 +184,16 @@ def carregar_parametros_exportacao(
     )
 
     taxa_cambio_brl_por_usd = float(
-        config.get("taxa_cambio_brl_por_usd", config.get("exchange_rate_brl_per_usd", 1.0))
+        config.get(
+            "taxa_cambio_brl_por_usd", config.get("exchange_rate_brl_per_usd", 1.0)
+        )
     )
     if taxa_cambio_brl_por_usd < 0:
         raise ValueError("taxa_cambio_brl_por_usd deve ser nao-negativa")
 
-    uf_alvo = str(config.get("uf_alvo", config.get("target_state", "PA"))).strip().upper()
+    uf_alvo = (
+        str(config.get("uf_alvo", config.get("target_state", "PA"))).strip().upper()
+    )
 
     return (
         preparacoes_produtos,
@@ -259,7 +276,9 @@ def prever_exportacoes_linear(
         return pd.DataFrame(columns=colunas_necessarias)
 
     dados[coluna_ano] = dados[coluna_ano].astype(int)
-    agrupado = dados.groupby([coluna_ano, *colunas_rotulo], as_index=False)[coluna_valor].sum()
+    agrupado = dados.groupby([coluna_ano, *colunas_rotulo], as_index=False)[
+        coluna_valor
+    ].sum()
 
     linhas_previsao: list[dict[str, Any]] = []
     for rotulos, grupo in agrupado.groupby(list(colunas_rotulo), dropna=False):
@@ -306,15 +325,21 @@ def distribuir_exportacoes_por_produto(
     participacoes_especificas: Optional[Mapping[Tuple[str, str], float]] = None,
 ) -> pd.DataFrame:
     if coluna_ncm not in exportacoes_por_ncm.columns:
-        raise KeyError(f"Coluna '{coluna_ncm}' nao encontrada no dataframe de exportacoes")
+        raise KeyError(
+            f"Coluna '{coluna_ncm}' nao encontrada no dataframe de exportacoes"
+        )
 
     colunas_metricas = [
-        coluna for coluna in exportacoes_por_ncm.columns if coluna not in {coluna_ncm, coluna_id_ncm}
+        coluna
+        for coluna in exportacoes_por_ncm.columns
+        if coluna not in {coluna_ncm, coluna_id_ncm}
     ]
 
     dados_numericos = exportacoes_por_ncm.copy()
     for coluna in colunas_metricas:
-        dados_numericos[coluna] = pd.to_numeric(dados_numericos[coluna], errors="coerce")
+        dados_numericos[coluna] = pd.to_numeric(
+            dados_numericos[coluna], errors="coerce"
+        )
     dados_numericos = dados_numericos.fillna(
         {coluna: valor_preenchimento for coluna in colunas_metricas}
     )
@@ -326,7 +351,9 @@ def distribuir_exportacoes_por_produto(
 
     participacoes_normalizadas = {
         (str(produto), str(nome_ncm)): participacao
-        for (produto, nome_ncm), participacao in (participacoes_especificas or {}).items()
+        for (produto, nome_ncm), participacao in (
+            participacoes_especificas or {}
+        ).items()
     }
 
     linhas_distribuidas: list[dict[str, Any]] = []
@@ -357,14 +384,21 @@ def distribuir_exportacoes_por_produto(
                 )
 
             produtos_restantes = [
-                produto for produto in produtos_relacionados if produto not in participacoes_definidas
+                produto
+                for produto in produtos_relacionados
+                if produto not in participacoes_definidas
             ]
             participacao_restante_total = max(0.0, 1.0 - total_participacoes_definidas)
             if produtos_restantes and participacao_restante_total > 0:
-                participacao_restante = participacao_restante_total / len(produtos_restantes)
+                participacao_restante = participacao_restante_total / len(
+                    produtos_restantes
+                )
                 for produto in produtos_restantes:
                     linhas_distribuidas.append(
-                        {"produto": produto, **(valores * participacao_restante).to_dict()}
+                        {
+                            "produto": produto,
+                            **(valores * participacao_restante).to_dict(),
+                        }
                     )
         else:
             participacao_igual = 1.0 / len(produtos_relacionados)
@@ -375,7 +409,9 @@ def distribuir_exportacoes_por_produto(
                 )
 
     if not linhas_distribuidas:
-        return pd.DataFrame(columns=colunas_metricas, index=pd.Index([], name="produto"))
+        return pd.DataFrame(
+            columns=colunas_metricas, index=pd.Index([], name="produto")
+        )
 
     return (
         pd.DataFrame(linhas_distribuidas)
@@ -395,7 +431,9 @@ def preparar_dados_coeficientes_exportacao(
     uf_alvo: str,
 ) -> pd.DataFrame:
     colunas_faltantes = [
-        coluna for coluna in COLUNAS_OBRIGATORIAS_EXPORTACAO if coluna not in exportacoes_df.columns
+        coluna
+        for coluna in COLUNAS_OBRIGATORIAS_EXPORTACAO
+        if coluna not in exportacoes_df.columns
     ]
     if colunas_faltantes:
         raise ValueError(
@@ -407,11 +445,17 @@ def preparar_dados_coeficientes_exportacao(
 
     dados["ano"] = pd.to_numeric(dados["ano"], errors="coerce")
     dados["valor_fob_dolar"] = pd.to_numeric(dados["valor_fob_dolar"], errors="coerce")
-    dados["nome_ncm_portugues"] = dados["nome_ncm_portugues"].astype("string").str.strip()
+    dados["nome_ncm_portugues"] = (
+        dados["nome_ncm_portugues"].astype("string").str.strip()
+    )
     dados["id_ncm"] = dados["id_ncm"].astype("string").str.strip()
-    dados["sigla_uf_ncm"] = dados["sigla_uf_ncm"].astype("string").str.strip().str.upper()
+    dados["sigla_uf_ncm"] = (
+        dados["sigla_uf_ncm"].astype("string").str.strip().str.upper()
+    )
 
-    dados = dados.dropna(subset=["ano", "valor_fob_dolar", "nome_ncm_portugues", "id_ncm"])
+    dados = dados.dropna(
+        subset=["ano", "valor_fob_dolar", "nome_ncm_portugues", "id_ncm"]
+    )
 
     if uf_alvo:
         dados = dados[dados["sigla_uf_ncm"] == uf_alvo]
@@ -420,9 +464,9 @@ def preparar_dados_coeficientes_exportacao(
         return pd.DataFrame(columns=COLUNAS_FINAIS)
 
     dados["ano"] = dados["ano"].astype(int)
-    agrupado = dados.groupby(
-        ["ano", "id_ncm", "nome_ncm_portugues"], as_index=False
-    )["valor_fob_dolar"].sum()
+    agrupado = dados.groupby(["ano", "id_ncm", "nome_ncm_portugues"], as_index=False)[
+        "valor_fob_dolar"
+    ].sum()
 
     previsao_df = prever_exportacoes_linear(
         agrupado,
@@ -491,7 +535,9 @@ def construir_json_coeficientes_exportacao(
 
     payload: dict[str, list[dict[str, Any]]] = {}
     for ano, dados_ano in coeficientes_exportacao.groupby("ano", as_index=False):
-        payload[str(int(ano))] = dados_ano.drop(columns=["ano"]).to_dict(orient="records")
+        payload[str(int(ano))] = dados_ano.drop(columns=["ano"]).to_dict(
+            orient="records"
+        )
 
     return payload
 
@@ -591,7 +637,9 @@ def prepare_export_coefficients_data(
     )
 
 
-def build_export_coefficients_json(export_coefficients: pd.DataFrame) -> dict[str, list[dict[str, Any]]]:
+def build_export_coefficients_json(
+    export_coefficients: pd.DataFrame,
+) -> dict[str, list[dict[str, Any]]]:
     return construir_json_coeficientes_exportacao(export_coefficients)
 
 

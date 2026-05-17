@@ -4,6 +4,7 @@ Convention (see REFACTORING.md §4.1): every pipeline writes temp data under
 ``tmp_data/<dataset_id>/{input,output}/`` at the repo root. Override the root
 via the ``TMP_DATA_DIR`` env var.
 """
+
 from __future__ import annotations
 
 import os

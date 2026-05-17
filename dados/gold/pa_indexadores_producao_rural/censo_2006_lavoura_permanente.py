@@ -1,4 +1,5 @@
 """Gold flow: pa_indexadores_producao_rural — Censo Agro 2006, lavoura permanente."""
+
 from __future__ import annotations
 
 import pandas as pd
@@ -23,8 +24,13 @@ SILVER_TABLE = "tbl_2518_2006"
 
 MODEL = PaIndexadoresLavouraPermanenteCenso2006
 NON_NUMERIC = {
-    "ano", "id_municipio", "nome", "nome_regiao_integracao", "sigla_uf",
-    "tipo_agricultura", "produto",
+    "ano",
+    "id_municipio",
+    "nome",
+    "nome_regiao_integracao",
+    "sigla_uf",
+    "tipo_agricultura",
+    "produto",
 }
 NUMERIC_COLS = [c for c in MODEL.model_fields if c not in NON_NUMERIC]
 
@@ -78,10 +84,14 @@ def load(df: pd.DataFrame) -> None:
 def flow() -> None:
     log.info("flow.start", table=TABLE)
     try:
-        df = extract();    log.info("extract.done", rows=len(df), table=TABLE)
-        df = transform(df);log.info("transform.done", rows=len(df), table=TABLE)
-        df = validate(df); log.info("validate.done", rows=len(df), table=TABLE)
-        load(df);          log.info("load.done", rows=len(df), table=TABLE)
+        df = extract()
+        log.info("extract.done", rows=len(df), table=TABLE)
+        df = transform(df)
+        log.info("transform.done", rows=len(df), table=TABLE)
+        df = validate(df)
+        log.info("validate.done", rows=len(df), table=TABLE)
+        load(df)
+        log.info("load.done", rows=len(df), table=TABLE)
     except Exception as exc:
         log.exception("flow.error", error=str(exc), table=TABLE)
         raise
