@@ -29,7 +29,6 @@ FLOWS=(
   dados.gold.pa_servicos_industria_comercio.pas_servicos
   dados.gold.pa_servicos_industria_comercio.pia_industrias
   dados.gold.br_despesas_familiares.pof_2018_despesas_familiares_situacao_domicilio
-  dados.gold.brasil_despesas_familiares.pof_2018_despesas_familiares_situacao_domicilio
   dados.gold.br_servicos.pas_servicos
   dados.gold.pa_coeficientes_custo.preparacao_camada_custo
   dados.gold.br_coeficientes_consumo.preparacao_camada_consumo
