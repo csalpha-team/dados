@@ -7,7 +7,7 @@ import os
 import pandas as pd
 from dotenv import load_dotenv
 
-from dados.gold.models.pa_indexadores_valor_producao_rural import (
+from dados.gold.pa_indexadores_valor_producao_rural.models import (
     PaIndexadoresPessoalOcupadoCenso2017,
 )
 from dados.gold.pa_indexadores_producao_rural._common import (

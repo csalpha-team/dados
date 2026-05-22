@@ -19,7 +19,7 @@ from dados.gold.br_coeficientes_renda.utils import (
     construir_tabela_saida_renda,
     preparar_dados_coeficientes_renda,
 )
-from dados.gold.models.br_coeficientes_renda import (
+from dados.gold.br_coeficientes_renda.models import (
     BrCoeficientesRendaPreparacaoCamadaRenda,
     BrCoeficientesRendaRendaProdutividade,
     BrCoeficientesRendaRendaSalario,

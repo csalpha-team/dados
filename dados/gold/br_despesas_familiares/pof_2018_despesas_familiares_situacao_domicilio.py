@@ -11,7 +11,7 @@ from decimal import Decimal
 import pandas as pd
 from dotenv import load_dotenv
 
-from dados.gold.models.br_despesas_familiares import (
+from dados.gold.br_despesas_familiares.models import (
     BrDespesasFamiliaresPof2018DespesasFamiliaresSituacaoDomicilio,
 )
 from dados.raw.utils.postgres_interactions import PostgresETL

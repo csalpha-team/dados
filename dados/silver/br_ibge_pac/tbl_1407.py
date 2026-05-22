@@ -14,7 +14,7 @@ import pandas as pd
 from dotenv import load_dotenv
 
 from dados.raw.utils.postgres_interactions import PostgresETL
-from dados.silver.models.br_ibge_pac import BrIbgePacTbl1407
+from dados.silver.br_ibge_pac.models import BrIbgePacTbl1407
 from dados.utils.logging import get_logger
 from dados.utils.pydantic_postgres import pydantic_to_postgres_columns
 

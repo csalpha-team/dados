@@ -20,7 +20,7 @@ from dados.gold.br_coeficientes_exportacao.utils import (
     preparar_dados_coeficientes_exportacao,
     salvar_json_coeficientes_exportacao,
 )
-from dados.gold.models.br_coeficientes_exportacao import (
+from dados.gold.br_coeficientes_exportacao.models import (
     BrCoeficientesExportacaoPreparacaoCamadaExportacao,
 )
 from dados.raw.utils.postgres_interactions import PostgresETL

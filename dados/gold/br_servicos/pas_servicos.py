@@ -8,7 +8,7 @@ from decimal import Decimal
 import pandas as pd
 from dotenv import load_dotenv
 
-from dados.gold.models.br_servicos import BrServicosPasServicos
+from dados.gold.br_servicos.models import BrServicosPasServicos
 from dados.raw.utils.postgres_interactions import PostgresETL
 from dados.utils.logging import get_logger
 from dados.utils.pydantic_postgres import pydantic_to_postgres_columns

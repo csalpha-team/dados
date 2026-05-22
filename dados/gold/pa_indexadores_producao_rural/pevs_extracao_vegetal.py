@@ -5,7 +5,7 @@ from __future__ import annotations
 import pandas as pd
 from dotenv import load_dotenv
 
-from dados.gold.models.pa_indexadores_producao_rural import (
+from dados.gold.pa_indexadores_producao_rural.models import (
     PaIndexadoresExtracaoVegetalPevs,
 )
 from dados.gold.pa_indexadores_producao_rural._common import (

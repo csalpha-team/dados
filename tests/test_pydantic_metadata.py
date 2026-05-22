@@ -2,9 +2,9 @@
 
 REFACTORING.md §4 mandates that every column carries a Python type, a
 ``description`` and a ``unit`` (via ``json_schema_extra``). This test walks
-``dados.silver.models`` and ``dados.gold.models``, imports each module, and
-fails if any ``BaseModel`` subclass has a field missing either piece of
-metadata.
+the ``models`` submodule inside each dataset package under ``dados.silver``
+and ``dados.gold``, and fails if any ``BaseModel`` subclass has a field
+missing either piece of metadata.
 """
 
 from __future__ import annotations
@@ -16,12 +16,16 @@ import pytest
 from pydantic import BaseModel
 
 
-def _iter_models(package_name: str):
-    pkg = importlib.import_module(package_name)
+def _iter_models(zone_package: str):
+    pkg = importlib.import_module(zone_package)
     for mod_info in pkgutil.iter_modules(pkg.__path__):
-        if mod_info.name.startswith("_"):
+        if not mod_info.ispkg or mod_info.name.startswith("_"):
             continue
-        module = importlib.import_module(f"{package_name}.{mod_info.name}")
+        models_mod_name = f"{zone_package}.{mod_info.name}.models"
+        try:
+            module = importlib.import_module(models_mod_name)
+        except ModuleNotFoundError:
+            continue
         for attr in vars(module).values():
             if (
                 isinstance(attr, type)
@@ -32,9 +36,9 @@ def _iter_models(package_name: str):
                 yield module.__name__, attr
 
 
-def _collect_violations(package_name: str) -> list[str]:
+def _collect_violations(zone_package: str) -> list[str]:
     violations: list[str] = []
-    for module_name, model in _iter_models(package_name):
+    for module_name, model in _iter_models(zone_package):
         for field_name, field in model.model_fields.items():
             extra = field.json_schema_extra or {}
             if not field.description:
@@ -48,7 +52,7 @@ def _collect_violations(package_name: str) -> list[str]:
     return violations
 
 
-@pytest.mark.parametrize("package", ["dados.silver.models", "dados.gold.models"])
-def test_models_declare_description_and_unit(package: str) -> None:
-    violations = _collect_violations(package)
+@pytest.mark.parametrize("zone_package", ["dados.silver", "dados.gold"])
+def test_models_declare_description_and_unit(zone_package: str) -> None:
+    violations = _collect_violations(zone_package)
     assert not violations, "Missing metadata:\n  " + "\n  ".join(violations)

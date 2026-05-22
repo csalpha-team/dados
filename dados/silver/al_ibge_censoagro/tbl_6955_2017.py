@@ -14,7 +14,7 @@ from dados.silver.al_ibge_censoagro._common import (
     download_raw,
     write_silver,
 )
-from dados.silver.models.al_ibge_censoagro import AlIbgeCensoagroTbl69552017
+from dados.silver.al_ibge_censoagro.models import AlIbgeCensoagroTbl69552017
 from dados.silver.constants.produtos import dicionario_produtos_censo_6955_2518
 from dados.silver.utils import fix_ibge_digits
 from dados.utils.logging import get_logger

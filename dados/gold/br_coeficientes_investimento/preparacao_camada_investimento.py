@@ -20,7 +20,7 @@ from dotenv import load_dotenv
 from dados.gold.br_coeficientes_investimento.utils import (
     carregar_coeficientes_investimento,
 )
-from dados.gold.models.br_coeficientes_investimento import (
+from dados.gold.br_coeficientes_investimento.models import (
     BrCoeficientesInvestimentoCoeficientesInvestimento,
 )
 from dados.raw.utils.postgres_interactions import PostgresETL

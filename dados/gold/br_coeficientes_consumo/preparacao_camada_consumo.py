@@ -16,7 +16,7 @@ from dotenv import load_dotenv
 from dados.gold.br_coeficientes_consumo.utils import (
     construir_coeficientes_consumo,
 )
-from dados.gold.models.br_coeficientes_consumo import (
+from dados.gold.br_coeficientes_consumo.models import (
     BrCoeficientesConsumoPreparacaoCamadaConsumo,
 )
 from dados.raw.utils.postgres_interactions import PostgresETL
