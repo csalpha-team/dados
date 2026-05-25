@@ -45,7 +45,7 @@ class IncomeForecasterTests(unittest.TestCase):
 
 
 class RendaPreparationTests(unittest.TestCase):
-    def test_preparacao_usa_forecaster_nas_variaveis_brutas(self) -> None:
+    def test_preparacao_retroprojeta_coeficientes_com_cagr_ancorado(self) -> None:
         pia_df = pd.DataFrame(
             columns=[
                 "ano",
@@ -98,13 +98,13 @@ class RendaPreparationTests(unittest.TestCase):
         )
 
         self.assertAlmostEqual(productivity[2005], 50.0)
-        self.assertAlmostEqual(productivity[2006], 50.0)
+        self.assertAlmostEqual(productivity[2006], 70.71067811865476)
         self.assertAlmostEqual(productivity[2007], 100.0)
         self.assertAlmostEqual(productivity[2008], 150.0)
         self.assertAlmostEqual(productivity[2009], 200.0)
 
         self.assertAlmostEqual(salary[2005], 5.0)
-        self.assertAlmostEqual(salary[2006], 5.0)
+        self.assertAlmostEqual(salary[2006], 7.0710678118654755)
         self.assertAlmostEqual(salary[2007], 10.0)
         self.assertAlmostEqual(salary[2008], 15.0)
         self.assertAlmostEqual(salary[2009], 20.0)

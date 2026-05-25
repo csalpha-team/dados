@@ -323,6 +323,25 @@ def _projetar_variaveis_brutas(
     )
 
 
+def _calcular_cagr_serie(observed: pd.Series) -> float:
+    positive_observed = observed[observed > 0].dropna()
+    if positive_observed.size < 2:
+        return 0.0
+
+    first_year = int(positive_observed.index[0])
+    last_year = int(positive_observed.index[-1])
+    span = last_year - first_year
+    if span <= 0:
+        return 0.0
+
+    first_value = float(positive_observed.iloc[0])
+    last_value = float(positive_observed.iloc[-1])
+    if first_value <= 0 or last_value <= 0:
+        return 0.0
+
+    return float((last_value / first_value) ** (1.0 / span) - 1.0)
+
+
 def _completar_coeficientes_finais(
     coefficients_df: pd.DataFrame,
     years: list[int],
@@ -357,9 +376,20 @@ def _completar_coeficientes_finais(
         last_year = int(observed.index[-1])
         first_value = float(observed.iloc[0])
         last_value = float(observed.iloc[-1])
+        cagr = _calcular_cagr_serie(observed)
 
-        series.loc[series.index < first_year] = first_value
-        series.loc[series.index > last_year] = last_value
+        for year in series.index[series.index < first_year]:
+            if first_value > 0 and cagr > -1.0:
+                series.loc[year] = first_value / ((1.0 + cagr) ** (first_year - int(year)))
+            else:
+                series.loc[year] = first_value
+
+        for year in series.index[series.index > last_year]:
+            if last_value > 0 and cagr > -1.0:
+                series.loc[year] = last_value * ((1.0 + cagr) ** (int(year) - last_year))
+            else:
+                series.loc[year] = last_value
+
         series = series.ffill().bfill()
 
         if clamp_non_negative:
@@ -430,47 +460,45 @@ def preparar_dados_coeficientes_renda(
     pac_cleaned = _forcar_colunas_numericas(pac_df, PAC_VALUE_COLUMNS)
     pac_mapping = sector_mappings.get("PAC_COMERCIO", {})
     pia_mapping = sector_mappings.get("PIA_INDUSTRIA", {})
+    target_years = sorted({int(year) for year in years})
 
-    pia_forecast = _projetar_variaveis_brutas(
+    pia_observed_years = _listar_anos_observados(pia_cleaned)
+    pac_observed_years = _listar_anos_observados(pac_cleaned)
+
+    pia_observed_coefficients = _construir_coeficientes_observados(
         pia_cleaned,
-        years=years,
-        value_columns=PIA_VALUE_COLUMNS,
-        forecast_config=forecast_config,
-    )
-    pac_forecast = _projetar_variaveis_brutas(
-        pac_cleaned,
-        years=years,
-        value_columns=PAC_VALUE_COLUMNS,
-        forecast_config=forecast_config,
-    )
-
-    pia_coefficients = _construir_coeficientes_por_anos(
-        pia_forecast,
-        years=sorted({int(year) for year in years}),
+        observed_years=[year for year in pia_observed_years if year in target_years],
         mapping=pia_mapping,
         numeric_columns=PIA_VALUE_COLUMNS,
         numerator_column="valor_bruto_producao_industrial",
         salary_column="valor_salarios_remuneracoes",
     )
-    pac_coefficients = _construir_coeficientes_por_anos(
-        pac_forecast,
-        years=sorted({int(year) for year in years}),
+    pac_observed_coefficients = _construir_coeficientes_observados(
+        pac_cleaned,
+        observed_years=[year for year in pac_observed_years if year in target_years],
         mapping=pac_mapping,
         numeric_columns=PAC_VALUE_COLUMNS,
         numerator_column="valor_receita_bruta_revenda",
         salary_column="valor_gastos_salarios_remuneracoes",
     )
 
-    projected_frames = [
-        frame for frame in [pia_coefficients, pac_coefficients] if not frame.empty
+    observed_frames = [
+        frame
+        for frame in [pia_observed_coefficients, pac_observed_coefficients]
+        if not frame.empty
     ]
-    if projected_frames:
-        projected_coefficients = pd.concat(projected_frames, ignore_index=True)
+    if observed_frames:
+        observed_coefficients = pd.concat(observed_frames, ignore_index=True)
+        completed_coefficients = _completar_coeficientes_finais(
+            observed_coefficients,
+            years=target_years,
+            clamp_non_negative=forecast_config.clamp_non_negative,
+        )
     else:
-        projected_coefficients = pd.DataFrame(columns=FINAL_COLUMNS)
+        completed_coefficients = pd.DataFrame(columns=FINAL_COLUMNS)
     aa_coefficients = _construir_coeficientes_aa(years, aa_production_values)
 
-    final = pd.concat([projected_coefficients, aa_coefficients], ignore_index=True)
+    final = pd.concat([completed_coefficients, aa_coefficients], ignore_index=True)
     final["coeff"] = pd.to_numeric(final["coeff"], errors="coerce")
     final = final.sort_values(["ano", "conta_alfa", "tipo_coeff"]).reset_index(
         drop=True
