@@ -3,7 +3,8 @@
 Esta camada prepara a biblioteca de valores monetarios de consumo que alimenta
 a modelagem Layer 2. A fonte e a POF/IBGE na tabela silver
 `br_ibge_pof.tbl_6970`, usando a variável
-`Despesa monetária e não monetária média mensal familiar`, em Reais.
+`Despesa monetária e não monetária média mensal familiar`, originalmente em
+Reais.
 
 Pela metodologia revisada das Contas Alfa, a gold nao deve antecipar o calculo
 do coeficiente tecnico. A razao e simples: o coeficiente so ganha sentido
@@ -17,7 +18,17 @@ Em termos praticos, a saida desta camada e:
 
 - `ano`: ano de referencia da POF;
 - `coeff_key`: chave de demanda usada pela modelagem;
-- `valor`: despesa monetaria observada, em Reais.
+- `valor`: despesa monetaria observada, convertida para `Mil Reais`.
+
+E importante manter essa escala em mente. O raw da POF vem em Reais unitarios,
+mas esta gold divide os valores por 1000 para exportar consumo na mesma escala
+monetaria da camada de custos:
+
+- `br_ibge_pof.tbl_6970`: `Despesa monetária e não monetária média mensal familiar` com `unidade = Reais`;
+- a mesma tabela tambem traz a variavel de distribuicao com `unidade = %`, mas
+  essa variavel percentual nao e usada nesta gold.
+- a saida `valor` desta gold fica em `Mil Reais`, ou seja, cada unidade
+  numerica representa R$ 1.000.
 
 `valor` nao e percentual, nao deve somar 1 e nao deve ser reescalado para o
 intervalo `[0, 1]`. Ele e o insumo monetario que a modelagem usara depois para
@@ -46,7 +57,8 @@ O fluxo `preparacao_camada_consumo.py` executa:
 2. carregar `equivalencia_despesas.json`;
 3. filtrar o ano alvo e a variavel monetaria em Reais;
 4. aplicar a regra urbano/rural de compatibilizacao;
-5. publicar `ano`, `coeff_key` e `valor`.
+5. dividir `valor` por 1000 para harmonizar a escala monetaria com custos;
+6. publicar `ano`, `coeff_key` e `valor`.
 
 ## Leitura para a modelagem
 

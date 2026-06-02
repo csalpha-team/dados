@@ -10,15 +10,25 @@ participacoes do total nem coeficientes tecnicos. O coeficiente tecnico depende
 do contexto economico em que sera aplicado: produto, regiao, ano, VBP, grid de
 parametros e matriz de incidencia. Esses elementos pertencem ao repositorio de
 modelagem. O papel deste repo de dados e tratar a fonte secundaria, preservar o
-valor monetario observado e entregar uma tabela pronta para a calibracao no
-`csalpha`.
+valor monetario observado na escala original da fonte e entregar uma tabela
+pronta para a calibracao no `csalpha`.
 
 Em termos praticos, a saida desta camada e:
 
 - `ano`: ano do Censo Agropecuario;
 - `nome_regiao_integracao`: regiao de integracao do Para;
 - `tipo_coeff`: chave de custo esperada pela modelagem;
-- `valor`: despesa monetaria observada, em Reais.
+- `valor`: despesa monetaria observada, em `Mil Reais`.
+
+E importante manter essa escala em mente: os valores de custo desta gold estao
+em milhares de reais, isto e, cada unidade numerica representa R$ 1.000. Essa
+escala vem diretamente do raw do Censo Agropecuario:
+
+- `al_ibge_censoagro.tbl_1909_2006`: `Valor das despesas realizadas pelos estabelecimentos agropecuários` com `unidade_medida = Mil Reais`;
+- `al_ibge_censoagro.tbl_6899_2017`: `Valor das despesas realizadas pelos estabelecimentos agropecuários` com `unidade_medida = Mil Reais`.
+
+O pipeline silver/gold nao multiplica esses valores por 1000; ele preserva a
+escala monetaria declarada pelo IBGE.
 
 `valor` nao e uma razao contra a despesa total. A linha `Total` da fonte e
 removida porque nao representa um item de custo; ela so poderia ser usada como
@@ -74,5 +84,6 @@ especifico de produto ou fluxo.
   modelagem.
 - A ordem das entradas no JSON nao altera o resultado, mas agrupamentos
   coerentes facilitam revisao.
-- Novas fontes ou novos anos devem continuar preservando a unidade monetaria em
-  `valor`.
+- Novas fontes ou novos anos devem continuar preservando e documentando a
+  escala monetaria em `valor`. Se alguma fonte futura vier em Reais unitarios,
+  a diferenca precisa estar explicita antes de misturar series.

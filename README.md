@@ -126,9 +126,9 @@ class AlIbgePamLavouraPermanente(_PamBase):
     )
 ```
 
-Unidades padronizadas: `BRL`, `USD`, `kg`, `ton`, `L`, `head_count`,
-`hectare`, `m2`, `ratio`, `percent`, `dimensionless`, `YYYY`, `YYYY-MM`,
-`date`, `code` (lista completa em `REFACTORING.md` §4).
+Unidades padronizadas: `BRL`, `thousand_BRL`, `USD`, `kg`, `ton`, `L`,
+`head_count`, `hectare`, `m2`, `ratio`, `percent`, `dimensionless`, `YYYY`,
+`YYYY-MM`, `date`, `code` (lista completa em `REFACTORING.md` §4).
 
 O linter `tests/test_pydantic_metadata.py` percorre todos os models de
 silver/gold e falha se algum campo não tem `description` + `unit`.
