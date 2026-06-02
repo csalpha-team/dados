@@ -13,7 +13,7 @@ class BrCoeficientesConsumoPreparacaoCamadaConsumo(BaseModel):
         description="MIP destination expense category (chave_mip)",
         json_schema_extra={"unit": "code"},
     )
-    coeff: Decimal | None = Field(
-        description="Consumption coefficient derived from POF expense distribution",
-        json_schema_extra={"unit": "ratio"},
+    valor: Decimal | None = Field(
+        description="Observed average monthly household consumption value from POF",
+        json_schema_extra={"unit": "BRL"},
     )

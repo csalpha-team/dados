@@ -14,10 +14,10 @@ class PaCoeficientesCustoPreparacaoCamadaCusto(BaseModel):
         json_schema_extra={"unit": "code"},
     )
     tipo_coeff: str = Field(
-        description="Cost coefficient type label",
+        description="Cost value type label used by the downstream model",
         json_schema_extra={"unit": "code"},
     )
-    coeff: Decimal | None = Field(
-        description="Cost coefficient (share of total establishment expenses)",
-        json_schema_extra={"unit": "ratio"},
+    valor: Decimal | None = Field(
+        description="Observed gross cost value by region, year, and mapped cost item",
+        json_schema_extra={"unit": "BRL"},
     )
