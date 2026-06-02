@@ -98,15 +98,9 @@ def export_consumption_values() -> Path:
         log.info("export.consumption_values.pick_year", year=latest)
         df = df[df["ano"] == latest]
 
-    wide = (
-        df.set_index("coeff_key")["valor"]
-        .astype(float)
-        .to_frame()
-        .T.reset_index(drop=True)
-    )
     out = OUTPUT_DIR / "consumption_values.csv"
-    wide.to_csv(out, index=False, encoding="utf-8")
-    log.info("export.consumption_values", cols=len(wide.columns), path=str(out))
+    df.to_csv(out, index=False, encoding="utf-8")
+    log.info("export.consumption_values", rows=len(df), path=str(out))
     return out
 
 
@@ -192,7 +186,11 @@ GENERATORS = (
 def bundle_zip() -> Path:
     if ZIP_PATH.exists():
         ZIP_PATH.unlink()
-    files = sorted(p for p in OUTPUT_DIR.iterdir() if p.is_file())
+    files = sorted(
+        p
+        for p in OUTPUT_DIR.iterdir()
+        if p.is_file() and not p.name.startswith(".~lock.")
+    )
     with zipfile.ZipFile(ZIP_PATH, "w", zipfile.ZIP_DEFLATED) as zf:
         for f in files:
             zf.write(f, arcname=f"gold_export/{f.name}")
@@ -204,6 +202,8 @@ def flow() -> None:
     log.info("flow.start", output_dir=str(OUTPUT_DIR))
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     try:
+        for path in OUTPUT_DIR.glob(".~lock.*"):
+            path.unlink()
         for filename in GENERATED_FILES:
             path = OUTPUT_DIR / filename
             if path.exists():
