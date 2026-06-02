@@ -19,5 +19,5 @@ class PaCoeficientesCustoPreparacaoCamadaCusto(BaseModel):
     )
     valor: Decimal | None = Field(
         description="Observed gross cost value by region, year, and mapped cost item",
-        json_schema_extra={"unit": "BRL"},
+        json_schema_extra={"unit": "thousand_BRL"},
     )

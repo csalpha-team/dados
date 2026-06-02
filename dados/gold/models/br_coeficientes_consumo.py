@@ -14,6 +14,6 @@ class BrCoeficientesConsumoPreparacaoCamadaConsumo(BaseModel):
         json_schema_extra={"unit": "code"},
     )
     valor: Decimal | None = Field(
-        description="Observed average monthly household consumption value from POF",
-        json_schema_extra={"unit": "BRL"},
+        description="Observed average monthly household consumption value from POF, rescaled to thousands of BRL",
+        json_schema_extra={"unit": "thousand_BRL"},
     )
