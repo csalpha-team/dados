@@ -16,7 +16,7 @@ from pathlib import Path
 import pandas as pd
 from dotenv import load_dotenv
 
-from dados.gold.models.pa_coeficientes_custo import (
+from dados.gold.pa_coeficientes_custo.models import (
     PaCoeficientesCustoPreparacaoCamadaCusto,
 )
 from dados.gold.pa_coeficientes_custo.utils import (

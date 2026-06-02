@@ -8,7 +8,7 @@ from decimal import Decimal
 import pandas as pd
 from dotenv import load_dotenv
 
-from dados.gold.models.pa_servicos_industria_comercio import (
+from dados.gold.pa_servicos_industria_comercio.models import (
     PaServicosIndustriaComercioPiaIndustrias,
 )
 from dados.raw.utils.postgres_interactions import PostgresETL

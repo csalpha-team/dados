@@ -5,7 +5,7 @@ Repository: zone-based data pipeline (raw → silver → gold) on PostgreSQL. Py
 ## Hard rules
 
 - **Strict layering: raw → silver → gold.** No gold → gold, no gold → raw. Downstream zones consume only the layer directly above.
-- **Silver and gold tables require a pydantic schema** at `dados/<zone>/models/<dataset_id>.py`. Every field carries `description`, Python type, and `unit`.
+- **Silver and gold tables require a pydantic schema** at `dados/<zone>/<dataset_id>/models.py`. Every field carries `description`, Python type, and `unit`.
 - **All logs use `get_logger`** from `dados/utils/logging.py`. No `print`, no stdlib `logging`.
 - **All Postgres calls use `PostgresETL`** from `dados/raw/utils/postgres_interactions.py`.
 

@@ -193,7 +193,6 @@ br_coeficientes_exportacao/      # Comex → coeficientes de exportação
 br_coeficientes_investimento/    # PAC/PAIC → coeficientes de investimento
 br_coeficientes_renda/           # RAIS/PIA → produtividade e salário
 br_despesas_familiares/          # POF → despesas familiares
-brasil_despesas_familiares/      # variante nacional
 br_servicos/                     # PAS/PIA → serviços/indústria/comércio
 pa_coeficientes_custo/           # custos rurais — Pará
 pa_indexadores_custo_producao_rural/

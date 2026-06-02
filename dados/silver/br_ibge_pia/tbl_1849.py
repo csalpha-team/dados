@@ -13,7 +13,7 @@ import pandas as pd
 from dotenv import load_dotenv
 
 from dados.raw.utils.postgres_interactions import PostgresETL
-from dados.silver.models.br_ibge_pia import BrIbgePiaTbl1849
+from dados.silver.br_ibge_pia.models import BrIbgePiaTbl1849
 from dados.utils.logging import get_logger
 from dados.utils.pydantic_postgres import pydantic_to_postgres_columns
 
