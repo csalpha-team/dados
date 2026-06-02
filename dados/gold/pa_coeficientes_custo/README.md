@@ -1,110 +1,78 @@
-# Coeficientes de custo
+# Valores de custo
 
-Esta camada usa o arquivo `parametros_coeficientes_custo.json` para definir
-como os itens de despesa do Censo Agropecuario devem ser convertidos nas chaves
-de coeficientes usadas pelo modelo. O arquivo nao calcula nada por si so. Ele
-funciona como um dicionario de correspondencia entre:
+Esta camada prepara uma biblioteca de valores monetarios de custo rural para a
+modelagem Layer 2. A fonte principal e o Censo Agropecuario, lido a partir das
+tabelas silver `al_ibge_censoagro.tbl_1909_2006` e
+`al_ibge_censoagro.tbl_6899_2017`, filtradas para municipios do Para.
 
-- os grupos de parametros herdados da logica anterior da CSAlpha;
-- a lista de itens de custo efetivamente disponivel no Censo Agropecuario.
+Pela metodologia revisada das Contas Alfa, esta gold nao calcula mais
+participacoes do total nem coeficientes tecnicos. O coeficiente tecnico depende
+do contexto economico em que sera aplicado: produto, regiao, ano, VBP, grid de
+parametros e matriz de incidencia. Esses elementos pertencem ao repositorio de
+modelagem. O papel deste repo de dados e tratar a fonte secundaria, preservar o
+valor monetario observado e entregar uma tabela pronta para a calibracao no
+`csalpha`.
 
-Em termos praticos, esse JSON registra o "de para" entre os nomes que o modelo
-espera consumir e os nomes de despesa encontrados na base de origem.
+Em termos praticos, a saida desta camada e:
 
-## Origem das relacoes entre grupos de parametros
+- `ano`: ano do Censo Agropecuario;
+- `nome_regiao_integracao`: regiao de integracao do Para;
+- `tipo_coeff`: chave de custo esperada pela modelagem;
+- `valor`: despesa monetaria observada, em Reais.
 
-As relacoes presentes em `parametros_coeficientes_custo.json` nao surgem de uma
-classificacao automatica feita por este ETL. Elas foram definidas a partir da
-compatibilizacao entre:
+`valor` nao e uma razao contra a despesa total. A linha `Total` da fonte e
+removida porque nao representa um item de custo; ela so poderia ser usada como
+denominador em outro contexto. A divisao pelo VBP ou por qualquer base de
+incidencia deve acontecer na modelagem, nao nesta gold.
 
-1. os itens de custo usados na logica anterior da CSAlpha;
-2. os itens de custo disponibilizados pelo Censo Agropecuario.
+## Compatibilizacao
 
-Essa compatibilizacao e um agrupamento de insumos. Ela informa quais despesas
-observadas no censo devem alimentar cada grupo de parametro do modelo. Alguns
-exemplos centrais:
+O arquivo `parametros_coeficientes_custo.json` faz o de-para entre os itens de
+despesa do Censo Agropecuario e as chaves de custo usadas pela CSAlpha. Ele nao
+armazena valores finais nem coeficientes prontos; ele apenas explicita como a
+taxonomia da fonte deve alimentar a taxonomia operacional do modelo.
 
-- `InsumoEnergia` <- `Energia elétrica`
-- `InsumosCombustível` <- `Combustíveis e lubrificantes`
-- `InsumosMecânicos` <- `Aluguel de máquina` e `Compra de máquinas e veículos`
+Alguns exemplos:
 
-O mesmo principio vale para os demais grupos do arquivo: cada `expense_type`
-representa um item do censo, e cada `coeff_key` representa a chave de
-coeficiente que sera publicada para consumo pelo modelo.
+- `InsumoEnergia` recebe `Energia elétrica`;
+- `InsumosCombustível` recebe `Combustíveis e lubrificantes`;
+- `InsumosMecânicos` recebe `Aluguel de máquina` e
+  `Compra de máquinas e veículos`;
+- `EmbalagemBenefEstad`, `EmbalagemBenefLoc`, `EmbalagemTransfEstad` e
+  `EmbalagemTransfLoc` recebem `Sacarias e embalagens`.
 
-## Por que esse mapeamento fica no JSON
+Quando um item do Censo alimenta mais de uma chave, o valor e replicado. Essa
+replicacao e intencional: cada chave representa uma incidencia distinta que sera
+resolvida na modelagem. A gold nao tenta repartir esse valor sem conhecer a
+matriz de incidencia.
 
-O mapeamento esta versionado em JSON por desenho. A camada precisa de uma
-fonte simples e auditavel para manter explicita a correspondencia entre a
-taxonomia antiga e a taxonomia do censo. Isso evita espalhar regras de
-renomeacao no codigo e facilita revisar alteracoes quando:
+## Fluxo
 
-- um item do censo mudar de nome;
-- um grupo de parametro ganhar ou perder itens;
-- a compatibilizacao entre a logica anterior e a base de origem for revista.
+O fluxo `preparacao_camada_custo.py` executa:
 
-Quando houver revisao metodologica, a mudanca deve ser feita neste arquivo,
-preservando a coerencia com as chaves `coeff_keys` consumidas nas etapas
-seguintes.
+1. ler as despesas do Censo Agropecuario na silver;
+2. mapear cada municipio para sua regiao de integracao;
+3. carregar `parametros_coeficientes_custo.json`;
+4. remover a despesa `Total`;
+5. expandir cada `expense_type` para uma ou mais chaves `tipo_coeff`;
+6. agregar `valor` por ano, regiao de integracao e chave de custo;
+7. publicar a tabela gold `pa_coeficientes_custo.preparacao_camada_custo`.
 
-## Como o ETL usa esse arquivo
+## Leitura para a modelagem
 
-O fluxo da camada em `preparacao_camada_custo.py` e o seguinte:
+Na leitura metodologica, cada linha desta tabela representa o valor observado
+de um item de custo em uma regiao e ano. O repositorio `csalpha` deve combinar
+esse valor com o VBP, o produto, a agregacao e a incidencia para obter o
+coeficiente tecnico que efetivamente escala a matriz. Essa separacao evita que
+um percentual agregado do Censo seja aplicado como se fosse coeficiente
+especifico de produto ou fluxo.
 
-1. baixar os dados de despesas do Censo Agropecuario;
-2. carregar `parametros_coeficientes_custo.json`;
-3. transformar cada relacao `expense_types -> coeff_keys` em um mapa de expansao;
-4. calcular o coeficiente de cada tipo de despesa em relacao a `Total`;
-5. replicar o valor calculado para cada `coeff_key` associado ao item de despesa;
-6. agregar os resultados por regiao de integracao e manter o ano mais recente.
+## Manutencao
 
-O ponto importante e que o JSON nao guarda coeficientes prontos. Ele guarda a
-regra de correspondencia usada para transformar despesas observadas no censo em
-`tipo_coeff`.
-
-## Leitura dos grupos de parametros
-
-O bloco `grupos_parametros` esta dividido em dois grupos maiores:
-
-- `Custos`: itens correntes de despesa usados para formar coeficientes de custo;
-- `Investimento`: itens tratados nesta mesma camada que entram como investimento
-  especifico a partir da base de despesas.
-
-Dentro de cada grupo, cada objeto associa uma ou mais chaves do modelo a um ou
-mais itens do censo.
-
-## Relacoes atualmente definidas
-
-### Custos
-
-| `coeff_keys` | `expense_types` no Censo Agropecuario | Leitura da relacao |
-| --- | --- | --- |
-| `CombustíveisBenefEstad`, `CombustíveisBenefLoc` | `Combustíveis` | O item de combustíveis do censo alimenta duas chaves de coeficiente consumidas em outras etapas. |
-| `InsumoEnergia` | `Energia elétrica` | O grupo de energia da lógica anterior e representado pelo item de energia elétrica do censo. |
-| `InsumosCombustível` | `Combustíveis e lubrificantes` | O grupo de combustíveis e lubrificantes do censo e tratado como insumo de combustível no modelo. |
-| `InsumosMecânicos` | `Aluguel de máquina`, `Compra de máquinas e veículos` | O grupo de insumos mecânicos agrega despesas com uso e aquisição de bens mecanizados. |
-| `InsumosMineral` | `Corretivos do solo`, `Sal e rações (industrializados ou não-industrializados)`, `Sal, ração e outros suplementos` | O grupo agrega itens minerais e suplementos associados a esse bloco de custo na lógica anterior. |
-| `InsumosOrgânicos` | `Sementes e mudas`, `Compra de matéria-prima para agroindústria` | O grupo agrega insumos biológicos e matérias-primas compatibilizados com a taxonomia anterior. |
-| `InsumosQuímicos` | `Adubos`, `Agrotóxicos`, `Medicamentos para animais` | O grupo reúne insumos químicos e veterinários tratados conjuntamente no modelo. |
-| `EmbalagemBenefEstad`, `EmbalagemBenefLoc`, `EmbalagemTransfEstad`, `EmbalagemTransfLoc` | `Sacarias e embalagens` | Um único item do censo alimenta quatro chaves ligadas a beneficiamento e transformação. |
-| `CustosVariáveisDiversosBenefEstad`, `CustosVariáveisDiversosBenefLoc`, `CustosVariáveisDiversosTransfEstad`, `CustosVariáveisDiversosTransfLoc` | `Outras despesas` | O grupo absorve despesas residuais que não entram nas classes anteriores. |
-| `ServiçosConstCivilBenefEstad`, `ServiçosConstCivilBenefLoc`, `ServiçosConstCivilTransfEstad`, `ServiçosConstCivilTransfLocal` | `Serviços de empreitada` | O item do censo é propagado para as chaves de serviços ligadas a beneficiamento e transformação. |
-| `TransporteBenefEstad`, `TransporteBenefLoc`, `TransporteTransfEstad`, `TransporteTransfLoc` | `Transporte da produção` | O item de transporte do censo é distribuído entre as chaves de transporte usadas pelo modelo. |
-
-### Investimento
-
-| `coeff_keys` | `expense_types` no Censo Agropecuario | Leitura da relacao |
-| --- | --- | --- |
-| `InvestPlantio` | `Novas culturas permanentes e silvicultura`, `Formação de pastagens` | O grupo de investimento em plantio agrega os itens do censo ligados à implantação e formação de novas áreas. |
-
-## Observacoes de manutencao
-
-- A ordem das entradas no JSON nao muda o calculo, mas manter agrupamentos
-  coerentes facilita revisao.
-- Uma mesma entrada de despesa pode alimentar mais de uma `coeff_key` quando o
-  modelo precisa replicar esse valor para chaves diferentes.
-- Se um item do censo for renomeado ou substituido, o ajuste deve ser feito no
-  campo `expense_types`, nao no codigo do ETL, salvo quando houver mudanca de
-  logica.
-- As chaves `coeff_keys` formam um contrato com as camadas consumidoras; por
-  isso, renomeacoes devem ser tratadas com cuidado.
+- Ajustes de taxonomia devem ser feitos em `parametros_coeficientes_custo.json`.
+- Renomear `tipo_coeff` exige cuidado, pois essas chaves sao contrato com a
+  modelagem.
+- A ordem das entradas no JSON nao altera o resultado, mas agrupamentos
+  coerentes facilitam revisao.
+- Novas fontes ou novos anos devem continuar preservando a unidade monetaria em
+  `valor`.
