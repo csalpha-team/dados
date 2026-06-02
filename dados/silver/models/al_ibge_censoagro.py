@@ -32,7 +32,8 @@ class AlIbgeCensoagroTbl19092006(BaseModel):
         json_schema_extra={"unit": "head_count"},
     )
     valor_despesa: Decimal | None = Field(
-        description="Reported expenditure amount", json_schema_extra={"unit": "BRL"}
+        description="Reported expenditure amount",
+        json_schema_extra={"unit": "thousand_BRL"},
     )
 
 
