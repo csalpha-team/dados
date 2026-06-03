@@ -229,8 +229,8 @@ Layer 2 espera, em formatos fixos:
 
 | Artefato                          | Origem (gold)                                                      | Formato |
 |-----------------------------------|--------------------------------------------------------------------|---------|
-| `cost_values.csv`                 | `pa_coeficientes_custo.preparacao_camada_custo`                    | CSV     |
-| `consumption_values.csv`          | `br_coeficientes_consumo.preparacao_camada_consumo` (último ano)   | CSV     |
+| `pa_coeficientes_custo_values.csv`   | `pa_coeficientes_custo.preparacao_camada_custo`                    | CSV     |
+| `br_coeficientes_consumo_values.csv` | `br_coeficientes_consumo.preparacao_camada_consumo` (último ano)   | CSV     |
 | `investment_coefficients.json`    | `br_coeficientes_investimento.coeficientes_investimento`           | JSON    |
 | `export_coefficients.json`        | `br_coeficientes_exportacao.preparacao_camada_exportacao`          | JSON por ano |
 | `income_productivity.json`        | `br_coeficientes_renda.renda_produtividade`                        | JSON por ano |
@@ -248,11 +248,11 @@ Comportamento do flow:
    `gold_export.zip` na raiz do repositório. Esse zip é o entregável que
    alimenta o algoritmo.
 
-Observação metodológica: `cost_values.csv` e `consumption_values.csv` não
-publicam coeficientes técnicos. Eles carregam valores monetários observados
-em `valor`; a divisão pelo VBP ou pela base de incidência deve ocorrer na
-modelagem, onde existem produto, região, ano, agregação e matriz de
-incidência.
+Observação metodológica: `pa_coeficientes_custo_values.csv` e
+`br_coeficientes_consumo_values.csv` não publicam coeficientes técnicos. Eles
+carregam valores monetários observados em `valor`; a divisão pelo VBP ou pela
+base de incidência deve ocorrer na modelagem, onde existem produto, região,
+ano, agregação e matriz de incidência.
 
 Executar:
 
