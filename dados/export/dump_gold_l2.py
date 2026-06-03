@@ -3,8 +3,8 @@
 Reads the gold zone via :class:`PostgresETL` and materialises the six dynamic
 artefacts described in ``gold_export/l2_input_schemas_examples.md``:
 
-- ``cost_values.csv``               (pa_coeficientes_custo.preparacao_camada_custo)
-- ``consumption_values.csv``        (br_coeficientes_consumo.preparacao_camada_consumo)
+- ``pa_coeficientes_custo_values.csv``      (pa_coeficientes_custo.preparacao_camada_custo)
+- ``br_coeficientes_consumo_values.csv``    (br_coeficientes_consumo.preparacao_camada_consumo)
 - ``investment_coefficients.json``  (br_coeficientes_investimento.coeficientes_investimento)
 - ``export_coefficients.json``      (br_coeficientes_exportacao.preparacao_camada_exportacao)
 - ``income_productivity.json``      (br_coeficientes_renda.renda_produtividade)
@@ -46,6 +46,8 @@ GENERATED_FILES = {
     "consumption_coefficients.csv",
     "cost_values.csv",
     "consumption_values.csv",
+    "pa_coeficientes_custo_values.csv",
+    "br_coeficientes_consumo_values.csv",
     "investment_coefficients.json",
     "export_coefficients.json",
     "income_productivity.json",
@@ -81,7 +83,7 @@ def export_cost_values() -> Path:
         "SELECT ano, nome_regiao_integracao, tipo_coeff, valor "
         "FROM pa_coeficientes_custo.preparacao_camada_custo",
     )
-    out = OUTPUT_DIR / "cost_values.csv"
+    out = OUTPUT_DIR / "pa_coeficientes_custo_values.csv"
     df.to_csv(out, index=False, encoding="utf-8")
     log.info("export.cost_values", rows=len(df), path=str(out))
     return out
@@ -98,7 +100,7 @@ def export_consumption_values() -> Path:
         log.info("export.consumption_values.pick_year", year=latest)
         df = df[df["ano"] == latest]
 
-    out = OUTPUT_DIR / "consumption_values.csv"
+    out = OUTPUT_DIR / "br_coeficientes_consumo_values.csv"
     df.to_csv(out, index=False, encoding="utf-8")
     log.info("export.consumption_values", rows=len(df), path=str(out))
     return out
