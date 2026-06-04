@@ -1,5 +1,30 @@
 import pandas as pd
 
+from dados.raw.utils.ibge_api_crawler import get_classificacao_unidades
+
+
+def enrich_unidade_medida_por_produto(
+    df: pd.DataFrame,
+    agregado: str,
+    id_classificacao: str,
+    nome_variavel_quantidade: str,
+) -> pd.DataFrame:
+    """Preenche ``unidade_medida`` por produto nas linhas da variável de quantidade.
+
+    A unidade de medida física do censo é definida **por produto (categoria)** nos
+    metadados do agregado, não pela variável (a série traz unidades genéricas como
+    'Não se aplica'/'Unidades'). Enriquecemos apenas as linhas da variável de
+    quantidade produzida — as demais (valores em BRL, contagens) mantêm a unidade
+    da variável. Produtos sem unidade nos metadados (ex. 'Total') ficam ``None``.
+    """
+    unidades = get_classificacao_unidades(agregado, id_classificacao)
+    mask = df["nome_variavel"] == nome_variavel_quantidade
+    df.loc[mask, "unidade_medida"] = df.loc[mask, "id_produto"].map(unidades)
+    df["unidade_medida"] = df["unidade_medida"].where(
+        df["unidade_medida"].notna(), None
+    )
+    return df
+
 
 def parse_agrocenso_json(
     data: dict, id_produto: str, id_tipo_agricultura: str

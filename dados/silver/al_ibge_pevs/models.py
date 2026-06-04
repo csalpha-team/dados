@@ -18,10 +18,26 @@ class AlIbgePevsExtracaoVegetal(BaseModel):
         json_schema_extra={"unit": "code"},
     )
     quantidade_produzida: Decimal | None = Field(
-        description="Quantity produced in vegetal extraction (unit depends on product)",
+        description=(
+            "Quantidade produzida na extração vegetal, em toneladas. Produtos madeireiros "
+            "(lenha, madeira em tora, nó-de-pinho), informados pelo IBGE em m³, são "
+            "convertidos para toneladas via densidade de 0,5 t/m³. 'árvores abatidas' "
+            "permanece em 'Mil árvores' (contagem; zero na Amazônia Legal)."
+        ),
         json_schema_extra={"unit": "ton"},
     )
     valor_producao: Decimal | None = Field(
-        description="Value of vegetal-extraction production (deflated by currency_fix)",
-        json_schema_extra={"unit": "BRL"},
+        description=(
+            "Value of vegetal-extraction production. Historical currencies normalized by "
+            "currency_fix to the Mil Reais base; kept in thousands of BRL (IBGE source unit "
+            "'Mil Reais')."
+        ),
+        json_schema_extra={"unit": "1000xBRL"},
+    )
+    unidade_medida: str | None = Field(
+        description=(
+            "Unidade de medida efetiva da quantidade produzida (Toneladas; 'Mil árvores' "
+            "para árvores abatidas). Origem: metadados IBGE agregado 289, classificação 193."
+        ),
+        json_schema_extra={"unit": "code"},
     )

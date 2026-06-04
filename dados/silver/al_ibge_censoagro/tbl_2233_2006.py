@@ -15,8 +15,16 @@ from dados.silver.al_ibge_censoagro._common import (
     write_silver,
 )
 from dados.silver.al_ibge_censoagro.models import AlIbgeCensoagroTbl22332006
-from dados.silver.constants.produtos import dicionario_produtos_censo_6949_2233
-from dados.silver.utils import calcula_autoconsumo_comercio, fix_ibge_digits
+from dados.silver.constants.produtos import (
+    CENSO_FATOR_MIL_M3_TON,
+    CENSO_KG_POR_FRUTO,
+    dicionario_produtos_censo_6949_2233,
+)
+from dados.silver.utils import (
+    calcula_autoconsumo_comercio,
+    censo_quantity_to_weight,
+    fix_ibge_digits,
+)
 from dados.utils.logging import get_logger
 
 load_dotenv()
@@ -46,7 +54,8 @@ def extract() -> pd.DataFrame:
             MAX(CASE WHEN nome_variavel = 'Quantidade colhida' THEN valor END) AS quantidade_produzida,
             MAX(CASE WHEN nome_variavel = 'Quantidade vendida' THEN valor END) AS quantidade_vendida,
             MAX(CASE WHEN nome_variavel = 'Valor da produção' THEN valor END) AS valor_producao,
-            MAX(CASE WHEN nome_variavel = 'Valor das vendas' THEN valor END) AS valor_venda
+            MAX(CASE WHEN nome_variavel = 'Valor das vendas' THEN valor END) AS valor_venda,
+            MAX(CASE WHEN nome_variavel = 'Quantidade colhida' THEN unidade_medida END) AS unidade_medida
         FROM {DATASET_ID}.{TABLE}
         WHERE tipo_agricultura IN ('Agricultura familiar - Lei 11.326', 'Agricultura não familiar')
         GROUP BY ano, id_municipio, produto, tipo_agricultura, tipo_consumo_estocagem
@@ -72,9 +81,16 @@ def transform(df: pd.DataFrame) -> pd.DataFrame:
         div_column="quantidade_estabelecimentos",
     )
 
+    df = censo_quantity_to_weight(
+        df,
+        ["quantidade_produzida", "quantidade_vendida"],
+        CENSO_FATOR_MIL_M3_TON,
+        CENSO_KG_POR_FRUTO,
+    )
+
     df = calcula_autoconsumo_comercio(
         df=df,
-        id_cols=PK_COLS,
+        id_cols=PK_COLS + ["unidade_medida"],
         metric_cols=METRIC_COLS,
         category_col="tipo_consumo_estocagem",
         total_label="Total",
@@ -87,7 +103,10 @@ def validate(df: pd.DataFrame) -> pd.DataFrame:
     if df.empty:
         raise ValueError("transform produced an empty dataframe")
     assert_pk_unique(df, PK_COLS)
-    decimal_cols = [c for c in df.columns if c not in PK_COLS]
+    df["unidade_medida"] = df["unidade_medida"].apply(
+        lambda v: None if pd.isna(v) or str(v).strip() in ("", "NaN", "nan") else v
+    )
+    decimal_cols = [c for c in df.columns if c not in PK_COLS + ["unidade_medida"]]
     df = coerce_decimals(df, decimal_cols)
     [AlIbgeCensoagroTbl22332006(**r) for r in df.to_dict("records")]
     return df

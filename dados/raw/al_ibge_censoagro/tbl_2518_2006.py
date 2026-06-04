@@ -14,7 +14,10 @@ import basedosdados as bd
 import pandas as pd
 from dotenv import load_dotenv
 
-from dados.raw.al_ibge_censoagro.utils import parse_agrocenso_destinacao
+from dados.raw.al_ibge_censoagro.utils import (
+    enrich_unidade_medida_por_produto,
+    parse_agrocenso_destinacao,
+)
 from dados.raw.utils.ibge_api_crawler import async_crawler_ibge_municipio
 from dados.raw.utils.postgres_interactions import PostgresETL
 from dados.utils.logging import get_logger
@@ -41,6 +44,10 @@ ID_PRODUTO_CLASSIFICACAO = "227"
 ID_TIPO_AGRICULTURA_CLASSIFICACAO = "12896"
 ID_CONSUMO_ESTOCADA_CLASSIFICACAO = "12763"
 ID_VENDIDA_ENTREGUE_CLASSIFICACAO = "12764"
+NOME_VARIAVEL_QUANTIDADE = (
+    "Quantidade produzida nos estabelecimentos agropecuários com mais de "
+    "50 pés existentes em 31/12"
+)
 
 COLUMNS_DDL = {
     "id_variavel": "VARCHAR(255)",
@@ -122,6 +129,9 @@ def extract() -> pd.DataFrame:
             )
         )
     df = pd.concat(dfs, ignore_index=True)
+    df = enrich_unidade_medida_por_produto(
+        df, AGREGADO, ID_PRODUTO_CLASSIFICACAO, NOME_VARIAVEL_QUANTIDADE
+    )
     return df
 
 

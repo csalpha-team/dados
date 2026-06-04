@@ -2,7 +2,7 @@
 
 Source: IBGE Agregados API, table 289, classification 193 (produtos da extração vegetal).
 Lands one row per (municipio, produto, ano, variavel) into
-``$DB_RAW_ZONE.al_ibge_pevs.extracao_vegetal``.
+``$DB_RAW_ZONE.al_ibge_pevs.produtos_extracao_vegetal``.
 """
 
 from __future__ import annotations
@@ -16,7 +16,10 @@ import pandas as pd
 from dotenv import load_dotenv
 
 from dados.raw.al_ibge_pam.utils import parse_pam_json
-from dados.raw.utils.ibge_api_crawler import async_crawler_ibge_municipio
+from dados.raw.utils.ibge_api_crawler import (
+    async_crawler_ibge_municipio,
+    get_classificacao_unidades,
+)
 from dados.raw.utils.postgres_interactions import PostgresETL
 from dados.utils.logging import get_logger
 from dados.utils.paths import tmp_dir
@@ -25,7 +28,7 @@ load_dotenv()
 
 DATASET_ID = "al_ibge_pevs"
 ZONE = "raw"
-TABLE = "extracao_vegetal"
+TABLE = "produtos_extracao_vegetal"
 
 API_URL_BASE = (
     "https://servicodados.ibge.gov.br/api/v3/agregados/{}/periodos/{}/variaveis/{}"
@@ -37,6 +40,7 @@ VARIAVEIS = "|".join(["144", "145"])
 NIVEL_GEOGRAFICO = "N6"
 CLASSIFICACAO = "193[all]"
 ID_PRODUTO_CLASSIFICACAO = "193"
+ID_VARIAVEL_QUANTIDADE = "144"
 EXPECTED_MUNICIPIOS = 773  # Amazônia Legal
 
 COLUMNS_DDL = {
@@ -99,6 +103,20 @@ def extract() -> pd.DataFrame:
             data = json.load(f)
         dfs.append(parse_pam_json(data, id_produto=ID_PRODUTO_CLASSIFICACAO))
     df = pd.concat(dfs, ignore_index=True)
+
+    # A unidade de medida da PEVS é definida por produto (categoria), não pela
+    # variável: a variável 144 traz apenas "Vide categorias da classificação...".
+    # Enriquecemos a quantidade com a unidade correta vinda dos metadados,
+    # mantendo a unidade de moeda já presente nas linhas de valor (variável 145).
+    unidades = get_classificacao_unidades(AGREGADO, ID_PRODUTO_CLASSIFICACAO)
+    qty_mask = df["id_variavel"].astype(str) == ID_VARIAVEL_QUANTIDADE
+    df.loc[qty_mask, "unidade_medida"] = df.loc[qty_mask, "id_produto"].map(unidades)
+    # Produtos sem unidade nos metadados (ex. 'Total') ficam None → NULL no Postgres
+    # (evita gravar a string 'NaN' ao serializar via load_data).
+    df["unidade_medida"] = df["unidade_medida"].where(
+        df["unidade_medida"].notna(), None
+    )
+    log.info("extract.unidades.done", produtos=len(unidades))
     return df
 
 

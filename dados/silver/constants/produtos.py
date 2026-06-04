@@ -12,6 +12,28 @@
 
 
 ### EXTRAÇÃO VEGETAL
+
+# Densidade básica média de madeira (t/m³), usada para converter produtos da PEVS
+# medidos em m³ (lenha, madeira em tora, nó-de-pinho) para toneladas no silver.
+PEVS_DENSIDADE_TON_M3 = 0.5
+
+# --- Censo Agropecuário (2006/2017): unidades nativas que não são Toneladas ---
+# A quantidade dos produtos madeireiros da extração vegetal (lenha, madeira em
+# toras) vem em "Mil metros cúbicos". Fator p/ toneladas = 1000 m³ × densidade.
+CENSO_FATOR_MIL_M3_TON = 1000 * PEVS_DENSIDADE_TON_M3  # 500 t por mil m³
+
+# Frutos medidos em "Mil frutos" no censo (coco-da-baía, graviola, jaca na lavoura
+# permanente; abacaxi na temporária). Peso médio por fruto (kg). Como o valor já
+# está em milhares de frutos, toneladas = quantidade × kg_por_fruto. Médias
+# nacionais aproximadas (o IBGE calcula pesos médios por UF); chaveado pelo nome
+# padronizado do produto (pós-`dicionario_produtos_censo_*`).
+CENSO_KG_POR_FRUTO = {
+    "abacaxi": 1.5,
+    "coco da baía": 1.3,
+    "graviola": 2.0,
+    "jaca": 8.0,
+}
+
 dicionario_produtos_pevs = {
     "1 - Alimentícios": "1-alimentícios",
     "1.1 - Açaí (fruto)": "açaí-fruto",

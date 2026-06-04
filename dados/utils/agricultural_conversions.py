@@ -47,7 +47,7 @@ def products_weight_ratio_fix(row):
         "Caqui": 0.18,
         "Figo": 0.09,
         "Goiaba": 0.16,
-        "Larajna": 0.16,
+        "Laranja": 0.16,
         "Limão": 0.10,
         "Maçã": 0.15,
         "Mamão": 0.80,
@@ -88,3 +88,66 @@ def products_weight_ratio_fix(row):
     row["rendimento_medio_producao"] = rendimento_medio_producao
 
     return row
+
+
+def censo_quantity_to_weight(
+    df: pd.DataFrame,
+    qty_cols: list[str],
+    fator_mil_m3: float,
+    kg_por_fruto: dict[str, float],
+    unidade_col: str = "unidade_medida",
+    produto_col: str = "produto",
+) -> pd.DataFrame:
+    """Homogeneíza as quantidades do Censo Agropecuário para toneladas.
+
+    Dirigido pela coluna ``unidade_medida`` ingerida dos metadados do IBGE (por
+    produto). Trata as duas unidades não-tonelada com massa equivalente:
+
+    - ``'Mil metros cúbicos'`` (lenha, madeira em toras): multiplica por
+      ``fator_mil_m3`` (= 1000 m³ × densidade t/m³).
+    - ``'Mil frutos'`` (coco-da-baía, graviola, jaca, abacaxi): multiplica pelo
+      peso médio do fruto em kg (``kg_por_fruto[produto]``); como o valor está em
+      milhares de frutos, ``toneladas = quantidade × kg_por_fruto``.
+
+    As colunas em ``qty_cols`` (produzida/vendida) são convertidas em conjunto, e a
+    ``unidade_medida`` efetiva das linhas convertidas passa a ``'Toneladas'``.
+    Contagens (``'Mil unidades'`` — mudas), ``'Toneladas'`` e ``None`` (Total)
+    ficam intactos. Frutos em ``'Mil frutos'`` sem fator mapeado não são
+    convertidos (preservam a unidade nativa).
+    """
+    df = df.copy()
+
+    m3_mask = df[unidade_col] == "Mil metros cúbicos"
+    for col in qty_cols:
+        df.loc[m3_mask, col] = df.loc[m3_mask, col].astype(float) * fator_mil_m3
+    df.loc[m3_mask, unidade_col] = "Toneladas"
+
+    fator_fruto = df[produto_col].map(kg_por_fruto)
+    fruto_mask = (df[unidade_col] == "Mil frutos") & fator_fruto.notna()
+    for col in qty_cols:
+        df.loc[fruto_mask, col] = (
+            df.loc[fruto_mask, col].astype(float) * fator_fruto[fruto_mask]
+        )
+    df.loc[fruto_mask, unidade_col] = "Toneladas"
+
+    return df
+
+
+def pevs_volume_to_weight(
+    df: pd.DataFrame,
+    fator_ton_m3: float,
+    unidade_col: str = "unidade_medida",
+    qty_col: str = "quantidade_produzida",
+) -> pd.DataFrame:
+    """Converte a quantidade de m³ para toneladas onde a unidade nativa é 'Metros cúbicos'.
+
+    A PEVS informa lenha, madeira em tora e nó-de-pinho em metros cúbicos e os demais
+    produtos em massa. Dirigido pela coluna ``unidade_medida`` ingerida dos metadados do
+    IBGE: multiplica as linhas em m³ pela densidade (t/m³) e marca a unidade efetiva como
+    'Toneladas'. 'Mil árvores' (árvores abatidas) e 'Toneladas' permanecem intactos.
+    """
+    df = df.copy()
+    mask = df[unidade_col] == "Metros cúbicos"
+    df.loc[mask, qty_col] = df.loc[mask, qty_col].astype(float) * fator_ton_m3
+    df.loc[mask, unidade_col] = "Toneladas"
+    return df

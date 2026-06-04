@@ -15,8 +15,12 @@ from dados.silver.al_ibge_censoagro._common import (
     write_silver,
 )
 from dados.silver.al_ibge_censoagro.models import AlIbgeCensoagroTbl69572017
-from dados.silver.constants.produtos import dicionario_produtos_censo_6957_2337
-from dados.silver.utils import fix_ibge_digits
+from dados.silver.constants.produtos import (
+    CENSO_FATOR_MIL_M3_TON,
+    CENSO_KG_POR_FRUTO,
+    dicionario_produtos_censo_6957_2337,
+)
+from dados.silver.utils import censo_quantity_to_weight, fix_ibge_digits
 from dados.utils.logging import get_logger
 
 load_dotenv()
@@ -47,7 +51,8 @@ def extract() -> pd.DataFrame:
             MAX(CASE WHEN nome_variavel = 'Quantidade vendida das lavouras temporárias' THEN valor END) AS quantidade_vendida,
             MAX(CASE WHEN nome_variavel = 'Valor da produção das lavouras temporárias' THEN valor END) AS valor_producao,
             MAX(CASE WHEN nome_variavel = 'Valor da venda das lavouras temporárias' THEN valor END) AS valor_venda,
-            MAX(CASE WHEN nome_variavel = 'Área colhida nas lavouras temporárias' THEN valor END) AS area_colhida
+            MAX(CASE WHEN nome_variavel = 'Área colhida nas lavouras temporárias' THEN valor END) AS area_colhida,
+            MAX(CASE WHEN nome_variavel = 'Quantidade produzida nas lavouras temporárias' THEN unidade_medida END) AS unidade_medida
         FROM {DATASET_ID}.{TABLE}
         WHERE tipo_agricultura IN ('Agricultura familiar - sim', 'Agricultura familiar - não')
         GROUP BY ano, id_municipio, produto, tipo_agricultura
@@ -65,6 +70,12 @@ def transform(df: pd.DataFrame) -> pd.DataFrame:
         ["id_municipio", "ano", "produto", "tipo_agricultura"],
         div_column="quantidade_estabelecimentos",
     )
+    df = censo_quantity_to_weight(
+        df,
+        ["quantidade_produzida", "quantidade_vendida"],
+        CENSO_FATOR_MIL_M3_TON,
+        CENSO_KG_POR_FRUTO,
+    )
     return df[list(AlIbgeCensoagroTbl69572017.model_fields.keys())]
 
 
@@ -73,6 +84,9 @@ def validate(df: pd.DataFrame) -> pd.DataFrame:
         raise ValueError("transform produced an empty dataframe")
     assert_pk_unique(df, PK_COLS)
     df = coerce_decimals(df, METRIC_COLS)
+    df["unidade_medida"] = df["unidade_medida"].apply(
+        lambda v: None if pd.isna(v) or str(v).strip() in ("", "NaN", "nan") else v
+    )
     [AlIbgeCensoagroTbl69572017(**r) for r in df.to_dict("records")]
     return df
 
