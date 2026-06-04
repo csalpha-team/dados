@@ -19,6 +19,13 @@ from dados.gold.br_coeficientes_exportacao.auditoria_series_coeficientes import 
     gerar_grafico_series,
     salvar_resumo,
 )
+from dados.gold.br_coeficientes_exportacao.auditoria_matches_ncm import (
+    auditar_parametros_vs_ncm,
+    carregar_catalogo_ncm,
+    carregar_parametros,
+    carregar_produtos_unicos,
+    gerar_candidatos_produto,
+)
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 PARAMETROS_PATH = (
@@ -112,6 +119,26 @@ def test_parametros_gold_sao_compativeis_com_raws_de_apoio() -> None:
 
     anos_taxa = set(taxas_cambio["ano"].astype(int))
     assert set(parametros["anos_previsao"]).issubset(anos_taxa)
+
+
+def test_auditoria_matches_ncm_valida_linguagem_dos_parametros() -> None:
+    parametros = carregar_parametros()
+    catalogo_ncm = carregar_catalogo_ncm()
+    produtos_unicos = carregar_produtos_unicos()
+
+    parametros_vs_ncm = auditar_parametros_vs_ncm(parametros, catalogo_ncm)
+    candidatos = gerar_candidatos_produto(
+        produtos_unicos,
+        parametros,
+        catalogo_ncm,
+        limite_por_produto=5,
+    )
+
+    assert not parametros_vs_ncm.empty
+    assert parametros_vs_ncm["codigo_existe_no_catalogo"].all()
+    assert parametros_vs_ncm["nome_por_match_normalizado"].all()
+    assert not candidatos.empty
+    assert {"por", "esp", "ing"}.issuperset(set(candidatos["melhor_linguagem"]))
 
 
 def test_preparacao_aplica_taxa_cambio_por_ano() -> None:
