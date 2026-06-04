@@ -57,7 +57,7 @@ class PaIndexadoresLavouraTemporariaCenso2006(_BaseRow):
     )
     valor_producao: Decimal | None = Field(
         description="Total production value",
-        json_schema_extra={"unit": "BRL"},
+        json_schema_extra={"unit": "1000xBRL"},
     )
 
 
@@ -75,7 +75,7 @@ class PaIndexadoresLavouraTemporariaCenso2006_2284(_BaseRow):
         description="Total quantity sold", json_schema_extra={"unit": "ton"}
     )
     valor_producao: Decimal | None = Field(
-        description="Total production value", json_schema_extra={"unit": "BRL"}
+        description="Total production value", json_schema_extra={"unit": "1000xBRL"}
     )
     autoconsumo_quantidade_estabelecimentos: Decimal | None = Field(
         description="Establishments reporting self-consumption",
@@ -91,7 +91,7 @@ class PaIndexadoresLavouraTemporariaCenso2006_2284(_BaseRow):
     )
     autoconsumo_valor_producao: Decimal | None = Field(
         description="Production value attributed to self-consumption",
-        json_schema_extra={"unit": "BRL"},
+        json_schema_extra={"unit": "1000xBRL"},
     )
     comercio_quantidade_estabelecimentos: Decimal | None = Field(
         description="Establishments reporting commercial production",
@@ -107,7 +107,7 @@ class PaIndexadoresLavouraTemporariaCenso2006_2284(_BaseRow):
     )
     comercio_valor_producao: Decimal | None = Field(
         description="Production value attributed to commerce",
-        json_schema_extra={"unit": "BRL"},
+        json_schema_extra={"unit": "1000xBRL"},
     )
 
 
@@ -129,15 +129,15 @@ class PaIndexadoresLavouraTemporariaCenso2017(_BaseRow):
         json_schema_extra={"unit": "ton"},
     )
     valor_producao: Decimal | None = Field(
-        description="Total production value", json_schema_extra={"unit": "BRL"}
+        description="Total production value", json_schema_extra={"unit": "1000xBRL"}
     )
     comercio_valor_producao: Decimal | None = Field(
         description="Sales value (treated as commerce)",
-        json_schema_extra={"unit": "BRL"},
+        json_schema_extra={"unit": "1000xBRL"},
     )
     autoconsumo_valor_producao: Decimal | None = Field(
         description="Production minus sales value (treated as self-consumption)",
-        json_schema_extra={"unit": "BRL"},
+        json_schema_extra={"unit": "1000xBRL"},
     )
 
 
@@ -154,10 +154,10 @@ class PaIndexadoresLavouraPermanenteCenso2006(_BaseRow):
         description="Total quantity sold", json_schema_extra={"unit": "ton"}
     )
     valor_producao: Decimal | None = Field(
-        description="Total production value", json_schema_extra={"unit": "BRL"}
+        description="Total production value", json_schema_extra={"unit": "1000xBRL"}
     )
     valor_venda: Decimal | None = Field(
-        description="Total sales value", json_schema_extra={"unit": "BRL"}
+        description="Total sales value", json_schema_extra={"unit": "1000xBRL"}
     )
     autoconsumo_quantidade_estabelecimentos: Decimal | None = Field(
         description="Establishments reporting self-consumption",
@@ -173,11 +173,11 @@ class PaIndexadoresLavouraPermanenteCenso2006(_BaseRow):
     )
     autoconsumo_valor_producao: Decimal | None = Field(
         description="Production value for self-consumption",
-        json_schema_extra={"unit": "BRL"},
+        json_schema_extra={"unit": "1000xBRL"},
     )
     autoconsumo_valor_venda: Decimal | None = Field(
         description="Sales value for self-consumption",
-        json_schema_extra={"unit": "BRL"},
+        json_schema_extra={"unit": "1000xBRL"},
     )
     comercio_quantidade_estabelecimentos: Decimal | None = Field(
         description="Establishments reporting commercial production",
@@ -191,11 +191,11 @@ class PaIndexadoresLavouraPermanenteCenso2006(_BaseRow):
     )
     comercio_valor_producao: Decimal | None = Field(
         description="Production value attributed to commerce",
-        json_schema_extra={"unit": "BRL"},
+        json_schema_extra={"unit": "1000xBRL"},
     )
     comercio_valor_venda: Decimal | None = Field(
         description="Sales value attributed to commerce",
-        json_schema_extra={"unit": "BRL"},
+        json_schema_extra={"unit": "1000xBRL"},
     )
 
 
@@ -220,17 +220,18 @@ class PaIndexadoresLavouraPermanenteCenso2017(_BaseRow):
         json_schema_extra={"unit": "ton"},
     )
     valor_producao: Decimal | None = Field(
-        description="Total production value", json_schema_extra={"unit": "BRL"}
+        description="Total production value", json_schema_extra={"unit": "1000xBRL"}
     )
     valor_venda: Decimal | None = Field(
-        description="Total sales value", json_schema_extra={"unit": "BRL"}
+        description="Total sales value", json_schema_extra={"unit": "1000xBRL"}
     )
     comercio_valor_producao: Decimal | None = Field(
-        description="Sales value (commerce alias)", json_schema_extra={"unit": "BRL"}
+        description="Sales value (commerce alias)",
+        json_schema_extra={"unit": "1000xBRL"},
     )
     autoconsumo_valor_producao: Decimal | None = Field(
         description="Production minus sales (self-consumption)",
-        json_schema_extra={"unit": "BRL"},
+        json_schema_extra={"unit": "1000xBRL"},
     )
     area_colhida: Decimal | None = Field(
         description="Harvested area", json_schema_extra={"unit": "hectare"}
@@ -253,10 +254,10 @@ class PaIndexadoresExtracaoVegetalCenso2006(_BaseRow):
         description="Total quantity sold", json_schema_extra={"unit": "ton"}
     )
     valor_producao: Decimal | None = Field(
-        description="Total production value", json_schema_extra={"unit": "BRL"}
+        description="Total production value", json_schema_extra={"unit": "1000xBRL"}
     )
     valor_venda: Decimal | None = Field(
-        description="Total sales value", json_schema_extra={"unit": "BRL"}
+        description="Total sales value", json_schema_extra={"unit": "1000xBRL"}
     )
     autoconsumo_quantidade_estabelecimentos: Decimal | None = Field(
         description="Establishments reporting self-consumption",
@@ -272,11 +273,11 @@ class PaIndexadoresExtracaoVegetalCenso2006(_BaseRow):
     )
     autoconsumo_valor_producao: Decimal | None = Field(
         description="Production value for self-consumption",
-        json_schema_extra={"unit": "BRL"},
+        json_schema_extra={"unit": "1000xBRL"},
     )
     autoconsumo_valor_venda: Decimal | None = Field(
         description="Sales value for self-consumption",
-        json_schema_extra={"unit": "BRL"},
+        json_schema_extra={"unit": "1000xBRL"},
     )
     comercio_quantidade_estabelecimentos: Decimal | None = Field(
         description="Establishments reporting commerce",
@@ -289,10 +290,11 @@ class PaIndexadoresExtracaoVegetalCenso2006(_BaseRow):
         description="Quantity sold for commerce", json_schema_extra={"unit": "ton"}
     )
     comercio_valor_producao: Decimal | None = Field(
-        description="Production value for commerce", json_schema_extra={"unit": "BRL"}
+        description="Production value for commerce",
+        json_schema_extra={"unit": "1000xBRL"},
     )
     comercio_valor_venda: Decimal | None = Field(
-        description="Sales value for commerce", json_schema_extra={"unit": "BRL"}
+        description="Sales value for commerce", json_schema_extra={"unit": "1000xBRL"}
     )
 
 
@@ -316,17 +318,18 @@ class PaIndexadoresExtracaoVegetalCenso2017(_BaseRow):
         json_schema_extra={"unit": "ton"},
     )
     valor_producao: Decimal | None = Field(
-        description="Total production value", json_schema_extra={"unit": "BRL"}
+        description="Total production value", json_schema_extra={"unit": "1000xBRL"}
     )
     valor_venda: Decimal | None = Field(
-        description="Total sales value", json_schema_extra={"unit": "BRL"}
+        description="Total sales value", json_schema_extra={"unit": "1000xBRL"}
     )
     comercio_valor_producao: Decimal | None = Field(
-        description="Sales value (commerce alias)", json_schema_extra={"unit": "BRL"}
+        description="Sales value (commerce alias)",
+        json_schema_extra={"unit": "1000xBRL"},
     )
     autoconsumo_valor_producao: Decimal | None = Field(
         description="Production minus sales (self-consumption)",
-        json_schema_extra={"unit": "BRL"},
+        json_schema_extra={"unit": "1000xBRL"},
     )
 
 
@@ -341,7 +344,7 @@ class PaIndexadoresDespesasCenso2006_2017(_BaseRow):
         json_schema_extra={"unit": "head_count"},
     )
     valor_despesa: Decimal | None = Field(
-        description="Total expense value", json_schema_extra={"unit": "BRL"}
+        description="Total expense value", json_schema_extra={"unit": "1000xBRL"}
     )
 
 
@@ -353,7 +356,7 @@ class PaIndexadoresLavouraPermanentePam(_BaseRow):
     )
     valor_producao: Decimal | None = Field(
         description="Production value (PAM permanente)",
-        json_schema_extra={"unit": "BRL"},
+        json_schema_extra={"unit": "1000xBRL"},
     )
     area_destinada_colheita: Decimal | None = Field(
         description="Area destined for harvest", json_schema_extra={"unit": "hectare"}
@@ -375,7 +378,7 @@ class PaIndexadoresLavouraTemporariaPam(_BaseRow):
     )
     valor_producao: Decimal | None = Field(
         description="Production value (PAM temporária)",
-        json_schema_extra={"unit": "BRL"},
+        json_schema_extra={"unit": "1000xBRL"},
     )
     area_plantada: Decimal | None = Field(
         description="Planted area", json_schema_extra={"unit": "hectare"}
@@ -395,5 +398,5 @@ class PaIndexadoresExtracaoVegetalPevs(_BaseRow):
         description="Quantity produced (PEVS)", json_schema_extra={"unit": "ton"}
     )
     valor_producao: Decimal | None = Field(
-        description="Production value (PEVS)", json_schema_extra={"unit": "BRL"}
+        description="Production value (PEVS)", json_schema_extra={"unit": "1000xBRL"}
     )

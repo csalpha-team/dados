@@ -37,8 +37,8 @@ class PaIndexadoresValorProducaoCenso2006_2017(BaseModel):
         json_schema_extra={"unit": "head_count"},
     )
     valor_producao: Decimal | None = Field(
-        description="Total production value",
-        json_schema_extra={"unit": "BRL"},
+        description="Total production value, in thousands of BRL (IBGE source unit 'Mil Reais')",
+        json_schema_extra={"unit": "1000xBRL"},
     )
 
 

@@ -32,7 +32,8 @@ class AlIbgeCensoagroTbl19092006(BaseModel):
         json_schema_extra={"unit": "head_count"},
     )
     valor_despesa: Decimal | None = Field(
-        description="Reported expenditure amount", json_schema_extra={"unit": "BRL"}
+        description="Reported expenditure amount, in thousands of BRL (IBGE source unit 'Mil Reais')",
+        json_schema_extra={"unit": "1000xBRL"},
     )
 
 
@@ -53,7 +54,8 @@ class AlIbgeCensoagroTbl19312006(BaseModel):
         json_schema_extra={"unit": "head_count"},
     )
     valor_producao: Decimal | None = Field(
-        description="Value of production", json_schema_extra={"unit": "BRL"}
+        description="Value of production, in thousands of BRL (IBGE source unit 'Mil Reais')",
+        json_schema_extra={"unit": "1000xBRL"},
     )
 
 
@@ -84,10 +86,12 @@ class _Censo2233Like(BaseModel):
         json_schema_extra={"unit": "ton"},
     )
     valor_producao: Decimal | None = Field(
-        description="Value of production", json_schema_extra={"unit": "BRL"}
+        description="Value of production, in thousands of BRL (IBGE source unit 'Mil Reais')",
+        json_schema_extra={"unit": "1000xBRL"},
     )
     valor_venda: Decimal | None = Field(
-        description="Value of sales", json_schema_extra={"unit": "BRL"}
+        description="Value of sales, in thousands of BRL (IBGE source unit 'Mil Reais')",
+        json_schema_extra={"unit": "1000xBRL"},
     )
 
     autoconsumo_quantidade_estabelecimentos: Decimal | None = Field(
@@ -103,12 +107,12 @@ class _Censo2233Like(BaseModel):
         json_schema_extra={"unit": "ton"},
     )
     autoconsumo_valor_producao: Decimal | None = Field(
-        description="Value of production consumed on-farm",
-        json_schema_extra={"unit": "BRL"},
+        description="Value of production consumed on-farm, in thousands of BRL (IBGE source unit 'Mil Reais')",
+        json_schema_extra={"unit": "1000xBRL"},
     )
     autoconsumo_valor_venda: Decimal | None = Field(
-        description="Value of sales from on-farm consumption portion",
-        json_schema_extra={"unit": "BRL"},
+        description="Value of sales from on-farm consumption portion, in thousands of BRL (IBGE source unit 'Mil Reais')",
+        json_schema_extra={"unit": "1000xBRL"},
     )
 
     comercio_quantidade_estabelecimentos: Decimal | None = Field(
@@ -123,11 +127,12 @@ class _Censo2233Like(BaseModel):
         description="Quantity sold commercialized", json_schema_extra={"unit": "ton"}
     )
     comercio_valor_producao: Decimal | None = Field(
-        description="Value of production commercialized",
-        json_schema_extra={"unit": "BRL"},
+        description="Value of production commercialized, in thousands of BRL (IBGE source unit 'Mil Reais')",
+        json_schema_extra={"unit": "1000xBRL"},
     )
     comercio_valor_venda: Decimal | None = Field(
-        description="Value of sales commercialized", json_schema_extra={"unit": "BRL"}
+        description="Value of sales commercialized, in thousands of BRL (IBGE source unit 'Mil Reais')",
+        json_schema_extra={"unit": "1000xBRL"},
     )
 
     unidade_medida: str | None = Field(
@@ -175,7 +180,8 @@ class AlIbgeCensoagroTbl22842006(BaseModel):
         json_schema_extra={"unit": "ton"},
     )
     valor_producao: Decimal | None = Field(
-        description="Value of production", json_schema_extra={"unit": "BRL"}
+        description="Value of production, in thousands of BRL (IBGE source unit 'Mil Reais')",
+        json_schema_extra={"unit": "1000xBRL"},
     )
 
     autoconsumo_quantidade_estabelecimentos: Decimal | None = Field(
@@ -191,8 +197,8 @@ class AlIbgeCensoagroTbl22842006(BaseModel):
         json_schema_extra={"unit": "ton"},
     )
     autoconsumo_valor_producao: Decimal | None = Field(
-        description="Value of production consumed on-farm",
-        json_schema_extra={"unit": "BRL"},
+        description="Value of production consumed on-farm, in thousands of BRL (IBGE source unit 'Mil Reais')",
+        json_schema_extra={"unit": "1000xBRL"},
     )
 
     comercio_quantidade_estabelecimentos: Decimal | None = Field(
@@ -207,8 +213,8 @@ class AlIbgeCensoagroTbl22842006(BaseModel):
         description="Quantity sold commercialized", json_schema_extra={"unit": "ton"}
     )
     comercio_valor_producao: Decimal | None = Field(
-        description="Value of production commercialized",
-        json_schema_extra={"unit": "BRL"},
+        description="Value of production commercialized, in thousands of BRL (IBGE source unit 'Mil Reais')",
+        json_schema_extra={"unit": "1000xBRL"},
     )
 
     unidade_medida: str | None = Field(
@@ -244,7 +250,8 @@ class AlIbgeCensoagroTbl23372006(BaseModel):
         json_schema_extra={"unit": "ton"},
     )
     valor_producao: Decimal | None = Field(
-        description="Value of production", json_schema_extra={"unit": "BRL"}
+        description="Value of production, in thousands of BRL (IBGE source unit 'Mil Reais')",
+        json_schema_extra={"unit": "1000xBRL"},
     )
     area_colhida: Decimal | None = Field(
         description="Harvested area", json_schema_extra={"unit": "hectare"}
@@ -332,7 +339,8 @@ class AlIbgeCensoagroTbl68982017(BaseModel):
         json_schema_extra={"unit": "head_count"},
     )
     valor_producao: Decimal | None = Field(
-        description="Value of production", json_schema_extra={"unit": "BRL"}
+        description="Value of production, in thousands of BRL (IBGE source unit 'Mil Reais')",
+        json_schema_extra={"unit": "1000xBRL"},
     )
 
 
@@ -364,10 +372,12 @@ class _Censo2017ProdutoLike(BaseModel):
         json_schema_extra={"unit": "ton"},
     )
     valor_producao: Decimal | None = Field(
-        description="Value of production", json_schema_extra={"unit": "BRL"}
+        description="Value of production, in thousands of BRL (IBGE source unit 'Mil Reais')",
+        json_schema_extra={"unit": "1000xBRL"},
     )
     valor_venda: Decimal | None = Field(
-        description="Value of sales", json_schema_extra={"unit": "BRL"}
+        description="Value of sales, in thousands of BRL (IBGE source unit 'Mil Reais')",
+        json_schema_extra={"unit": "1000xBRL"},
     )
 
     unidade_medida: str | None = Field(

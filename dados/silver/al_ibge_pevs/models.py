@@ -27,7 +27,11 @@ class AlIbgePevsExtracaoVegetal(BaseModel):
         json_schema_extra={"unit": "ton"},
     )
     valor_producao: Decimal | None = Field(
-        description="Value of vegetal-extraction production (deflated by currency_fix)",
+        description=(
+            "Value of vegetal-extraction production. Historical currencies normalized by "
+            "currency_fix to the Mil Reais base; kept in thousands of BRL (IBGE source unit "
+            "'Mil Reais')."
+        ),
         json_schema_extra={"unit": "1000xBRL"},
     )
     unidade_medida: str | None = Field(

@@ -79,10 +79,10 @@ def transform(df: pd.DataFrame) -> pd.DataFrame:
     # ('Mil árvores') ficam intactos. Dirigido pela unidade vinda dos metadados.
     df = pevs_volume_to_weight(df, PEVS_DENSIDADE_TON_M3)
 
+    # currency_fix é row-wise (lê ano + valor_producao): deflaciona as moedas históricas
+    # (Cruzeiros/Cruzados/Cruzados Novos/Cruzeiros Reais) para a base atual (Mil Reais).
     df["valor_producao"] = df["valor_producao"].astype("float")
-    df["valor_producao"] = df["valor_producao"].apply(
-        lambda x: currency_fix(x) if isinstance(x, str) else x
-    )
+    df["valor_producao"] = df.apply(currency_fix, axis=1)
 
     return df[list(AlIbgePevsExtracaoVegetal.model_fields.keys())]
 

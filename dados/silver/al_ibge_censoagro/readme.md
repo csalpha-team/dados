@@ -13,8 +13,15 @@ Tabelas no escopo (uma por agregado/ano):
 | Lavoura temporária | `226` | `tbl_2284_2006` (2284), `tbl_2337_2006` (2237) | `tbl_6957_2017` (6957) |
 
 As demais tabelas do dataset (`tbl_1909/1931/2782/2006`, `tbl_6885/6898/6899/2017`) só têm
-contagem de estabelecimentos e valores em BRL — **não têm unidade física** e ficam fora
+contagem de estabelecimentos e valores monetários — **não têm unidade física** e ficam fora
 deste tratamento.
+
+> **Unidade monetária.** Todas as variáveis de valor do Censo Agropecuário (`valor_producao`,
+> `valor_venda`, `valor_despesa` e derivadas de autoconsumo/comércio) vêm da API do IBGE com
+> `unidade = "Mil Reais"`. O pipeline **mantém essa escala**: os modelos silver e gold declaram
+> `unit: "1000xBRL"` (1000×BRL). Não há conversão para BRL — os algoritmos downstream já assumem
+> 1000xBRL. O mesmo vale para PAM e PEVS (mesma origem; `currency_fix` normaliza moedas históricas
+> para a base Mil Reais).
 
 ---
 

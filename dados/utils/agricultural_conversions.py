@@ -47,7 +47,7 @@ def products_weight_ratio_fix(row):
         "Caqui": 0.18,
         "Figo": 0.09,
         "Goiaba": 0.16,
-        "Larajna": 0.16,
+        "Laranja": 0.16,
         "Limão": 0.10,
         "Maçã": 0.15,
         "Mamão": 0.80,
