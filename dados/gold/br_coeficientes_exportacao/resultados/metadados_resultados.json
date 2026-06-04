@@ -1,0 +1,8 @@
+{
+  "fonte_exportacoes": "https://api-comexstat.mdic.gov.br/general?language=pt",
+  "uf": "PA",
+  "codigo_uf": 15,
+  "linhas_exportacoes_ncm": 11281,
+  "linhas_coeficientes": 770,
+  "observacao": "ComexStat geral retorna dados a partir de 1997; anos anteriores em anos_previsao sao estimados pela regressao linear do pipeline."
+}
