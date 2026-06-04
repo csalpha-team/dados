@@ -1,9 +1,9 @@
 """Shared helpers for pa_indexadores_producao_rural gold flows.
 
 Every flow in this dataset reads a silver table filtered to Pará municipalities
-(``id_municipio LIKE '15%'``), enriches with a municipality directory pulled
-from Base dos Dados (BigQuery), and maps the result onto the integration
-region (``RI``) dictionary in :mod:`dados.gold.pa_indexadores_producao_rural.utils`.
+(``id_municipio LIKE '15%'``) and enriches it with the integration-region (``RI``)
+directory from the silver table ``br_csalpha_diretorios_brasil.regioes_integracao``
+(see :func:`enrich_with_regiao`).
 """
 
 from __future__ import annotations

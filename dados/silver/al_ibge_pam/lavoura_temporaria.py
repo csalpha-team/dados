@@ -11,7 +11,11 @@ from dotenv import load_dotenv
 from dados.raw.utils.postgres_interactions import PostgresETL
 from dados.silver.al_ibge_pam.models import AlIbgePamLavouraTemporaria
 from dados.silver.constants.produtos import dicionario_produtos_pam_temporaria
-from dados.silver.utils import currency_fix, fix_ibge_digits
+from dados.silver.utils import (
+    currency_fix,
+    fix_ibge_digits,
+    products_weight_ratio_fix,
+)
 from dados.utils.logging import get_logger
 from dados.utils.pydantic_postgres import pydantic_to_postgres_columns
 
@@ -44,7 +48,8 @@ def extract() -> pd.DataFrame:
             MAX(CASE WHEN nome_variavel = 'Valor da produção' THEN valor END) AS valor_producao,
             MAX(CASE WHEN nome_variavel = 'Área plantada' THEN valor END) AS area_plantada,
             MAX(CASE WHEN nome_variavel = 'Área colhida' THEN valor END) AS area_colhida,
-            MAX(CASE WHEN nome_variavel = 'Rendimento médio da produção' THEN valor END) AS rendimento_medio_producao
+            MAX(CASE WHEN nome_variavel = 'Rendimento médio da produção' THEN valor END) AS rendimento_medio_producao,
+            MAX(CASE WHEN nome_variavel = 'Quantidade produzida' THEN unidade_medida END) AS unidade_medida
         FROM {DATASET_ID}.{TABLE}
         GROUP BY ano, id_municipio, produto
     """
@@ -60,14 +65,24 @@ def extract() -> pd.DataFrame:
 
 def transform(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
-    df["produto"] = df["produto"].map(dicionario_produtos_pam_temporaria)
 
     df = fix_ibge_digits(df, METRIC_COLS, PK_COLS)
 
+    # Conversão temporal das frutíferas (pré-2001): melancia e melão eram informados em
+    # mil frutos (rendimento em frutos/ha) e passaram a toneladas/kg/ha em 2001.
+    # products_weight_ratio_fix usa os nomes ORIGINAIS do IBGE, por isso roda ANTES do
+    # map de padronização. Exige quantidade_produzida e area_colhida numéricas.
+    df[["quantidade_produzida", "area_colhida"]] = df[
+        ["quantidade_produzida", "area_colhida"]
+    ].apply(pd.to_numeric, errors="coerce")
+    df = df.apply(products_weight_ratio_fix, axis=1)
+
+    df["produto"] = df["produto"].map(dicionario_produtos_pam_temporaria)
+
+    # currency_fix é row-wise (lê ano + valor_producao): deflaciona as moedas históricas
+    # (Cruzeiros/Cruzados/Cruzados Novos/Cruzeiros Reais) para a base atual (Mil Reais).
     df["valor_producao"] = df["valor_producao"].astype("float")
-    df["valor_producao"] = df["valor_producao"].apply(
-        lambda x: currency_fix(x) if isinstance(x, str) else x
-    )
+    df["valor_producao"] = df.apply(currency_fix, axis=1)
     return df[list(AlIbgePamLavouraTemporaria.model_fields.keys())]
 
 
@@ -83,6 +98,10 @@ def validate(df: pd.DataFrame) -> pd.DataFrame:
 
     for col in METRIC_COLS:
         df[col] = df[col].apply(lambda v: None if pd.isna(v) else Decimal(str(v)))
+
+    df["unidade_medida"] = df["unidade_medida"].apply(
+        lambda v: None if pd.isna(v) or str(v).strip() in ("", "NaN", "nan") else v
+    )
 
     [AlIbgePamLavouraTemporaria(**r) for r in df.to_dict("records")]
     return df
