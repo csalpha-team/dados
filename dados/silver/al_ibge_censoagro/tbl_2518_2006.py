@@ -15,8 +15,16 @@ from dados.silver.al_ibge_censoagro._common import (
     write_silver,
 )
 from dados.silver.al_ibge_censoagro.models import AlIbgeCensoagroTbl25182006
-from dados.silver.constants.produtos import dicionario_produtos_censo_6955_2518
-from dados.silver.utils import calcula_autoconsumo_comercio, fix_ibge_digits
+from dados.silver.constants.produtos import (
+    CENSO_FATOR_MIL_M3_TON,
+    CENSO_KG_POR_FRUTO,
+    dicionario_produtos_censo_6955_2518,
+)
+from dados.silver.utils import (
+    calcula_autoconsumo_comercio,
+    censo_quantity_to_weight,
+    fix_ibge_digits,
+)
 from dados.utils.logging import get_logger
 
 load_dotenv()
@@ -51,7 +59,8 @@ def extract() -> pd.DataFrame:
             MAX(CASE WHEN nome_variavel = 'Valor da produção dos estabelecimentos agropecuários com mais de 50 pés existentes em 31/12' THEN valor END) AS valor_producao,
             MAX(CASE WHEN nome_variavel = 'Valor das vendas dos estabelecimentos agropecuários com mais de 50 pés existentes em 31/12' THEN valor END) AS valor_venda,
             MAX(CASE WHEN nome_variavel = 'Área colhida nos estabelecimentos agropecuários com mais de 50 pés existentes em 31/12' THEN valor END) AS area_colhida,
-            MAX(CASE WHEN nome_variavel = 'Área plantada nos estabelecimentos agropecuários com mais de 50 pés existentes em 31/12' THEN valor END) AS area_plantada
+            MAX(CASE WHEN nome_variavel = 'Área plantada nos estabelecimentos agropecuários com mais de 50 pés existentes em 31/12' THEN valor END) AS area_plantada,
+            MAX(CASE WHEN nome_variavel = 'Quantidade produzida nos estabelecimentos agropecuários com mais de 50 pés existentes em 31/12' THEN unidade_medida END) AS unidade_medida
         FROM {DATASET_ID}.{TABLE}
         WHERE tipo_agricultura IN ('Agricultura familiar - Lei 11.326', 'Agricultura não familiar')
         GROUP BY ano, id_municipio, produto, tipo_agricultura, tipo_consumo_estocagem, tipo_venda_entrega
@@ -78,9 +87,16 @@ def transform(df: pd.DataFrame) -> pd.DataFrame:
         div_column="quantidade_estabelecimentos",
     )
 
+    df = censo_quantity_to_weight(
+        df,
+        ["quantidade_produzida", "quantidade_vendida"],
+        CENSO_FATOR_MIL_M3_TON,
+        CENSO_KG_POR_FRUTO,
+    )
+
     df = calcula_autoconsumo_comercio(
         df=df,
-        id_cols=PK_COLS,
+        id_cols=PK_COLS + ["unidade_medida"],
         metric_cols=METRIC_COLS,
         category_col="tipo_consumo_estocagem",
         total_label="Total",
@@ -93,7 +109,10 @@ def validate(df: pd.DataFrame) -> pd.DataFrame:
     if df.empty:
         raise ValueError("transform produced an empty dataframe")
     assert_pk_unique(df, PK_COLS)
-    decimal_cols = [c for c in df.columns if c not in PK_COLS]
+    df["unidade_medida"] = df["unidade_medida"].apply(
+        lambda v: None if pd.isna(v) or str(v).strip() in ("", "NaN", "nan") else v
+    )
+    decimal_cols = [c for c in df.columns if c not in PK_COLS + ["unidade_medida"]]
     df = coerce_decimals(df, decimal_cols)
     [AlIbgeCensoagroTbl25182006(**r) for r in df.to_dict("records")]
     return df

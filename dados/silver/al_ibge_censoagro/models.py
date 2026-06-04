@@ -76,10 +76,12 @@ class _Censo2233Like(BaseModel):
         description="Number of farms", json_schema_extra={"unit": "head_count"}
     )
     quantidade_produzida: Decimal | None = Field(
-        description="Quantity produced", json_schema_extra={"unit": "ton"}
+        description="Quantity produced (effective unit in unidade_medida)",
+        json_schema_extra={"unit": "ton"},
     )
     quantidade_vendida: Decimal | None = Field(
-        description="Quantity sold", json_schema_extra={"unit": "ton"}
+        description="Quantity sold (effective unit in unidade_medida)",
+        json_schema_extra={"unit": "ton"},
     )
     valor_producao: Decimal | None = Field(
         description="Value of production", json_schema_extra={"unit": "BRL"}
@@ -128,6 +130,15 @@ class _Censo2233Like(BaseModel):
         description="Value of sales commercialized", json_schema_extra={"unit": "BRL"}
     )
 
+    unidade_medida: str | None = Field(
+        description=(
+            "Effective unit of the stored quantities: 'Toneladas' (incl. wood "
+            "converted from 'Mil metros cúbicos' and fruit from 'Mil frutos'); "
+            "null for the 'Total' aggregate."
+        ),
+        json_schema_extra={"unit": "code"},
+    )
+
 
 class AlIbgeCensoagroTbl22332006(_Censo2233Like):
     pass
@@ -156,10 +167,12 @@ class AlIbgeCensoagroTbl22842006(BaseModel):
         description="Number of farms", json_schema_extra={"unit": "head_count"}
     )
     quantidade_produzida: Decimal | None = Field(
-        description="Quantity produced", json_schema_extra={"unit": "ton"}
+        description="Quantity produced (effective unit in unidade_medida)",
+        json_schema_extra={"unit": "ton"},
     )
     quantidade_vendida: Decimal | None = Field(
-        description="Quantity sold", json_schema_extra={"unit": "ton"}
+        description="Quantity sold (effective unit in unidade_medida)",
+        json_schema_extra={"unit": "ton"},
     )
     valor_producao: Decimal | None = Field(
         description="Value of production", json_schema_extra={"unit": "BRL"}
@@ -198,6 +211,14 @@ class AlIbgeCensoagroTbl22842006(BaseModel):
         json_schema_extra={"unit": "BRL"},
     )
 
+    unidade_medida: str | None = Field(
+        description=(
+            "Effective unit of the stored quantities: 'Toneladas' (incl. fruit "
+            "converted from 'Mil frutos', e.g. abacaxi); null for the 'Total' aggregate."
+        ),
+        json_schema_extra={"unit": "code"},
+    )
+
 
 class AlIbgeCensoagroTbl23372006(BaseModel):
     ano: int = Field(description="Reference year", json_schema_extra={"unit": "YYYY"})
@@ -215,16 +236,26 @@ class AlIbgeCensoagroTbl23372006(BaseModel):
         description="Number of farms", json_schema_extra={"unit": "head_count"}
     )
     quantidade_produzida: Decimal | None = Field(
-        description="Quantity produced", json_schema_extra={"unit": "ton"}
+        description="Quantity produced (effective unit in unidade_medida)",
+        json_schema_extra={"unit": "ton"},
     )
     quantidade_vendida: Decimal | None = Field(
-        description="Quantity sold", json_schema_extra={"unit": "ton"}
+        description="Quantity sold (effective unit in unidade_medida)",
+        json_schema_extra={"unit": "ton"},
     )
     valor_producao: Decimal | None = Field(
         description="Value of production", json_schema_extra={"unit": "BRL"}
     )
     area_colhida: Decimal | None = Field(
         description="Harvested area", json_schema_extra={"unit": "hectare"}
+    )
+
+    unidade_medida: str | None = Field(
+        description=(
+            "Effective unit of the stored quantities: 'Toneladas' (incl. fruit "
+            "converted from 'Mil frutos', e.g. abacaxi); null for the 'Total' aggregate."
+        ),
+        json_schema_extra={"unit": "code"},
     )
 
 
@@ -325,16 +356,27 @@ class _Censo2017ProdutoLike(BaseModel):
         description="Number of farms", json_schema_extra={"unit": "head_count"}
     )
     quantidade_produzida: Decimal | None = Field(
-        description="Quantity produced", json_schema_extra={"unit": "ton"}
+        description="Quantity produced (effective unit in unidade_medida)",
+        json_schema_extra={"unit": "ton"},
     )
     quantidade_vendida: Decimal | None = Field(
-        description="Quantity sold", json_schema_extra={"unit": "ton"}
+        description="Quantity sold (effective unit in unidade_medida)",
+        json_schema_extra={"unit": "ton"},
     )
     valor_producao: Decimal | None = Field(
         description="Value of production", json_schema_extra={"unit": "BRL"}
     )
     valor_venda: Decimal | None = Field(
         description="Value of sales", json_schema_extra={"unit": "BRL"}
+    )
+
+    unidade_medida: str | None = Field(
+        description=(
+            "Effective unit of the stored quantities: 'Toneladas' (incl. wood "
+            "converted from 'Mil metros cúbicos' and fruit from 'Mil frutos'); "
+            "'Mil unidades' for seedlings (counts, not converted); null for 'Total'."
+        ),
+        json_schema_extra={"unit": "code"},
     )
 
 

@@ -3,6 +3,7 @@ import pandas as pd
 from typing import List
 
 from dados.utils.agricultural_conversions import (
+    censo_quantity_to_weight,
     currency_fix,
     pevs_volume_to_weight,
     products_weight_ratio_fix,
@@ -14,6 +15,7 @@ __all__ = [
     "currency_fix",
     "products_weight_ratio_fix",
     "pevs_volume_to_weight",
+    "censo_quantity_to_weight",
     "check_duplicates",
     "calcula_autoconsumo_comercio",
 ]
