@@ -274,6 +274,7 @@ As zonas e suas variáveis de ambiente são definidas em `.env` (template em
 DB_PREFIX=zona
 DB_RAW_ZONE=${DB_PREFIX}_brutos
 DB_SILVER_ZONE=${DB_PREFIX}_tratados
+DB_GOLD_ZONE=${DB_PREFIX}_gold
 DB_AGREGATED_ZONE=${DB_PREFIX}_agregated
 ```
 
