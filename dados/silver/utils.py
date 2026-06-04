@@ -2,13 +2,18 @@ import numpy as np
 import pandas as pd
 from typing import List
 
-from dados.utils.agricultural_conversions import currency_fix, products_weight_ratio_fix
+from dados.utils.agricultural_conversions import (
+    currency_fix,
+    pevs_volume_to_weight,
+    products_weight_ratio_fix,
+)
 
 __all__ = [
     "fix_ibge_digits",
     "fix_ibge_x_digit",
     "currency_fix",
     "products_weight_ratio_fix",
+    "pevs_volume_to_weight",
     "check_duplicates",
     "calcula_autoconsumo_comercio",
 ]

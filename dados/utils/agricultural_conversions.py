@@ -88,3 +88,23 @@ def products_weight_ratio_fix(row):
     row["rendimento_medio_producao"] = rendimento_medio_producao
 
     return row
+
+
+def pevs_volume_to_weight(
+    df: pd.DataFrame,
+    fator_ton_m3: float,
+    unidade_col: str = "unidade_medida",
+    qty_col: str = "quantidade_produzida",
+) -> pd.DataFrame:
+    """Converte a quantidade de m³ para toneladas onde a unidade nativa é 'Metros cúbicos'.
+
+    A PEVS informa lenha, madeira em tora e nó-de-pinho em metros cúbicos e os demais
+    produtos em massa. Dirigido pela coluna ``unidade_medida`` ingerida dos metadados do
+    IBGE: multiplica as linhas em m³ pela densidade (t/m³) e marca a unidade efetiva como
+    'Toneladas'. 'Mil árvores' (árvores abatidas) e 'Toneladas' permanecem intactos.
+    """
+    df = df.copy()
+    mask = df[unidade_col] == "Metros cúbicos"
+    df.loc[mask, qty_col] = df.loc[mask, qty_col].astype(float) * fator_ton_m3
+    df.loc[mask, unidade_col] = "Toneladas"
+    return df

@@ -83,6 +83,31 @@ async def fetch(session: aiohttp.ClientSession, url: str) -> Dict[str, Any]:
     raise Exception(f"Falha ao buscar {url} após múltiplas tentativas")
 
 
+async def fetch_agregado_metadados(agregado: str) -> Dict[str, Any]:
+    """Busca os metadados de um agregado da API do IBGE (variáveis e classificações)."""
+    url = f"https://servicodados.ibge.gov.br/api/v3/agregados/{agregado}/metadados"
+    async with aiohttp.ClientSession(timeout=ClientTimeout(total=120)) as session:
+        return await fetch(session, url)
+
+
+def get_classificacao_unidades(agregado: str, classificacao_id: str) -> Dict[str, str]:
+    """Retorna ``{id_categoria: unidade}`` para uma classificação de um agregado.
+
+    As unidades de medida da PEVS são especificadas a nível de produto (categoria) na
+    classificação, e não na variável. Usado para enriquecer a ingestão raw com a
+    ``unidade_medida`` correta por produto.
+    """
+    meta = asyncio.run(fetch_agregado_metadados(agregado))
+    for classificacao in meta.get("classificacoes", []):
+        if str(classificacao.get("id")) == str(classificacao_id):
+            return {
+                str(cat["id"]): cat.get("unidade")
+                for cat in classificacao.get("categorias", [])
+                if cat.get("unidade")
+            }
+    return {}
+
+
 async def async_crawler_ibge_municipio(
     year: List[int],
     variables: List[str],

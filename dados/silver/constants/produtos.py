@@ -12,6 +12,11 @@
 
 
 ### EXTRAÇÃO VEGETAL
+
+# Densidade básica média de madeira (t/m³), usada para converter produtos da PEVS
+# medidos em m³ (lenha, madeira em tora, nó-de-pinho) para toneladas no silver.
+PEVS_DENSIDADE_TON_M3 = 0.5
+
 dicionario_produtos_pevs = {
     "1 - Alimentícios": "1-alimentícios",
     "1.1 - Açaí (fruto)": "açaí-fruto",

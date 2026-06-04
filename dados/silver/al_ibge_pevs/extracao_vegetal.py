@@ -3,7 +3,7 @@
 Pivots the long-form raw landing into one row per (id_municipio, ano, produto)
 with ``quantidade_produzida`` and ``valor_producao`` columns, applies the IBGE
 non-numeric digit fix and currency deflator, and lands at
-``$DB_SILVER_ZONE.al_ibge_pevs.extracao_vegetal``.
+``$DB_SILVER_ZONE.al_ibge_pevs.produtos_extracao_vegetal``.
 """
 
 from __future__ import annotations
@@ -16,8 +16,11 @@ from dotenv import load_dotenv
 
 from dados.raw.utils.postgres_interactions import PostgresETL
 from dados.silver.al_ibge_pevs.models import AlIbgePevsExtracaoVegetal
-from dados.silver.constants.produtos import dicionario_produtos_pevs
-from dados.silver.utils import currency_fix, fix_ibge_digits
+from dados.silver.constants.produtos import (
+    PEVS_DENSIDADE_TON_M3,
+    dicionario_produtos_pevs,
+)
+from dados.silver.utils import currency_fix, fix_ibge_digits, pevs_volume_to_weight
 from dados.utils.logging import get_logger
 from dados.utils.pydantic_postgres import pydantic_to_postgres_columns
 
@@ -25,7 +28,7 @@ load_dotenv()
 
 DATASET_ID = "al_ibge_pevs"
 ZONE = "silver"
-TABLE = "extracao_vegetal"
+TABLE = "produtos_extracao_vegetal"
 RAW_TABLE = "produtos_extracao_vegetal"
 
 PK_COLS = ["id_municipio", "ano", "produto"]
@@ -50,7 +53,9 @@ def extract() -> pd.DataFrame:
             MAX(CASE WHEN nome_variavel = 'Quantidade produzida na extração vegetal'
                      THEN valor END) AS quantidade_produzida,
             MAX(CASE WHEN nome_variavel = 'Valor da produção na extração vegetal'
-                     THEN valor END) AS valor_producao
+                     THEN valor END) AS valor_producao,
+            MAX(CASE WHEN nome_variavel = 'Quantidade produzida na extração vegetal'
+                     THEN unidade_medida END) AS unidade_medida
         FROM {DATASET_ID}.{RAW_TABLE}
         GROUP BY ano, id_municipio, produto
     """
@@ -69,6 +74,10 @@ def transform(df: pd.DataFrame) -> pd.DataFrame:
     df["produto"] = df["produto"].map(dicionario_produtos_pevs)
 
     df = fix_ibge_digits(df, ["quantidade_produzida", "valor_producao"], PK_COLS)
+
+    # Normaliza produtos madeireiros (m³) para toneladas; demais (t) e contagem
+    # ('Mil árvores') ficam intactos. Dirigido pela unidade vinda dos metadados.
+    df = pevs_volume_to_weight(df, PEVS_DENSIDADE_TON_M3)
 
     df["valor_producao"] = df["valor_producao"].astype("float")
     df["valor_producao"] = df["valor_producao"].apply(
@@ -90,6 +99,11 @@ def validate(df: pd.DataFrame) -> pd.DataFrame:
 
     for col in ("quantidade_produzida", "valor_producao"):
         df[col] = df[col].apply(lambda v: None if pd.isna(v) else Decimal(str(v)))
+
+    # Produtos sem unidade nos metadados (ex. 'total') vêm como NaN/''/'NaN' → None.
+    df["unidade_medida"] = df["unidade_medida"].apply(
+        lambda v: None if pd.isna(v) or str(v).strip() in ("", "NaN", "nan") else v
+    )
 
     [AlIbgePevsExtracaoVegetal(**r) for r in df.to_dict("records")]
     return df
