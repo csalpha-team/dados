@@ -32,18 +32,27 @@ STOPWORDS = {
     "fruto",
     "in",
     "insumo",
+    "amendoa",
     "natura",
     "oleo",
+    "para",
 }
 
 ALIASES_PRODUTO = {
     "AcaiCaroco": ["acai", "caroco"],
     "AcaiFruto": ["acai"],
     "AcaiInsumo": ["acai"],
+    "CacauAmendoa": ["cacau", "cocoa"],
     "CajuAcuFruto": ["caju", "cajuacu", "caju acu"],
     "CascaBarbaTimao": ["barbatimao", "barba timao", "casca"],
     "CascaCajuacu": ["cajuacu", "caju acu", "casca"],
-    "CastanhaDoPara": ["castanha do para", "castanha do brasil", "brazil nuts"],
+    "CastanhaDoPara": [
+        "castanha do para",
+        "castanha do brasil",
+        "castanha da amazonia",
+        "brazil nuts",
+        "nuez de brasil",
+    ],
     "CestoBuriti": ["buriti", "cesto"],
     "CopaibaOleo": ["copaiba"],
     "Limao": ["limao", "limon", "lemon"],
@@ -64,10 +73,11 @@ def normalizar_texto(valor: str) -> str:
 def tokens_produto(produto: str) -> list[str]:
     separado = re.sub(r"(?<!^)(?=[A-Z])", " ", produto)
     tokens = normalizar_texto(separado).split()
-    aliases = []
-    for alias in ALIASES_PRODUTO.get(produto, []):
-        aliases.extend(normalizar_texto(alias).split())
-    return sorted({token for token in [*tokens, *aliases] if token not in STOPWORDS})
+    return sorted({token for token in tokens if token not in STOPWORDS})
+
+
+def aliases_produto(produto: str) -> list[str]:
+    return [normalizar_texto(alias) for alias in ALIASES_PRODUTO.get(produto, [])]
 
 
 def carregar_parametros() -> dict:
@@ -94,7 +104,8 @@ def _score_tokens(tokens: Iterable[str], texto_normalizado: str) -> float:
     tokens_validos = list(tokens)
     if not tokens_validos:
         return 0.0
-    encontrados = sum(1 for token in tokens_validos if token in texto_normalizado)
+    palavras = set(texto_normalizado.split())
+    encontrados = sum(1 for token in tokens_validos if token in palavras)
     return encontrados / len(tokens_validos)
 
 
@@ -102,6 +113,19 @@ def _score_similaridade(consulta: str, texto_normalizado: str) -> float:
     if not consulta or not texto_normalizado:
         return 0.0
     return SequenceMatcher(None, consulta, texto_normalizado).ratio()
+
+
+def _score_aliases(aliases: Iterable[str], texto_normalizado: str) -> float:
+    aliases_validos = [alias for alias in aliases if alias]
+    if not aliases_validos:
+        return 0.0
+
+    texto_com_bordas = f" {texto_normalizado} "
+    return (
+        1.0
+        if any(f" {alias} " in texto_com_bordas for alias in aliases_validos)
+        else 0.0
+    )
 
 
 def auditar_parametros_vs_ncm(
@@ -155,6 +179,7 @@ def gerar_candidatos_produto(
     linhas = []
     for produto in produtos_unicos:
         tokens = tokens_produto(produto)
+        aliases = aliases_produto(produto)
         consulta = " ".join(tokens)
         candidatos_produto = []
 
@@ -164,9 +189,14 @@ def gerar_candidatos_produto(
                 "esp": _score_tokens(tokens, ncm.NO_NCM_ESP_normalizado),
                 "ing": _score_tokens(tokens, ncm.NO_NCM_ING_normalizado),
             }
+            alias_scores = {
+                "por": _score_aliases(aliases, ncm.NO_NCM_POR_normalizado),
+                "esp": _score_aliases(aliases, ncm.NO_NCM_ESP_normalizado),
+                "ing": _score_aliases(aliases, ncm.NO_NCM_ING_normalizado),
+            }
             codigo = str(ncm.CO_NCM)
             parametrizado = (produto, codigo) in codigos_parametrizados
-            tem_token = max(token_scores.values()) > 0
+            tem_token = max(token_scores.values()) > 0 or max(alias_scores.values()) > 0
             if not tem_token and not parametrizado:
                 continue
 
@@ -176,7 +206,11 @@ def gerar_candidatos_produto(
                 "ing": _score_similaridade(consulta, ncm.NO_NCM_ING_normalizado),
             }
             scores_linguagem = {
-                linguagem: max(token_scores[linguagem], similaridade * 0.25)
+                linguagem: max(
+                    token_scores[linguagem],
+                    alias_scores[linguagem],
+                    similaridade * 0.25,
+                )
                 for linguagem, similaridade in similaridade_scores.items()
             }
             melhor_linguagem = max(scores_linguagem, key=scores_linguagem.get)
@@ -186,6 +220,7 @@ def gerar_candidatos_produto(
                 {
                     "produto": produto,
                     "tokens_busca": " ".join(tokens),
+                    "aliases_busca": "; ".join(aliases),
                     "id_ncm": codigo,
                     "nome_ncm_por": ncm.NO_NCM_POR,
                     "nome_ncm_esp": ncm.NO_NCM_ESP,
@@ -196,6 +231,9 @@ def gerar_candidatos_produto(
                     "token_score_por": round(token_scores["por"], 4),
                     "token_score_esp": round(token_scores["esp"], 4),
                     "token_score_ing": round(token_scores["ing"], 4),
+                    "alias_score_por": round(alias_scores["por"], 4),
+                    "alias_score_esp": round(alias_scores["esp"], 4),
+                    "alias_score_ing": round(alias_scores["ing"], 4),
                     "melhor_linguagem": melhor_linguagem,
                     "score_match": round(melhor_score, 4),
                     "ja_parametrizado": parametrizado,
