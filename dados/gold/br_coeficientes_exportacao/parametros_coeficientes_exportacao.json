@@ -1,203 +1,1161 @@
 {
   "uf_alvo": "PA",
-  "taxa_cambio_brl_por_usd": 4.99,
-  "anos_previsao": {
-    "start": 1995,
-    "end": 2023
+  "anos_previsao": [
+    1996,
+    1997,
+    1998,
+    1999,
+    2001,
+    2002,
+    2003,
+    2004,
+    2007,
+    2008,
+    2009,
+    2010,
+    2012,
+    2013,
+    2014,
+    2015,
+    2018,
+    2019,
+    2020,
+    2021,
+    2024,
+    2025
+  ],
+  "taxa_cambio_brl_por_usd": {
+    "arquivo": "../../raw/pa_me_comex_stat/taxa_cambio.csv",
+    "coluna_ano": "ano",
+    "coluna_taxa": "taxa_cambio"
   },
-  "preparacoes_produtos": {
+  "produtos_unicos_fonte": "../../raw/pa_me_comex_stat/produtos_unicos_matrizes.json",
+  "catalogo_ncm_fonte": "../../raw/pa_me_comex_stat/NCM.csv",
+  "composicao_produtos": {
     "Abacate": [
-      "Geleias e marmelades, de outras frutas",
-      "Doces, pures e pastas, de outras frutas",
-      "Misturas de frutas preparadas em água edulcorada, inclusive corantes",
-      "Misturas de frutas preparadas, conservadas de outro modo",
-      "Sucos (sumo) de outras frutas, não fermentado, sem adição de açúcar",
-      "Caramelos, confeitos, pastilhas e produtos semelhantes, sem açúcar",
-      "Outras preparações alimentícias",
-      "Purês de outras frutas"
+      {
+        "id_ncm": "08044000",
+        "nome_ncm": "Abacates frescos ou secos"
+      },
+      {
+        "id_ncm": "20079910",
+        "nome_ncm": "Geleias e marmelades, de outras frutas"
+      },
+      {
+        "id_ncm": "20079990",
+        "nome_ncm": "Doces, pures e pastas, de outras frutas"
+      },
+      {
+        "id_ncm": "20089710",
+        "nome_ncm": "Misturas de frutas preparadas em água edulcorada, inclusive corantes"
+      },
+      {
+        "id_ncm": "20089790",
+        "nome_ncm": "Misturas de frutas preparadas,conservadas de outro modo"
+      },
+      {
+        "id_ncm": "20098990",
+        "nome_ncm": "Sucos (sumo) de outras frutas, não fermentado, sem adição de açúcar"
+      },
+      {
+        "id_ncm": "21069060",
+        "nome_ncm": "Caramelos, confeitos, pastilhas e produtos semelhantes, sem açúcar"
+      },
+      {
+        "id_ncm": "21069090",
+        "nome_ncm": "Outras preparações alimentícias"
+      },
+      {
+        "id_ncm": "20079929",
+        "nome_ncm": "Purês de outras frutas"
+      }
     ],
     "Abacaxi": [
-      "Geleias e marmelades, de outras frutas",
-      "Doces, pures e pastas, de outras frutas",
-      "Abacaxis (ananases), preparados ou conservados em água edulcorada, incluindo os xaropes",
-      "Abacaxis (ananases), preparados ou conservados de outro modo",
-      "Misturas de frutas preparadas em água edulcorada, inclusive corantes",
-      "Sucos (sumo) de outras frutas, não fermentado, sem adição de açúcar",
-      "Outras preparações para elaboração de bebidas",
-      "Caramelos, confeitos, pastilhas e produtos semelhantes, sem açúcar",
-      "Outras preparações alimentícias"
+      {
+        "id_ncm": "08043000",
+        "nome_ncm": "Abacaxis frescos ou secos"
+      },
+      {
+        "id_ncm": "20094000",
+        "nome_ncm": "Sucos de abacaxis (ananases), não fermentados"
+      },
+      {
+        "id_ncm": "20094100",
+        "nome_ncm": "Suco (sumo) de abacaxi (ananás), com valor Brix não superior a 20"
+      },
+      {
+        "id_ncm": "20094900",
+        "nome_ncm": "Outros sucos de abacaxi"
+      },
+      {
+        "id_ncm": "20079910",
+        "nome_ncm": "Geleias e marmelades, de outras frutas"
+      },
+      {
+        "id_ncm": "20079990",
+        "nome_ncm": "Doces, pures e pastas, de outras frutas"
+      },
+      {
+        "id_ncm": "20082010",
+        "nome_ncm": "Abacaxis (ananases), preparados ou conservados em água edulcorada, incluindo os xaropes"
+      },
+      {
+        "id_ncm": "20082090",
+        "nome_ncm": "Abacaxis (ananases), preparados ou conservados de outro modo"
+      },
+      {
+        "id_ncm": "20089710",
+        "nome_ncm": "Misturas de frutas preparadas em água edulcorada, inclusive corantes"
+      },
+      {
+        "id_ncm": "20098990",
+        "nome_ncm": "Sucos (sumo) de outras frutas, não fermentado, sem adição de açúcar"
+      },
+      {
+        "id_ncm": "21069010",
+        "nome_ncm": "Outras preparações para elaboração de bebidas"
+      },
+      {
+        "id_ncm": "21069060",
+        "nome_ncm": "Caramelos, confeitos, pastilhas e produtos semelhantes, sem açúcar"
+      },
+      {
+        "id_ncm": "21069090",
+        "nome_ncm": "Outras preparações alimentícias"
+      }
     ],
     "AcaiCaroco": [],
     "AcaiFruto": [
-      "Purês de açaí (Euterpe oleracea)",
-      "Sucos (sumo) de outras frutas, não fermentado, sem adição de açúcar",
-      "Outras frutas não cozidas ou cozidas em água ou vapor, congeladas, mesmo adicionadas de açúcar ou de outros edulcorantes",
-      "Outras frutas, partes de plantas, preparadas/conservadas de outro modo"
+      {
+        "id_ncm": "20079921",
+        "nome_ncm": "Purês de açaí (Euterpe oleracea)"
+      },
+      {
+        "id_ncm": "20098990",
+        "nome_ncm": "Sucos (sumo) de outras frutas, não fermentado, sem adição de açúcar"
+      },
+      {
+        "id_ncm": "08119000",
+        "nome_ncm": "Outras frutas não cozidas ou cozidas em água ou vapor, congeladas, mesmo adicionadas de açúcar ou de outros edulcorantes"
+      },
+      {
+        "id_ncm": "20089900",
+        "nome_ncm": "Outras frutas, partes de plantas, preparadas/conservadas de outro modo"
+      }
+    ],
+    "AcaiInsumo": [
+      {
+        "id_ncm": "20079921",
+        "nome_ncm": "Purês de açaí (Euterpe oleracea)"
+      }
+    ],
+    "Acucar": [
+      {
+        "id_ncm": "17011100",
+        "nome_ncm": "Açúcar de cana, em bruto"
+      },
+      {
+        "id_ncm": "17011300",
+        "nome_ncm": "Açúcar de cana mencionado na nota 2 da posição 1701"
+      },
+      {
+        "id_ncm": "17011400",
+        "nome_ncm": "Outros açúcares de cana"
+      },
+      {
+        "id_ncm": "17019100",
+        "nome_ncm": "Outros açúcares de cana, beterraba, com aromatizante corante"
+      },
+      {
+        "id_ncm": "17019900",
+        "nome_ncm": "Outros açúcares de cana, beterraba, sacarose químicamente pura, sol."
+      }
+    ],
+    "Amendoim": [
+      {
+        "id_ncm": "15081000",
+        "nome_ncm": "Óleo de amendoim, em bruto"
+      },
+      {
+        "id_ncm": "15089000",
+        "nome_ncm": "Outros óleos de amendoim"
+      },
+      {
+        "id_ncm": "23050000",
+        "nome_ncm": "Tortas e outros resíduos sólidos, mesmo triturados ou em pellets, da extração do óleo de amendoim"
+      }
     ],
     "Arroz": [
-      "Outras preparações alimentícias"
+      {
+        "id_ncm": "10061010",
+        "nome_ncm": "Arroz com casca (arroz paddy), para semeadura"
+      },
+      {
+        "id_ncm": "10061091",
+        "nome_ncm": "Arroz com casca (arroz paddy), parboilizado"
+      },
+      {
+        "id_ncm": "10061092",
+        "nome_ncm": "Arroz com casca (arroz paddy), não parboilizado"
+      },
+      {
+        "id_ncm": "10062010",
+        "nome_ncm": "Arroz descascado (arroz cargo ou castanho), descascado, parboilizado"
+      },
+      {
+        "id_ncm": "10062020",
+        "nome_ncm": "Arroz descascado (arroz cargo ou castanho), não parboilizado"
+      },
+      {
+        "id_ncm": "10063011",
+        "nome_ncm": "Arroz semibranqueado ou branqueado, parboilizado, polido ou brunido"
+      },
+      {
+        "id_ncm": "10063019",
+        "nome_ncm": "Outros tipode de arroz semibranqueado ou branqueado, parboilizado"
+      },
+      {
+        "id_ncm": "10063021",
+        "nome_ncm": "Arroz semibranqueado ou branqueado, não parboilizado, polido ou brunido"
+      },
+      {
+        "id_ncm": "10063029",
+        "nome_ncm": "Outros tipode de arroz semibranqueado ou branqueado, não parboilizado"
+      },
+      {
+        "id_ncm": "10064000",
+        "nome_ncm": "Arroz quebrado"
+      },
+      {
+        "id_ncm": "11023000",
+        "nome_ncm": "Farinha de arroz"
+      },
+      {
+        "id_ncm": "11031400",
+        "nome_ncm": "Grumos e sêmolas, de arroz"
+      },
+      {
+        "id_ncm": "23022010",
+        "nome_ncm": "Farelo de arroz"
+      },
+      {
+        "id_ncm": "23022090",
+        "nome_ncm": "Sêmeas e outros resíduos, de arroz"
+      },
+      {
+        "id_ncm": "21069090",
+        "nome_ncm": "Outras preparações alimentícias"
+      }
     ],
     "Banana": [
-      "Purês de banana (Musa spp.)",
-      "Doces, pures e pastas, de outras frutas",
-      "Misturas de frutas preparadas em água edulcorada, inclusive corantes",
-      "Misturas de frutas preparadas, conservadas de outro modo",
-      "Sucos (sumo) de outras frutas, não fermentado, sem adição de açúcar",
-      "Outras preparações para elaboração de bebidas",
-      "Caramelos, confeitos, pastilhas e produtos semelhantes, sem açúcar",
-      "Outras preparações alimentícias"
+      {
+        "id_ncm": "08030000",
+        "nome_ncm": "Bananas frescas ou secas"
+      },
+      {
+        "id_ncm": "08031000",
+        "nome_ncm": "Bananas-da-terra, frescas ou secas"
+      },
+      {
+        "id_ncm": "08039000",
+        "nome_ncm": "Bananas frescas ou secas, exceto bananas-da-terra"
+      },
+      {
+        "id_ncm": "20079923",
+        "nome_ncm": "Purês de banana (Musa spp.)"
+      },
+      {
+        "id_ncm": "20079990",
+        "nome_ncm": "Doces, pures e pastas, de outras frutas"
+      },
+      {
+        "id_ncm": "20089710",
+        "nome_ncm": "Misturas de frutas preparadas em água edulcorada, inclusive corantes"
+      },
+      {
+        "id_ncm": "20089790",
+        "nome_ncm": "Misturas de frutas preparadas,conservadas de outro modo"
+      },
+      {
+        "id_ncm": "20098990",
+        "nome_ncm": "Sucos (sumo) de outras frutas, não fermentado, sem adição de açúcar"
+      },
+      {
+        "id_ncm": "21069010",
+        "nome_ncm": "Outras preparações para elaboração de bebidas"
+      },
+      {
+        "id_ncm": "21069060",
+        "nome_ncm": "Caramelos, confeitos, pastilhas e produtos semelhantes, sem açúcar"
+      },
+      {
+        "id_ncm": "21069090",
+        "nome_ncm": "Outras preparações alimentícias"
+      }
     ],
-    "BorrachaLatex": [],
     "BuritiFruto": [
-      "Geleias e marmelades, de outras frutas",
-      "Doces, pures e pastas, de outras frutas",
-      "Misturas de frutas preparadas em água edulcorada, inclusive corantes",
-      "Misturas de frutas preparadas, conservadas de outro modo",
-      "Sucos (sumo) de outras frutas, não fermentado, sem adição de açúcar",
-      "Outras preparações para elaboração de bebidas",
-      "Caramelos, confeitos, pastilhas e produtos semelhantes, sem açúcar",
-      "Outras preparações alimentícias",
-      "Purês de outras frutas"
+      {
+        "id_ncm": "20079910",
+        "nome_ncm": "Geleias e marmelades, de outras frutas"
+      },
+      {
+        "id_ncm": "20079990",
+        "nome_ncm": "Doces, pures e pastas, de outras frutas"
+      },
+      {
+        "id_ncm": "20089710",
+        "nome_ncm": "Misturas de frutas preparadas em água edulcorada, inclusive corantes"
+      },
+      {
+        "id_ncm": "20089790",
+        "nome_ncm": "Misturas de frutas preparadas,conservadas de outro modo"
+      },
+      {
+        "id_ncm": "20098990",
+        "nome_ncm": "Sucos (sumo) de outras frutas, não fermentado, sem adição de açúcar"
+      },
+      {
+        "id_ncm": "21069010",
+        "nome_ncm": "Outras preparações para elaboração de bebidas"
+      },
+      {
+        "id_ncm": "21069060",
+        "nome_ncm": "Caramelos, confeitos, pastilhas e produtos semelhantes, sem açúcar"
+      },
+      {
+        "id_ncm": "21069090",
+        "nome_ncm": "Outras preparações alimentícias"
+      },
+      {
+        "id_ncm": "20079929",
+        "nome_ncm": "Purês de outras frutas"
+      }
     ],
     "CacauAmendoa": [
-      "Outras preparações alimentícias",
-      "Purês de outras frutas"
+      {
+        "id_ncm": "18010000",
+        "nome_ncm": "Cacau inteiro ou partido, em bruto ou torrado"
+      },
+      {
+        "id_ncm": "21069090",
+        "nome_ncm": "Outras preparações alimentícias"
+      },
+      {
+        "id_ncm": "20079929",
+        "nome_ncm": "Purês de outras frutas"
+      }
     ],
     "CajuAcuFruto": [
-      "Geleias e marmelades, de outras frutas",
-      "Doces, pures e pastas, de outras frutas",
-      "Purês de outras frutas",
-      "Misturas de frutas preparadas em água edulcorada, inclusive corantes",
-      "Misturas de frutas preparadas, conservadas de outro modo",
-      "Outras preparações para elaboração de bebidas",
-      "Caramelos, confeitos, pastilhas e produtos semelhantes, sem açúcar",
-      "Outras preparações alimentícias"
+      {
+        "id_ncm": "20079910",
+        "nome_ncm": "Geleias e marmelades, de outras frutas"
+      },
+      {
+        "id_ncm": "20079990",
+        "nome_ncm": "Doces, pures e pastas, de outras frutas"
+      },
+      {
+        "id_ncm": "20079929",
+        "nome_ncm": "Purês de outras frutas"
+      },
+      {
+        "id_ncm": "20089710",
+        "nome_ncm": "Misturas de frutas preparadas em água edulcorada, inclusive corantes"
+      },
+      {
+        "id_ncm": "20089790",
+        "nome_ncm": "Misturas de frutas preparadas,conservadas de outro modo"
+      },
+      {
+        "id_ncm": "21069010",
+        "nome_ncm": "Outras preparações para elaboração de bebidas"
+      },
+      {
+        "id_ncm": "21069060",
+        "nome_ncm": "Caramelos, confeitos, pastilhas e produtos semelhantes, sem açúcar"
+      },
+      {
+        "id_ncm": "21069090",
+        "nome_ncm": "Outras preparações alimentícias"
+      }
     ],
+    "CanaDeAcucar": [
+      {
+        "id_ncm": "12129200",
+        "nome_ncm": "Cana-de-açúcar fresca, refrigerada, congelada, seca, em pó"
+      },
+      {
+        "id_ncm": "12129300",
+        "nome_ncm": "Cana-de-açúcar, fresca, regrigerada, congelada ou seca"
+      },
+      {
+        "id_ncm": "23032000",
+        "nome_ncm": "Polpas de beterraba, bagaços de cana-de-açúcar e outros desperdícios da indústria do açúcar"
+      }
+    ],
+    "Carvao": [
+      {
+        "id_ncm": "44020000",
+        "nome_ncm": "Carvão vegetal"
+      },
+      {
+        "id_ncm": "44021000",
+        "nome_ncm": "Carvão vegetal (incluindo o carvão de cascas ou de caroços), mesmo aglomerado, de bambu"
+      },
+      {
+        "id_ncm": "44022000",
+        "nome_ncm": "Carvão vegetal, mesmo aglomerado, de cascas ou de caroços"
+      },
+      {
+        "id_ncm": "44029000",
+        "nome_ncm": "Outro carvão vegetal (incluindo o carvão de cascas ou de caroços), mesmo aglomerado"
+      }
+    ],
+    "CascaBarbaTimao": [],
+    "CascaCajuacu": [],
     "CastanhaDeCaju": [
-      "Outras preparações alimentícias",
-      "Purês de outras frutas"
-    ],
-    "CastanhaDoBrasil": [
-      "Outras preparações alimentícias",
-      "Purês de outras frutas"
+      {
+        "id_ncm": "08013100",
+        "nome_ncm": "Castanha de caju, fresca ou seca, com casca"
+      },
+      {
+        "id_ncm": "08013200",
+        "nome_ncm": "Castanha de caju, fresca ou seca, sem casca"
+      },
+      {
+        "id_ncm": "21069090",
+        "nome_ncm": "Outras preparações alimentícias"
+      },
+      {
+        "id_ncm": "20079929",
+        "nome_ncm": "Purês de outras frutas"
+      }
     ],
     "CastanhaDoPara": [
-      "Outras preparações alimentícias",
-      "Purês de outras frutas"
+      {
+        "id_ncm": "08012100",
+        "nome_ncm": "Castanha-do-pará, fresca ou seca, com casca"
+      },
+      {
+        "id_ncm": "08012200",
+        "nome_ncm": "Castanha-do-pará, fresca ou seca, sem casca"
+      },
+      {
+        "id_ncm": "21069090",
+        "nome_ncm": "Outras preparações alimentícias"
+      },
+      {
+        "id_ncm": "20079929",
+        "nome_ncm": "Purês de outras frutas"
+      }
     ],
+    "CavaloMangaLarga": [
+      {
+        "id_ncm": "01011010",
+        "nome_ncm": "Cavalos reprodutores de raça pura"
+      },
+      {
+        "id_ncm": "01011100",
+        "nome_ncm": "Cavalos reprodutores, de raça pura"
+      },
+      {
+        "id_ncm": "01011900",
+        "nome_ncm": "Outros cavalos, vivos"
+      },
+      {
+        "id_ncm": "01012100",
+        "nome_ncm": "Cavalos reprodutores de raça pura"
+      },
+      {
+        "id_ncm": "01012900",
+        "nome_ncm": "Cavalos, exceto reprodutores de raça pura"
+      },
+      {
+        "id_ncm": "01019010",
+        "nome_ncm": "Cavalos vivos, exceto reprodutores raça pura"
+      }
+    ],
+    "CestoBuriti": [],
     "Coco": [
-      "Caramelos, confeitos, pastilhas e produtos semelhantes, sem açúcar",
-      "Outras preparações alimentícias",
-      "Purês de outras frutas"
+      {
+        "id_ncm": "08011100",
+        "nome_ncm": "Cocos, frescos ou secos, dessecados"
+      },
+      {
+        "id_ncm": "08011110",
+        "nome_ncm": "Cocos secos, sem casca, mesmo ralados"
+      },
+      {
+        "id_ncm": "08011190",
+        "nome_ncm": "Outros cocos secos"
+      },
+      {
+        "id_ncm": "08011200",
+        "nome_ncm": "Cocos na casca interna (endocarpo)"
+      },
+      {
+        "id_ncm": "08011900",
+        "nome_ncm": "Cocos frescos"
+      },
+      {
+        "id_ncm": "15131100",
+        "nome_ncm": "Óleo de coco (óleo de copra), em bruto"
+      },
+      {
+        "id_ncm": "15131900",
+        "nome_ncm": "Outros óleos de coco (óleos de copra)"
+      },
+      {
+        "id_ncm": "15132111",
+        "nome_ncm": "Óleo de cocombocaya(Acrocomia totai), em bruto"
+      },
+      {
+        "id_ncm": "15132911",
+        "nome_ncm": "Outros óleos de amêndoa de palma (palmiste) (coconote) de coco mbocaya (Acrocomia totai)"
+      },
+      {
+        "id_ncm": "15132919",
+        "nome_ncm": "Outros óleos de \"palmiste\""
+      },
+      {
+        "id_ncm": "15132920",
+        "nome_ncm": "Outros óleos de babaçu"
+      },
+      {
+        "id_ncm": "23065000",
+        "nome_ncm": "Tortas e outros resíduos sólidos, de coco ou de copra"
+      },
+      {
+        "id_ncm": "53051100",
+        "nome_ncm": "Cairo (fibras de coco) em bruto"
+      },
+      {
+        "id_ncm": "53051900",
+        "nome_ncm": "Cairo (fibras de coco) trabalhado, não fiado, estopas, desperdícios"
+      },
+      {
+        "id_ncm": "53081000",
+        "nome_ncm": "Fios de cairo (fios de fibras de coco)"
+      },
+      {
+        "id_ncm": "21069060",
+        "nome_ncm": "Caramelos, confeitos, pastilhas e produtos semelhantes, sem açúcar"
+      },
+      {
+        "id_ncm": "21069090",
+        "nome_ncm": "Outras preparações alimentícias"
+      },
+      {
+        "id_ncm": "20079929",
+        "nome_ncm": "Purês de outras frutas"
+      }
     ],
     "CopaibaOleo": [
-      "Outras gorduras e óleos vegetais, mesmo refinado"
+      {
+        "id_ncm": "15159090",
+        "nome_ncm": "Outras gorduras e óleos vegetais, mesmo refinado"
+      }
+    ],
+    "Fava": [
+      {
+        "id_ncm": "07135010",
+        "nome_ncm": "Favas (Vicia faba var. major) e fava forrageira (Vicia faba var. equina, Vicia faba var. minor), secas, para semeadura"
+      },
+      {
+        "id_ncm": "07135090",
+        "nome_ncm": "Outras favas (Vicia faba var. major) e fava forrageira (Vicia faba var. equina, Vicia faba var. minor), secas, em grãos"
+      }
+    ],
+    "Feijao": [
+      {
+        "id_ncm": "07133210",
+        "nome_ncm": "Feijão-adzuki (Phaseolus ou Vigna angularis), seco, para semeadura"
+      },
+      {
+        "id_ncm": "07133311",
+        "nome_ncm": "Feijão comum ((Phaseolus vulgaris), preto, seco, para semeadura"
+      },
+      {
+        "id_ncm": "07133321",
+        "nome_ncm": "Feijão comum, branco, seco, para semeadura"
+      },
+      {
+        "id_ncm": "07133410",
+        "nome_ncm": "Feijão-bambara (Vigna subterranea ou Voandzeia subterranea), para semeadura"
+      },
+      {
+        "id_ncm": "07133490",
+        "nome_ncm": "Feijão-bambara (Vigna subterranea ou Voandzeia subterranea), exceto para semeadura"
+      },
+      {
+        "id_ncm": "07133510",
+        "nome_ncm": "Feijão-fradinho (Vigna unguiculata), para semeadura"
+      },
+      {
+        "id_ncm": "07133590",
+        "nome_ncm": "Feijão-fradinho, exceto para semeadura"
+      },
+      {
+        "id_ncm": "07136010",
+        "nome_ncm": "Feijão-guando (Cajanus cajan), para semeadura"
+      },
+      {
+        "id_ncm": "07136090",
+        "nome_ncm": "Feijão-guando (Cajanus cajan), exceto para semeadura"
+      }
     ],
     "Goiaba": [
-      "Purês de goiaba (Psidium guajava)",
-      "Doces, pures e pastas, de outras frutas",
-      "Sucos (sumo) de outras frutas, não fermentado, sem adição de açúcar",
-      "Outras preparações para elaboração de bebidas",
-      "Caramelos, confeitos, pastilhas e produtos semelhantes, sem açúcar",
-      "Outras preparações alimentícias",
-      "Purês de outras frutas"
+      {
+        "id_ncm": "08045000",
+        "nome_ncm": "Goiabas, mangas e mangostões, frescos ou secos"
+      },
+      {
+        "id_ncm": "08045010",
+        "nome_ncm": "Goiabas frescas ou secas"
+      },
+      {
+        "id_ncm": "20079924",
+        "nome_ncm": "Purês de goiaba (Psidium guajava)"
+      },
+      {
+        "id_ncm": "20079990",
+        "nome_ncm": "Doces, pures e pastas, de outras frutas"
+      },
+      {
+        "id_ncm": "20098990",
+        "nome_ncm": "Sucos (sumo) de outras frutas, não fermentado, sem adição de açúcar"
+      },
+      {
+        "id_ncm": "21069010",
+        "nome_ncm": "Outras preparações para elaboração de bebidas"
+      },
+      {
+        "id_ncm": "21069060",
+        "nome_ncm": "Caramelos, confeitos, pastilhas e produtos semelhantes, sem açúcar"
+      },
+      {
+        "id_ncm": "21069090",
+        "nome_ncm": "Outras preparações alimentícias"
+      },
+      {
+        "id_ncm": "20079929",
+        "nome_ncm": "Purês de outras frutas"
+      }
     ],
     "Laranja": [
-      "Geleias e marmelades, de outras frutas",
-      "Doces, pures e pastas, de outras frutas",
-      "Sucos (sumo) de outras frutas, não fermentado, sem adição de açúcar",
-      "Outras preparações para elaboração de bebidas",
-      "Caramelos, confeitos, pastilhas e produtos semelhantes, sem açúcar",
-      "Outras preparações alimentícias",
-      "Purês de outras frutas"
+      {
+        "id_ncm": "08051000",
+        "nome_ncm": "Laranjas, frescas ou secas"
+      },
+      {
+        "id_ncm": "20091100",
+        "nome_ncm": "Suco (sumo) de laranja, não fermentados, sem adição de álcool, com ou sem adição de açúcar ou de outros edulcorantes, congelado"
+      },
+      {
+        "id_ncm": "20091200",
+        "nome_ncm": "Suco (sumo) de laranja, não fermentados, sem adição de álcool, com ou sem adição de açúcar ou de outros edulcorantes, não congelado, com valor Brix não superior a 20"
+      },
+      {
+        "id_ncm": "20091900",
+        "nome_ncm": "Outros sucos de laranjas, não fermentados, sem adição de álcool, com ou sem adição de açúcar ou de outros edulcorantes"
+      },
+      {
+        "id_ncm": "33011210",
+        "nome_ncm": "Óleo essencial, de laranja, de petit grain"
+      },
+      {
+        "id_ncm": "33011290",
+        "nome_ncm": "Outros óleos essenciais, de laranja"
+      },
+      {
+        "id_ncm": "20079910",
+        "nome_ncm": "Geleias e marmelades, de outras frutas"
+      },
+      {
+        "id_ncm": "20079990",
+        "nome_ncm": "Doces, pures e pastas, de outras frutas"
+      },
+      {
+        "id_ncm": "20098990",
+        "nome_ncm": "Sucos (sumo) de outras frutas, não fermentado, sem adição de açúcar"
+      },
+      {
+        "id_ncm": "21069010",
+        "nome_ncm": "Outras preparações para elaboração de bebidas"
+      },
+      {
+        "id_ncm": "21069060",
+        "nome_ncm": "Caramelos, confeitos, pastilhas e produtos semelhantes, sem açúcar"
+      },
+      {
+        "id_ncm": "21069090",
+        "nome_ncm": "Outras preparações alimentícias"
+      },
+      {
+        "id_ncm": "20079929",
+        "nome_ncm": "Purês de outras frutas"
+      }
     ],
-    "Lenha": [],
+    "Lenha": [
+      {
+        "id_ncm": "44011000",
+        "nome_ncm": "Lenha em qualquer estado"
+      },
+      {
+        "id_ncm": "44011100",
+        "nome_ncm": "Lenha em qualquer forma, de coníferas"
+      },
+      {
+        "id_ncm": "44011200",
+        "nome_ncm": "Lenha em qualquer forma, de não coníferas"
+      }
+    ],
+    "Lima": [
+      {
+        "id_ncm": "08053000",
+        "nome_ncm": "Limões e limas, frescos ou secos"
+      },
+      {
+        "id_ncm": "08055000",
+        "nome_ncm": "Limões (Citrus limon, Citrus limonum) e limas (Citrus aurantifolia, Citrus latifolia), frescos ou secos"
+      },
+      {
+        "id_ncm": "33011400",
+        "nome_ncm": "Óleo essencial, de lima"
+      },
+      {
+        "id_ncm": "33011910",
+        "nome_ncm": "Óleos essenciais de lima"
+      }
+    ],
     "Limao": [
-      "Geleias e marmelades, de outras frutas",
-      "Doces, pures e pastas, de outras frutas",
-      "Misturas de frutas preparadas em água edulcorada, inclusive corantes",
-      "Misturas de frutas preparadas, conservadas de outro modo",
-      "Sucos (sumo) de outras frutas, não fermentado, sem adição de açúcar",
-      "Outras preparações para elaboração de bebidas",
-      "Caramelos, confeitos, pastilhas e produtos semelhantes, sem açúcar",
-      "Outras preparações alimentícias",
-      "Purês de outras frutas"
+      {
+        "id_ncm": "08053000",
+        "nome_ncm": "Limões e limas, frescos ou secos"
+      },
+      {
+        "id_ncm": "08055000",
+        "nome_ncm": "Limões (Citrus limon, Citrus limonum) e limas (Citrus aurantifolia, Citrus latifolia), frescos ou secos"
+      },
+      {
+        "id_ncm": "33011300",
+        "nome_ncm": "Óleo essencial, de limão"
+      },
+      {
+        "id_ncm": "20079910",
+        "nome_ncm": "Geleias e marmelades, de outras frutas"
+      },
+      {
+        "id_ncm": "20079990",
+        "nome_ncm": "Doces, pures e pastas, de outras frutas"
+      },
+      {
+        "id_ncm": "20089710",
+        "nome_ncm": "Misturas de frutas preparadas em água edulcorada, inclusive corantes"
+      },
+      {
+        "id_ncm": "20089790",
+        "nome_ncm": "Misturas de frutas preparadas,conservadas de outro modo"
+      },
+      {
+        "id_ncm": "20098990",
+        "nome_ncm": "Sucos (sumo) de outras frutas, não fermentado, sem adição de açúcar"
+      },
+      {
+        "id_ncm": "21069010",
+        "nome_ncm": "Outras preparações para elaboração de bebidas"
+      },
+      {
+        "id_ncm": "21069060",
+        "nome_ncm": "Caramelos, confeitos, pastilhas e produtos semelhantes, sem açúcar"
+      },
+      {
+        "id_ncm": "21069090",
+        "nome_ncm": "Outras preparações alimentícias"
+      },
+      {
+        "id_ncm": "20079929",
+        "nome_ncm": "Purês de outras frutas"
+      }
     ],
-    "MadeiraBranca": [],
-    "MadeiraVermelha": [],
     "Malva": [],
     "Mamao": [
-      "Purês de mamão (papaia) (Carica papaya L.)",
-      "Geleias e marmelades, de outras frutas",
-      "Doces, pures e pastas, de outras frutas",
-      "Misturas de frutas preparadas, conservadas de outro modo",
-      "Sucos (sumo) de outras frutas, não fermentado, sem adição de açúcar",
-      "Outras preparações para elaboração de bebidas",
-      "Caramelos, confeitos, pastilhas e produtos semelhantes, sem açúcar",
-      "Outras preparações alimentícias"
+      {
+        "id_ncm": "08072000",
+        "nome_ncm": "Mamões (papaias) frescos"
+      },
+      {
+        "id_ncm": "13021910",
+        "nome_ncm": "Sucos e extratos, de mamão (Carica papaya), seco"
+      },
+      {
+        "id_ncm": "20079927",
+        "nome_ncm": "Purês de mamão (papaia) (Carica papaya L.)"
+      },
+      {
+        "id_ncm": "20079910",
+        "nome_ncm": "Geleias e marmelades, de outras frutas"
+      },
+      {
+        "id_ncm": "20079990",
+        "nome_ncm": "Doces, pures e pastas, de outras frutas"
+      },
+      {
+        "id_ncm": "20089790",
+        "nome_ncm": "Misturas de frutas preparadas,conservadas de outro modo"
+      },
+      {
+        "id_ncm": "20098990",
+        "nome_ncm": "Sucos (sumo) de outras frutas, não fermentado, sem adição de açúcar"
+      },
+      {
+        "id_ncm": "21069010",
+        "nome_ncm": "Outras preparações para elaboração de bebidas"
+      },
+      {
+        "id_ncm": "21069060",
+        "nome_ncm": "Caramelos, confeitos, pastilhas e produtos semelhantes, sem açúcar"
+      },
+      {
+        "id_ncm": "21069090",
+        "nome_ncm": "Outras preparações alimentícias"
+      }
+    ],
+    "Mandioca": [
+      {
+        "id_ncm": "07141000",
+        "nome_ncm": "Raízes de mandioca, frescas, refrigeradas, congeladas ou secas"
+      },
+      {
+        "id_ncm": "11081400",
+        "nome_ncm": "Fécula de mandioca"
+      }
+    ],
+    "Maracuja": [
+      {
+        "id_ncm": "08109015",
+        "nome_ncm": "Maracujás (Passiflora edulis)"
+      },
+      {
+        "id_ncm": "20098913",
+        "nome_ncm": "Suco de maracujá (Passiflora edulis) com adição de açúcar e outros edulcorantes ou não"
+      }
     ],
     "Melancia": [
-      "Geleias e marmelades, de outras frutas",
-      "Doces, pures e pastas, de outras frutas",
-      "Misturas de frutas preparadas em água edulcorada, inclusive corantes",
-      "Misturas de frutas preparadas, conservadas de outro modo",
-      "Sucos (sumo) de outras frutas, não fermentado, sem adição de açúcar",
-      "Outras preparações para elaboração de bebidas",
-      "Caramelos, confeitos, pastilhas e produtos semelhantes, sem açúcar",
-      "Outras preparações alimentícias"
+      {
+        "id_ncm": "08071100",
+        "nome_ncm": "Melancias frescas"
+      },
+      {
+        "id_ncm": "08140000",
+        "nome_ncm": "Cascas de frutos cítricos, de melões ou de melancias, frescas, secas, congeladas ou apresentadas em água salgada, sulfurada ou adicionada de outras substâncias destinadas a assegurar transitoriamente a sua conservação"
+      },
+      {
+        "id_ncm": "20079910",
+        "nome_ncm": "Geleias e marmelades, de outras frutas"
+      },
+      {
+        "id_ncm": "20079990",
+        "nome_ncm": "Doces, pures e pastas, de outras frutas"
+      },
+      {
+        "id_ncm": "20089710",
+        "nome_ncm": "Misturas de frutas preparadas em água edulcorada, inclusive corantes"
+      },
+      {
+        "id_ncm": "20089790",
+        "nome_ncm": "Misturas de frutas preparadas,conservadas de outro modo"
+      },
+      {
+        "id_ncm": "20098990",
+        "nome_ncm": "Sucos (sumo) de outras frutas, não fermentado, sem adição de açúcar"
+      },
+      {
+        "id_ncm": "21069010",
+        "nome_ncm": "Outras preparações para elaboração de bebidas"
+      },
+      {
+        "id_ncm": "21069060",
+        "nome_ncm": "Caramelos, confeitos, pastilhas e produtos semelhantes, sem açúcar"
+      },
+      {
+        "id_ncm": "21069090",
+        "nome_ncm": "Outras preparações alimentícias"
+      }
     ],
     "Milho": [
-      "Purês de outras frutas",
-      "Outras preparações alimentícias"
-    ],
-    "OleoCopaiba": [
-      "Outras gorduras e óleos vegetais, mesmo refinado"
+      {
+        "id_ncm": "07099011",
+        "nome_ncm": "Milho doce, para semeadura"
+      },
+      {
+        "id_ncm": "07099019",
+        "nome_ncm": "Milho doce, fresco ou refrigerad, exceto para semeadura"
+      },
+      {
+        "id_ncm": "07099911",
+        "nome_ncm": "Milho doce, frescos ou refrigerados, para semeadura"
+      },
+      {
+        "id_ncm": "07099919",
+        "nome_ncm": "Milho doce, frescos ou refrigerados, exceto para semeadura"
+      },
+      {
+        "id_ncm": "07104000",
+        "nome_ncm": "Milho doce congelado, não cozidos ou cozidos em água ou vapor, congelados"
+      },
+      {
+        "id_ncm": "10051000",
+        "nome_ncm": "Milho para semeadura"
+      },
+      {
+        "id_ncm": "10059010",
+        "nome_ncm": "Milho em grão, exceto para semeadura"
+      },
+      {
+        "id_ncm": "10059090",
+        "nome_ncm": "Milho, exceto em grão"
+      },
+      {
+        "id_ncm": "11022000",
+        "nome_ncm": "Farinha de milho"
+      },
+      {
+        "id_ncm": "11031300",
+        "nome_ncm": "Grumos e sêmolas, de milho"
+      },
+      {
+        "id_ncm": "11042300",
+        "nome_ncm": "Outros grãos trabalhados (por exemplo, descascados, em pérolas, cortados ou partidos), de milho"
+      },
+      {
+        "id_ncm": "11081200",
+        "nome_ncm": "Amido de milho"
+      },
+      {
+        "id_ncm": "15152100",
+        "nome_ncm": "Óleo de milho, em bruto"
+      },
+      {
+        "id_ncm": "15152900",
+        "nome_ncm": "Outros óleos de milho"
+      },
+      {
+        "id_ncm": "15152910",
+        "nome_ncm": "Óleo de milho, refinado, em recipientes com capacidade inferior ou igual a 5 litros"
+      },
+      {
+        "id_ncm": "20058000",
+        "nome_ncm": "Milho doce (Zea mays var. saccharata), preparados ou conservados, exceto em vinagre ou em ácido acético, não congelados"
+      },
+      {
+        "id_ncm": "23021000",
+        "nome_ncm": "Sêmeas, farelos e outros resíduos, mesmo em pellets, da peneiração, moagem ou de outros tratamentos de milho"
+      },
+      {
+        "id_ncm": "23067000",
+        "nome_ncm": "Tortas e outros resíduos sólidos, do germe de milho"
+      },
+      {
+        "id_ncm": "23069010",
+        "nome_ncm": "Tortas, resíduos, etc, de germe de milho"
+      },
+      {
+        "id_ncm": "20079929",
+        "nome_ncm": "Purês de outras frutas"
+      },
+      {
+        "id_ncm": "21069090",
+        "nome_ncm": "Outras preparações alimentícias"
+      }
     ],
     "PalmitoInNatura": [
-      "Outras preparações alimentícias"
+      {
+        "id_ncm": "20089100",
+        "nome_ncm": "Palmitos preparados ou conservados"
+      },
+      {
+        "id_ncm": "21069090",
+        "nome_ncm": "Outras preparações alimentícias"
+      }
+    ],
+    "Pimenta": [
+      {
+        "id_ncm": "07096000",
+        "nome_ncm": "Pimentões e pimentas dos gêneros Capsicum ou Pimenta, frescos ou refrigerados"
+      },
+      {
+        "id_ncm": "09041100",
+        "nome_ncm": "Pimenta (do gênero Piper), não triturada nem em pó"
+      },
+      {
+        "id_ncm": "09041200",
+        "nome_ncm": "Pimenta (do gênero Piper), triturada ou em pó"
+      },
+      {
+        "id_ncm": "09042000",
+        "nome_ncm": "Pimentões e pimentas \"capsicum\"/\"pimenta\", secos, pó, etc."
+      },
+      {
+        "id_ncm": "09042100",
+        "nome_ncm": "Pimentões e pimentas dos gêneros Capsicum ou Pimenta, secos, não triturados nem em pó"
+      },
+      {
+        "id_ncm": "09042200",
+        "nome_ncm": "Pimentões e pimentas dos gêneros Capsicum ou Pimenta, triturados ou em pó"
+      }
     ],
     "PimentaDoReino": [
-      "Outras preparações alimentícias"
+      {
+        "id_ncm": "09041100",
+        "nome_ncm": "Pimenta (do gênero Piper), não triturada nem em pó"
+      },
+      {
+        "id_ncm": "09041200",
+        "nome_ncm": "Pimenta (do gênero Piper), triturada ou em pó"
+      },
+      {
+        "id_ncm": "21069090",
+        "nome_ncm": "Outras preparações alimentícias"
+      }
     ],
     "Soja": [
-      "Outras preparações alimentícias"
+      {
+        "id_ncm": "12010010",
+        "nome_ncm": "Soja para semeadura"
+      },
+      {
+        "id_ncm": "12010090",
+        "nome_ncm": "Outros grãos de soja, mesmo triturados"
+      },
+      {
+        "id_ncm": "12011000",
+        "nome_ncm": "Soja, mesmo triturada, para semeadura"
+      },
+      {
+        "id_ncm": "12019000",
+        "nome_ncm": "Soja, mesmo triturada, exceto para semeadura"
+      },
+      {
+        "id_ncm": "12081000",
+        "nome_ncm": "Farinha de soja"
+      },
+      {
+        "id_ncm": "15071000",
+        "nome_ncm": "Óleo de soja, em bruto, mesmo degomado"
+      },
+      {
+        "id_ncm": "15079010",
+        "nome_ncm": "Óleo de soja, refinado"
+      },
+      {
+        "id_ncm": "15079011",
+        "nome_ncm": "Óleo de soja, refinado, em recipientes com capacidade inferior ou igual a 5 litros"
+      },
+      {
+        "id_ncm": "15079019",
+        "nome_ncm": "Óleo de soja, refinado, em recipientes com capacidade menor que 5 litros"
+      },
+      {
+        "id_ncm": "15079090",
+        "nome_ncm": "Outros óleos de soja"
+      },
+      {
+        "id_ncm": "21031010",
+        "nome_ncm": "Molho de soja, preparado, em embalagens imediatas de conteúdo inferior ou igual a 1 kg"
+      },
+      {
+        "id_ncm": "21031090",
+        "nome_ncm": "Outros molhos de soja, preparados"
+      },
+      {
+        "id_ncm": "23040010",
+        "nome_ncm": "Farinhas e pellets, da extração do óleo de soja"
+      },
+      {
+        "id_ncm": "23040090",
+        "nome_ncm": "Bagaços e outros resíduos sólidos, da extração do óleo de soja"
+      },
+      {
+        "id_ncm": "35040020",
+        "nome_ncm": "Proteínas de soja em pó, com teor de proteínas superior ou igual a 90 %, em peso, em base seca"
+      },
+      {
+        "id_ncm": "21069090",
+        "nome_ncm": "Outras preparações alimentícias"
+      }
     ],
     "Tomate": [
-      "Outras preparações alimentícias",
-      "Purês de outras frutas"
-    ],
-    "TucumaFruto": [
-      "Geleias e marmelades, de outras frutas",
-      "Doces, pures e pastas, de outras frutas",
-      "Misturas de frutas preparadas em água edulcorada, inclusive corantes",
-      "Misturas de frutas preparadas, conservadas de outro modo",
-      "Sucos (sumo) de outras frutas, não fermentado, sem adição de açúcar",
-      "Outras preparações para elaboração de bebidas",
-      "Caramelos, confeitos, pastilhas e produtos semelhantes, sem açúcar",
-      "Outras preparações alimentícias"
+      {
+        "id_ncm": "07020000",
+        "nome_ncm": "Tomates, frescos ou refrigerados"
+      },
+      {
+        "id_ncm": "20021000",
+        "nome_ncm": "Tomates inteiros ou pedaços, preparados ou conservados, exceto em vinagre ou em ácido acético"
+      },
+      {
+        "id_ncm": "20029000",
+        "nome_ncm": "Outros tomates preparados ou conservados, exceto em vinagre ou em ácido acético, exceto tomates inteiros ou em pedaços"
+      },
+      {
+        "id_ncm": "20029010",
+        "nome_ncm": "Sucos de tomates"
+      },
+      {
+        "id_ncm": "20029090",
+        "nome_ncm": "Outros tomates preparados ou conservados, exceto em vinagre ou em ácido acético"
+      },
+      {
+        "id_ncm": "20095000",
+        "nome_ncm": "Sucos de tomates, não fermentados"
+      },
+      {
+        "id_ncm": "21032010",
+        "nome_ncm": "Ketchup e outros molhos de tomate, preparado, em embalagens imediatas de conteúdo inferior ou igual a 1 kg"
+      },
+      {
+        "id_ncm": "21032090",
+        "nome_ncm": "Outros ketchup e molhos de tomate, preparados"
+      },
+      {
+        "id_ncm": "21069090",
+        "nome_ncm": "Outras preparações alimentícias"
+      },
+      {
+        "id_ncm": "20079929",
+        "nome_ncm": "Purês de outras frutas"
+      }
     ],
     "Urucum": [
-      "Outras preparações alimentícias"
+      {
+        "id_ncm": "21069090",
+        "nome_ncm": "Outras preparações alimentícias"
+      }
     ]
   },
   "participacoes_especificas": [
     {
       "produto": "AcaiFruto",
+      "id_ncm": "20079921",
       "nome_ncm": "Purês de açaí (Euterpe oleracea)",
       "participacao": 1.0
     },
     {
       "produto": "AcaiFruto",
+      "id_ncm": "20098990",
       "nome_ncm": "Sucos (sumo) de outras frutas, não fermentado, sem adição de açúcar",
       "participacao": 0.87
     },
     {
       "produto": "AcaiFruto",
+      "id_ncm": "08119000",
       "nome_ncm": "Outras frutas não cozidas ou cozidas em água ou vapor, congeladas, mesmo adicionadas de açúcar ou de outros edulcorantes",
       "participacao": 0.87
     },
     {
       "produto": "AcaiFruto",
+      "id_ncm": "20089900",
       "nome_ncm": "Outras frutas, partes de plantas, preparadas/conservadas de outro modo",
       "participacao": 0.87
     }

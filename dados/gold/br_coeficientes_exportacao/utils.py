@@ -1,7 +1,8 @@
 import json
 from collections import defaultdict
+from collections.abc import Mapping
 from pathlib import Path
-from typing import Any, Dict, Mapping, Optional, Sequence, Tuple
+from typing import Any, Dict, Optional, Sequence, Tuple
 
 import pandas as pd
 
@@ -15,6 +16,7 @@ COLUNAS_OBRIGATORIAS_EXPORTACAO = [
 ]
 
 COLUNAS_FINAIS = ["ano", "produto", "valor_fob_dolar", "valor_fob_real", "coeff"]
+TaxaCambio = float | Mapping[int, float]
 
 # Aliases para compatibilidade com a interface anterior em ingles.
 REQUIRED_EXPORT_COLUMNS = COLUNAS_OBRIGATORIAS_EXPORTACAO
@@ -119,15 +121,136 @@ def _construir_anos_previsao(valor_configuracao: Any) -> list[int]:
     return list(range(1995, 2024))
 
 
+def _resolver_caminho_configuracao(
+    caminho_configuracao: Path,
+    caminho_referenciado: str,
+) -> Path:
+    caminho = Path(caminho_referenciado).expanduser()
+    if caminho.is_absolute():
+        return caminho
+    return (caminho_configuracao.parent / caminho).resolve()
+
+
+def _extrair_nome_ncm(item: Any) -> str:
+    if isinstance(item, dict):
+        return str(
+            item.get(
+                "nome_ncm",
+                item.get("nome_ncm_portugues", item.get("NO_NCM_POR", "")),
+            )
+        ).strip()
+
+    return str(item).strip()
+
+
+def _carregar_taxas_cambio_csv(
+    caminho_configuracao: Path,
+    configuracao_taxa: Mapping[str, Any],
+) -> dict[int, float]:
+    caminho_bruto = configuracao_taxa.get(
+        "arquivo",
+        configuracao_taxa.get("path", configuracao_taxa.get("caminho")),
+    )
+    if not caminho_bruto:
+        raise ValueError(
+            "Configuracao de taxa de cambio em CSV precisa de 'arquivo' ou 'path'"
+        )
+
+    caminho_csv = _resolver_caminho_configuracao(
+        caminho_configuracao, str(caminho_bruto)
+    )
+    coluna_ano = str(configuracao_taxa.get("coluna_ano", "ano"))
+    coluna_taxa = str(configuracao_taxa.get("coluna_taxa", "taxa_cambio"))
+
+    taxas_df = pd.read_csv(caminho_csv)
+    colunas_faltantes = [
+        coluna
+        for coluna in [coluna_ano, coluna_taxa]
+        if coluna not in taxas_df.columns
+    ]
+    if colunas_faltantes:
+        raise ValueError(
+            "Colunas obrigatorias ausentes no CSV de taxa de cambio "
+            f"{caminho_csv}: {', '.join(colunas_faltantes)}"
+        )
+
+    dados = taxas_df[[coluna_ano, coluna_taxa]].copy()
+    dados[coluna_ano] = pd.to_numeric(dados[coluna_ano], errors="coerce")
+    dados[coluna_taxa] = pd.to_numeric(dados[coluna_taxa], errors="coerce")
+    dados = dados.dropna(subset=[coluna_ano, coluna_taxa])
+
+    taxas = {
+        int(linha[coluna_ano]): float(linha[coluna_taxa])
+        for _, linha in dados.iterrows()
+    }
+    if not taxas:
+        raise ValueError(f"Nenhuma taxa de cambio valida encontrada em {caminho_csv}")
+
+    taxas_invalidas = {ano: taxa for ano, taxa in taxas.items() if taxa < 0}
+    if taxas_invalidas:
+        anos_invalidos = ", ".join(str(ano) for ano in sorted(taxas_invalidas))
+        raise ValueError(
+            "taxa_cambio_brl_por_usd deve ser nao-negativa. "
+            f"Anos invalidos: {anos_invalidos}"
+        )
+
+    return taxas
+
+
+def _carregar_taxas_cambio(
+    caminho_configuracao: Path,
+    valor_configuracao: Any,
+) -> TaxaCambio:
+    if isinstance(valor_configuracao, dict):
+        if any(chave in valor_configuracao for chave in ["arquivo", "path", "caminho"]):
+            return _carregar_taxas_cambio_csv(caminho_configuracao, valor_configuracao)
+
+        taxas = {int(ano): float(taxa) for ano, taxa in valor_configuracao.items()}
+        taxas_invalidas = {ano: taxa for ano, taxa in taxas.items() if taxa < 0}
+        if taxas_invalidas:
+            anos_invalidos = ", ".join(str(ano) for ano in sorted(taxas_invalidas))
+            raise ValueError(
+                "taxa_cambio_brl_por_usd deve ser nao-negativa. "
+                f"Anos invalidos: {anos_invalidos}"
+            )
+        return taxas
+
+    taxa_cambio_brl_por_usd = float(valor_configuracao)
+    if taxa_cambio_brl_por_usd < 0:
+        raise ValueError("taxa_cambio_brl_por_usd deve ser nao-negativa")
+    return taxa_cambio_brl_por_usd
+
+
+def _obter_taxa_cambio_ano(taxa_cambio_brl_por_usd: TaxaCambio, ano: int) -> float:
+    if isinstance(taxa_cambio_brl_por_usd, Mapping):
+        if ano not in taxa_cambio_brl_por_usd:
+            raise ValueError(
+                "Taxa de cambio ausente para o ano "
+                f"{ano}. Ajuste anos_previsao ou a fonte de taxa_cambio."
+            )
+        return float(taxa_cambio_brl_por_usd[ano])
+
+    return float(taxa_cambio_brl_por_usd)
+
+
 def carregar_parametros_exportacao(
     caminho_configuracao: Path,
-) -> tuple[dict[str, list[str]], dict[tuple[str, str], float], list[int], float, str]:
+) -> tuple[
+    dict[str, list[str]],
+    dict[tuple[str, str], float],
+    list[int],
+    TaxaCambio,
+    str,
+]:
     with caminho_configuracao.open("r", encoding="utf-8") as file:
         config = json.load(file)
 
     preparacoes_produtos_raw = config.get(
-        "preparacoes_produtos",
-        config.get("products_preparations", {}),
+        "composicao_produtos",
+        config.get(
+            "preparacoes_produtos",
+            config.get("products_preparations", {}),
+        ),
     )
     if not isinstance(preparacoes_produtos_raw, dict):
         raise ValueError(
@@ -135,15 +258,18 @@ def carregar_parametros_exportacao(
         )
 
     preparacoes_produtos: dict[str, list[str]] = {}
-    for produto, nomes_ncm in preparacoes_produtos_raw.items():
+    for produto, itens_ncm in preparacoes_produtos_raw.items():
         produto_normalizado = str(produto).strip()
-        if not isinstance(nomes_ncm, list):
+        if not isinstance(itens_ncm, list):
             raise ValueError(
-                "Cada valor de preparacoes_produtos deve ser uma lista de nomes NCM"
+                "Cada valor de composicao_produtos/preparacoes_produtos deve ser "
+                "uma lista de nomes NCM ou objetos com nome_ncm"
             )
 
         preparacoes_produtos[produto_normalizado] = [
-            str(nome_ncm).strip() for nome_ncm in nomes_ncm if str(nome_ncm).strip()
+            nome_ncm
+            for nome_ncm in (_extrair_nome_ncm(item) for item in itens_ncm)
+            if nome_ncm
         ]
 
     participacoes_especificas_raw = config.get(
@@ -183,13 +309,13 @@ def carregar_parametros_exportacao(
         config.get("anos_previsao", config.get("forecast_years"))
     )
 
-    taxa_cambio_brl_por_usd = float(
+    taxa_cambio_brl_por_usd = _carregar_taxas_cambio(
+        caminho_configuracao,
         config.get(
-            "taxa_cambio_brl_por_usd", config.get("exchange_rate_brl_per_usd", 1.0)
-        )
+            "taxa_cambio_brl_por_usd",
+            config.get("exchange_rate_brl_per_usd", 1.0),
+        ),
     )
-    if taxa_cambio_brl_por_usd < 0:
-        raise ValueError("taxa_cambio_brl_por_usd deve ser nao-negativa")
 
     uf_alvo = (
         str(config.get("uf_alvo", config.get("target_state", "PA"))).strip().upper()
@@ -427,7 +553,7 @@ def preparar_dados_coeficientes_exportacao(
     preparacoes_produtos: Mapping[str, Sequence[str]],
     participacoes_especificas: Mapping[Tuple[str, str], float],
     anos: Sequence[int],
-    taxa_cambio_brl_por_usd: float,
+    taxa_cambio_brl_por_usd: TaxaCambio,
     uf_alvo: str,
 ) -> pd.DataFrame:
     colunas_faltantes = [
@@ -507,9 +633,12 @@ def preparar_dados_coeficientes_exportacao(
         return pd.DataFrame(columns=COLUNAS_FINAIS)
 
     final = pd.concat(distribuido_por_ano, ignore_index=True)
+    final["taxa_cambio_brl_por_usd"] = final["ano"].map(
+        lambda ano: _obter_taxa_cambio_ano(taxa_cambio_brl_por_usd, int(ano))
+    )
     final["valor_fob_real"] = (
         pd.to_numeric(final["valor_fob_dolar"], errors="coerce")
-        * taxa_cambio_brl_por_usd
+        * final["taxa_cambio_brl_por_usd"]
         / 1000.0
     )
 
@@ -575,7 +704,13 @@ def build_export_query(
 
 def load_export_parameters(
     config_path: Path,
-) -> tuple[dict[str, list[str]], dict[tuple[str, str], float], list[int], float, str]:
+) -> tuple[
+    dict[str, list[str]],
+    dict[tuple[str, str], float],
+    list[int],
+    TaxaCambio,
+    str,
+]:
     return carregar_parametros_exportacao(config_path)
 
 
@@ -624,7 +759,7 @@ def prepare_export_coefficients_data(
     products_preparations: Mapping[str, Sequence[str]],
     specific_shares: Mapping[Tuple[str, str], float],
     years: Sequence[int],
-    exchange_rate_brl_per_usd: float,
+    exchange_rate_brl_per_usd: TaxaCambio,
     target_state: str,
 ) -> pd.DataFrame:
     return preparar_dados_coeficientes_exportacao(
