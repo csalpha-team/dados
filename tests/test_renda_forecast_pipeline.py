@@ -12,6 +12,34 @@ from dados.gold.br_coeficientes_renda.utils import preparar_dados_coeficientes_r
 
 
 class IncomeForecasterTests(unittest.TestCase):
+    def test_theil_sen_forecast_is_robust_to_outlier(self) -> None:
+        data = pd.DataFrame(
+            {
+                "ano": [2000, 2001, 2002, 2003],
+                "serie": ["A", "A", "A", "A"],
+                "valor": [10.0, 12.0, 1000.0, 16.0],
+            }
+        )
+
+        forecaster = IncomeForecaster(
+            year_col="ano",
+            label_cols="serie",
+            value_cols="valor",
+            config=ForecastConfig(
+                method="theil_sen",
+                clamp_non_negative=True,
+                max_annual_growth_rate=None,
+            ),
+        )
+
+        result = forecaster.forecast(
+            data,
+            forecast_years=[2004],
+            include_history=False,
+        )
+
+        self.assertAlmostEqual(result.loc[0, "valor"], 18.0)
+
     def test_linear_backcast_repeats_last_positive_projection_after_crossing_zero(
         self,
     ) -> None:
@@ -79,6 +107,10 @@ class RendaPreparationTests(unittest.TestCase):
             forecast_config=ForecastConfig(method="linear", clamp_non_negative=True),
         )
 
+        self.assertEqual(
+            coefficients.columns.tolist(), ["ano", "conta_alfa", "tipo_coeff", "coeff"]
+        )
+
         conta_teste = coefficients.loc[
             coefficients["conta_alfa"] == "ContaTeste"
         ].copy()
@@ -99,15 +131,15 @@ class RendaPreparationTests(unittest.TestCase):
 
         self.assertAlmostEqual(productivity[2005], 50.0)
         self.assertAlmostEqual(productivity[2006], 50.0)
-        self.assertAlmostEqual(productivity[2007], 100.0)
-        self.assertAlmostEqual(productivity[2008], 150.0)
-        self.assertAlmostEqual(productivity[2009], 200.0)
+        self.assertAlmostEqual(productivity[2007], 75.0)
+        self.assertAlmostEqual(productivity[2008], 112.5)
+        self.assertAlmostEqual(productivity[2009], 168.75)
 
         self.assertAlmostEqual(salary[2005], 5.0)
         self.assertAlmostEqual(salary[2006], 5.0)
-        self.assertAlmostEqual(salary[2007], 10.0)
-        self.assertAlmostEqual(salary[2008], 15.0)
-        self.assertAlmostEqual(salary[2009], 20.0)
+        self.assertAlmostEqual(salary[2007], 7.5)
+        self.assertAlmostEqual(salary[2008], 11.25)
+        self.assertAlmostEqual(salary[2009], 16.875)
 
     def test_preparacao_preserva_anos_observados_com_multiplas_ufs(self) -> None:
         pia_df = pd.DataFrame(

@@ -110,10 +110,15 @@ def carregar_parametros_renda(
         raise ValueError("forecast_config deve ser um dicionario")
 
     forecast_config = ForecastConfig(
-        method=str(forecast_config_raw.get("method", "linear")),
+        method=str(forecast_config_raw.get("method", "theil_sen")),
         min_history=int(forecast_config_raw.get("min_history", 2)),
         clamp_non_negative=bool(forecast_config_raw.get("clamp_non_negative", True)),
         rolling_window=int(forecast_config_raw.get("rolling_window", 3)),
+        max_annual_growth_rate=(
+            None
+            if forecast_config_raw.get("max_annual_growth_rate") is None
+            else float(forecast_config_raw.get("max_annual_growth_rate", 0.50))
+        ),
     )
 
     years = _construir_anos(config.get("target_years", config.get("anos_alvo")))
@@ -415,6 +420,55 @@ def _construir_coeficientes_aa(
     return pd.DataFrame(rows, columns=FINAL_COLUMNS)
 
 
+def _aplicar_tolerancia_crescimento_anual(
+    coefficients_df: pd.DataFrame,
+    max_annual_growth_rate: float | None,
+) -> pd.DataFrame:
+    if coefficients_df.empty or max_annual_growth_rate is None:
+        return coefficients_df
+    if max_annual_growth_rate < 0:
+        raise ValueError("max_annual_growth_rate deve ser maior ou igual a zero")
+
+    tolerated = coefficients_df.copy()
+    rows = []
+    group_columns = ["conta_alfa", "tipo_coeff"]
+    for _, group in tolerated.groupby(group_columns, dropna=False):
+        ordered = group.sort_values("ano").copy()
+        previous_value: float | None = None
+        previous_year: int | None = None
+
+        for index, row in ordered.iterrows():
+            current_value = row["coeff"]
+            if pd.isna(current_value):
+                rows.append(row)
+                continue
+
+            current_value = float(current_value)
+            current_year = int(row["ano"])
+            if (
+                previous_value is not None
+                and previous_year is not None
+                and previous_value > 0
+                and current_year > previous_year
+            ):
+                year_delta = current_year - previous_year
+                max_allowed = previous_value * (
+                    (1.0 + max_annual_growth_rate) ** year_delta
+                )
+                current_value = min(current_value, max_allowed)
+
+            ordered.at[index, "coeff"] = current_value
+            previous_value = current_value
+            previous_year = current_year
+            rows.append(ordered.loc[index])
+
+    result = pd.DataFrame(rows)
+    result = result.sort_values(["ano", "conta_alfa", "tipo_coeff"]).reset_index(
+        drop=True
+    )
+    return result[FINAL_COLUMNS]
+
+
 def preparar_dados_coeficientes_renda(
     pia_df: pd.DataFrame,
     pac_df: pd.DataFrame,
@@ -472,6 +526,10 @@ def preparar_dados_coeficientes_renda(
 
     final = pd.concat([projected_coefficients, aa_coefficients], ignore_index=True)
     final["coeff"] = pd.to_numeric(final["coeff"], errors="coerce")
+    final = _aplicar_tolerancia_crescimento_anual(
+        final,
+        forecast_config.max_annual_growth_rate,
+    )
     final = final.sort_values(["ano", "conta_alfa", "tipo_coeff"]).reset_index(
         drop=True
     )
