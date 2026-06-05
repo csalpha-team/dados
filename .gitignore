@@ -45,3 +45,12 @@ gold_export
 
 benchmark/
 gold_export_l1/
+
+# local Codex files
+.codex/
+
+# local forecast/audit artifacts
+auditoria_forecast_renda.*
+auditoria_matches_ncm.*
+series_coeficientes_exportacao.*
+dados/gold/**/resultados/
