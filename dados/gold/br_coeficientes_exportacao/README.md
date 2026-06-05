@@ -10,10 +10,10 @@ ano e produto com:
   ano considerado.
 
 A entrada principal da camada e o arquivo
-`parametros_coeficientes_exportacao.json`, que define quais descricoes de NCM
-devem ser associadas a cada produto e quais regras de reparticao especifica
-devem ser aplicadas quando a classificacao aduaneira e mais ampla do que o
-produto de interesse.
+`parametros_coeficientes_exportacao.json`, que define quais NCMs devem ser
+associados a cada produto e quais regras de reparticao especifica devem ser
+aplicadas quando a classificacao aduaneira e mais ampla do que o produto de
+interesse.
 
 ## Origem metodologica
 
@@ -39,14 +39,18 @@ descrever a parametrizacao adotada no modulo.
 
 O JSON tem dois blocos centrais:
 
-- `preparacoes_produtos`: define o "de para" entre cada produto do modelo e as
-  descricoes de NCM encontradas na base;
+- `composicao_produtos`: define o "de para" entre cada produto do modelo e os
+  NCMs encontrados na base, usando objetos com `id_ncm` e `nome_ncm`;
 - `participacoes_especificas`: sobrescreve a divisao padrao quando um produto
   precisa de um peso diferente de reparticao.
 
+O arquivo tambem referencia `taxa_cambio.csv`, da raw `pa_me_comex_stat`, para
+converter `valor_fob_dolar` em `valor_fob_real` com a taxa correspondente a cada
+ano. Assim, a conversao nao depende mais de uma taxa fixa.
+
 No caso do acai, a logica funciona assim:
 
-1. `AcaiFruto` e associado em `preparacoes_produtos` a quatro descricoes de NCM:
+1. `AcaiFruto` e associado em `composicao_produtos` a quatro NCMs:
    `Purês de açaí (Euterpe oleracea)`,
    `Sucos (sumo) de outras frutas, não fermentado, sem adição de açúcar`,
    `Outras frutas não cozidas ou cozidas em água ou vapor, congeladas, mesmo adicionadas de açúcar ou de outros edulcorantes`
@@ -77,16 +81,82 @@ O fluxo implementado em `preparacao_camada_exportacao.py` e direto:
 6. distribuir os valores dos NCMs entre os produtos definidos no parametro;
 7. aplicar as `participacoes_especificas` quando houver regra explicita, como o
    `0.87` do acai;
-8. converter o valor em dolar para real;
+8. converter o valor em dolar para real usando a taxa BRL/USD do ano;
 9. calcular `coeff` como a participacao do produto no total do ano;
 10. gravar o resultado em `br_coeficientes_exportacao.preparacao_camada_exportacao`.
+
+## Execucao local com Postgres
+
+Suba o banco local:
+
+```bash
+docker compose up -d postgres
+```
+
+Garanta que a raw contenha:
+
+- `pa_me_comex_stat.ncm_exportacao`;
+- `br_csalpha_diretorios_brasil.nomenclatura_comum_mercosul`.
+
+Quando essas tabelas ainda nao existirem, carregue primeiro os flows raw:
+
+```bash
+python -m dados.raw.pa_me_comex_stat.ncm_exportacao
+python -m dados.raw.br_csalpha_diretorios_brasil.nomenclatura_comum_mercosul
+```
+
+Depois gere a gold:
+
+```bash
+python -m dados.gold.br_coeficientes_exportacao.preparacao_camada_exportacao
+```
+
+O flow escreve no banco definido por `DB_GOLD_ZONE`; se essa variavel nao
+existir, usa `DB_AGREGATED_ZONE`. Essa compatibilidade preserva a nomenclatura
+historica do repositorio e a arquitetura de medalhoes documentada na raiz.
+
+## Auditoria das series
+
+Depois de carregar a tabela gold, gere o resumo e o grafico das series:
+
+```bash
+python -m dados.gold.br_coeficientes_exportacao.auditoria_series_coeficientes
+```
+
+Os arquivos saem em `tmp_data/br_coeficientes_exportacao/output/`:
+
+- `resumo_coeficientes.csv`;
+- `series_coeficientes_exportacao.png`.
+
+O grafico mostra as series de `coeff` dos principais produtos por participacao
+media. A primeira leitura esperada e se as series somam 1 por ano, se existem
+saltos provocados por mudanca de composicao NCM e se produtos amplos, como
+preparacoes alimenticias, nao dominam a serie sem justificativa metodologica.
+
+## Testes
+
+A bateria focada fica em `tests/test_export_coefficients.py` e valida:
+
+- leitura do novo formato enriquecido de `composicao_produtos`;
+- taxa de cambio anual carregada de CSV;
+- compatibilidade dos parametros com `produtos_unicos_matrizes.json`, `NCM.csv`
+  e `taxa_cambio.csv`;
+- transformacao gold com filtro de UF, reparticao por participacao especifica,
+  normalizacao anual de `coeff` e contrato pydantic;
+- geracao do resumo e do grafico de auditoria.
+
+Execute:
+
+```bash
+python -m pytest tests/test_export_coefficients.py
+```
 
 ## Observacoes de manutencao
 
 - Se a metodologia para o acai mudar, o ajuste deve ser feito primeiro em
   `participacoes_especificas`.
 - Se uma nova descricao de NCM passar a representar o produto, ela precisa
-  entrar em `preparacoes_produtos`.
+  entrar em `composicao_produtos` com `id_ncm` e `nome_ncm`.
 - Se a base passar a identificar o produto de forma direta e suficiente, a
   regra de estimacao por participacao media pode ser revista ou removida.
 - A documentacao desta camada assume a nomenclatura NCM tal como aparece na base

@@ -60,6 +60,15 @@ NUMERIC_COLS = ["valor_fob_dolar", "valor_fob_real", "coeff"]
 log = get_logger(dataset_id=DATASET_ID, zone=ZONE)
 
 
+def _database_gold() -> str:
+    database = os.getenv("DB_GOLD_ZONE") or os.getenv("DB_AGREGATED_ZONE")
+    if not database:
+        raise ValueError(
+            "Banco gold não configurado. Defina DB_GOLD_ZONE ou DB_AGREGATED_ZONE."
+        )
+    return database
+
+
 def extract() -> tuple[pd.DataFrame, dict]:
     (
         preparacoes_produtos,
@@ -128,7 +137,7 @@ def load(df: pd.DataFrame) -> None:
     columns = pydantic_to_postgres_columns(MODEL)
     with PostgresETL(
         host="localhost",
-        database=os.getenv("DB_GOLD_ZONE"),
+        database=_database_gold(),
         user=os.getenv("POSTGRES_USER"),
         password=os.getenv("POSTGRES_PASSWORD"),
         schema=DATASET_ID,
