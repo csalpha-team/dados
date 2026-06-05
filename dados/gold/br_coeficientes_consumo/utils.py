@@ -10,8 +10,7 @@ REQUIRED_POF_COLUMNS = [
     "valor",
 ]
 
-FINAL_COLUMNS = ["ano", "coeff_key", "valor"]
-REAIS_TO_THOUSAND_REAIS = 1000.0
+FINAL_COLUMNS = ["ano", "coeff_key", "coeff"]
 
 
 def carregar_mapeamento_mip(mip_path: Path, sheet_name: str) -> pd.DataFrame:
@@ -31,7 +30,7 @@ def validar_colunas_pof(pof_df: pd.DataFrame) -> None:
         )
 
 
-def construir_valores_consumo(
+def construir_coeficientes_consumo(
     pof_df: pd.DataFrame,
     mip_mapping_df: pd.DataFrame,
     parametros: dict,
@@ -65,7 +64,7 @@ def construir_valores_consumo(
     pof_filtrada = pof_filtrada[pof_filtrada["ano"] == parametros["ano_alvo"]].copy()
 
     pof_filtrada["valor"] = pd.to_numeric(pof_filtrada["valor"], errors="coerce")
-    pof_filtrada["valor"] = pof_filtrada["valor"] / REAIS_TO_THOUSAND_REAIS
+    pof_filtrada["valor"] = pof_filtrada["valor"] / 100
 
     pof_filtrada = pof_filtrada.rename(columns={coluna_chave_mip: "coeff_key"})
 
@@ -84,13 +83,7 @@ def construir_valores_consumo(
     filtrado = filtrado.dropna(subset=["coeff_key", "valor"])
     filtrado = filtrado.drop_duplicates(subset=["coeff_key"], keep="last")
 
-    values = filtrado[["ano", "coeff_key", "valor"]].copy()
-    return values[FINAL_COLUMNS]
-
-
-def construir_coeficientes_consumo(
-    pof_df: pd.DataFrame,
-    mip_mapping_df: pd.DataFrame,
-    parametros: dict,
-) -> pd.DataFrame:
-    return construir_valores_consumo(pof_df, mip_mapping_df, parametros)
+    coefficients = filtrado[["ano", "coeff_key", "valor"]].rename(
+        columns={"valor": "coeff"}
+    )
+    return coefficients[FINAL_COLUMNS]

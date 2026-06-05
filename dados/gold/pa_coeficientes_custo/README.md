@@ -1,46 +1,28 @@
-# Valores de custo
+# Coeficientes de custo
 
-Esta camada prepara uma biblioteca de valores monetarios de custo rural para a
-modelagem Layer 2. A fonte principal e o Censo Agropecuario, lido a partir das
-tabelas silver `al_ibge_censoagro.tbl_1909_2006` e
-`al_ibge_censoagro.tbl_6899_2017`, filtradas para municipios do Para.
+Esta camada prepara os coeficientes de custo rural para a modelagem Layer 2. A
+fonte principal é o Censo Agropecuário, lido a partir das tabelas silver
+`al_ibge_censoagro.tbl_1909_2006` e `al_ibge_censoagro.tbl_6899_2017`,
+filtradas para municípios do Pará.
 
-Pela metodologia revisada das Contas Alfa, esta gold nao calcula mais
-participacoes do total nem coeficientes tecnicos. O coeficiente tecnico depende
-do contexto economico em que sera aplicado: produto, regiao, ano, VBP, grid de
-parametros e matriz de incidencia. Esses elementos pertencem ao repositorio de
-modelagem. O papel deste repo de dados e tratar a fonte secundaria, preservar o
-valor monetario observado na escala original da fonte e entregar uma tabela
-pronta para a calibracao no `csalpha`.
+## Contrato
 
-Em termos praticos, a saida desta camada e:
+A tabela gold `pa_coeficientes_custo.preparacao_camada_custo` publica:
 
-- `ano`: ano do Censo Agropecuario;
-- `nome_regiao_integracao`: regiao de integracao do Para;
+- `ano`: ano do Censo Agropecuário mais recente disponível para a chave;
+- `nome_regiao_integracao`: região de integração do Pará;
 - `tipo_coeff`: chave de custo esperada pela modelagem;
-- `valor`: despesa monetaria observada, em `Mil Reais`.
+- `coeff`: participação do item de despesa em relação à despesa total do
+  estabelecimento, agregada por região.
 
-E importante manter essa escala em mente: os valores de custo desta gold estao
-em milhares de reais, isto e, cada unidade numerica representa R$ 1.000. Essa
-escala vem diretamente do raw do Censo Agropecuario:
+O campo `coeff` é a coluna contratual do repositório para coeficientes. A linha
+`Total` da fonte é usada como denominador municipal e não é exportada como item
+de custo.
 
-- `al_ibge_censoagro.tbl_1909_2006`: `Valor das despesas realizadas pelos estabelecimentos agropecuários` com `unidade_medida = Mil Reais`;
-- `al_ibge_censoagro.tbl_6899_2017`: `Valor das despesas realizadas pelos estabelecimentos agropecuários` com `unidade_medida = Mil Reais`.
-
-O pipeline silver/gold nao multiplica esses valores por 1000; ele preserva a
-escala monetaria declarada pelo IBGE.
-
-`valor` nao e uma razao contra a despesa total. A linha `Total` da fonte e
-removida porque nao representa um item de custo; ela so poderia ser usada como
-denominador em outro contexto. A divisao pelo VBP ou por qualquer base de
-incidencia deve acontecer na modelagem, nao nesta gold.
-
-## Compatibilizacao
+## Compatibilização
 
 O arquivo `parametros_coeficientes_custo.json` faz o de-para entre os itens de
-despesa do Censo Agropecuario e as chaves de custo usadas pela CSAlpha. Ele nao
-armazena valores finais nem coeficientes prontos; ele apenas explicita como a
-taxonomia da fonte deve alimentar a taxonomia operacional do modelo.
+despesa do Censo Agropecuário e as chaves de custo usadas pela CSAlpha.
 
 Alguns exemplos:
 
@@ -51,39 +33,20 @@ Alguns exemplos:
 - `EmbalagemBenefEstad`, `EmbalagemBenefLoc`, `EmbalagemTransfEstad` e
   `EmbalagemTransfLoc` recebem `Sacarias e embalagens`.
 
-Quando um item do Censo alimenta mais de uma chave, o valor e replicado. Essa
-replicacao e intencional: cada chave representa uma incidencia distinta que sera
-resolvida na modelagem. A gold nao tenta repartir esse valor sem conhecer a
-matriz de incidencia.
+Quando um item do Censo alimenta mais de uma chave, o coeficiente é replicado.
+Essa replicação é intencional porque cada chave representa uma incidência
+distinta na modelagem.
 
 ## Fluxo
 
 O fluxo `preparacao_camada_custo.py` executa:
 
-1. ler as despesas do Censo Agropecuario na silver;
-2. mapear cada municipio para sua regiao de integracao;
+1. ler as despesas do Censo Agropecuário na silver;
+2. mapear cada município para sua região de integração;
 3. carregar `parametros_coeficientes_custo.json`;
-4. remover a despesa `Total`;
+4. calcular `coeff = valor_despesa / Total` por município e item;
 5. expandir cada `expense_type` para uma ou mais chaves `tipo_coeff`;
-6. agregar `valor` por ano, regiao de integracao e chave de custo;
-7. publicar a tabela gold `pa_coeficientes_custo.preparacao_camada_custo`.
-
-## Leitura para a modelagem
-
-Na leitura metodologica, cada linha desta tabela representa o valor observado
-de um item de custo em uma regiao e ano. O repositorio `csalpha` deve combinar
-esse valor com o VBP, o produto, a agregacao e a incidencia para obter o
-coeficiente tecnico que efetivamente escala a matriz. Essa separacao evita que
-um percentual agregado do Censo seja aplicado como se fosse coeficiente
-especifico de produto ou fluxo.
-
-## Manutencao
-
-- Ajustes de taxonomia devem ser feitos em `parametros_coeficientes_custo.json`.
-- Renomear `tipo_coeff` exige cuidado, pois essas chaves sao contrato com a
-  modelagem.
-- A ordem das entradas no JSON nao altera o resultado, mas agrupamentos
-  coerentes facilitam revisao.
-- Novas fontes ou novos anos devem continuar preservando e documentando a
-  escala monetaria em `valor`. Se alguma fonte futura vier em Reais unitarios,
-  a diferenca precisa estar explicita antes de misturar series.
+6. agregar os coeficientes por ano, região de integração e chave de custo;
+7. selecionar o ano mais recente para cada região e chave;
+8. validar o schema Pydantic;
+9. publicar a tabela gold `pa_coeficientes_custo.preparacao_camada_custo`.
