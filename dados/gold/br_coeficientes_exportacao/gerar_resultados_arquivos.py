@@ -84,7 +84,9 @@ def _consultar_exportacoes_pa_ano(ano: int) -> pd.DataFrame:
     response.raise_for_status()
     dados = response.json()
     if not dados.get("success"):
-        raise ValueError(f"ComexStat retornou falha para {ano}: {dados.get('message')}")
+        raise ValueError(
+            f"ComexStat retornou falha para {ano}: {dados.get('message')}"
+        )
 
     linhas = (dados.get("data") or {}).get("list") or []
     if not linhas:
@@ -230,9 +232,7 @@ def salvar_resultados(coeficientes: pd.DataFrame, exportacoes: pd.DataFrame) -> 
     with (RESULTADOS_DIR / "metadados_resultados.json").open(
         "w", encoding="utf-8"
     ) as file:
-        json.dump(
-            metadados.to_dict(orient="records")[0], file, ensure_ascii=False, indent=2
-        )
+        json.dump(metadados.to_dict(orient="records")[0], file, ensure_ascii=False, indent=2)
 
 
 def main() -> None:

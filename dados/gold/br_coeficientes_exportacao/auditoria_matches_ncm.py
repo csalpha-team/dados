@@ -133,7 +133,8 @@ def auditar_parametros_vs_ncm(
     catalogo_ncm: pd.DataFrame,
 ) -> pd.DataFrame:
     catalogo_por_codigo = {
-        str(linha.CO_NCM): linha for linha in catalogo_ncm.itertuples()
+        str(linha.CO_NCM): linha
+        for linha in catalogo_ncm.itertuples()
     }
     linhas = []
     for produto, composicao in parametros["composicao_produtos"].items():
@@ -274,9 +275,7 @@ def gerar_relatorio_matches() -> tuple[Path, Path]:
     with pd.ExcelWriter(caminho_xlsx) as writer:
         parametros_vs_ncm.to_excel(writer, sheet_name="parametros_vs_ncm", index=False)
         candidatos.to_excel(writer, sheet_name="candidatos_produto", index=False)
-        sem_composicao.to_excel(
-            writer, sheet_name="produtos_sem_composicao", index=False
-        )
+        sem_composicao.to_excel(writer, sheet_name="produtos_sem_composicao", index=False)
 
     return caminho_csv, caminho_xlsx
 

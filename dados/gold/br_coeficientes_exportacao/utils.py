@@ -164,7 +164,9 @@ def _carregar_taxas_cambio_csv(
 
     taxas_df = pd.read_csv(caminho_csv)
     colunas_faltantes = [
-        coluna for coluna in [coluna_ano, coluna_taxa] if coluna not in taxas_df.columns
+        coluna
+        for coluna in [coluna_ano, coluna_taxa]
+        if coluna not in taxas_df.columns
     ]
     if colunas_faltantes:
         raise ValueError(

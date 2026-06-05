@@ -3,8 +3,8 @@
 Reads the gold zone via :class:`PostgresETL` and materialises the six dynamic
 artefacts described in ``gold_export/l2_input_schemas_examples.md``:
 
-- ``cost_coefficients.csv``         (pa_coeficientes_custo.preparacao_camada_custo)
-- ``consumption_coefficients.csv``  (br_coeficientes_consumo.preparacao_camada_consumo)
+- ``pa_coeficientes_custo_values.csv``      (pa_coeficientes_custo.preparacao_camada_custo)
+- ``br_coeficientes_consumo_values.csv``    (br_coeficientes_consumo.preparacao_camada_consumo)
 - ``investment_coefficients.json``  (br_coeficientes_investimento.coeficientes_investimento)
 - ``export_coefficients.json``      (br_coeficientes_exportacao.preparacao_camada_exportacao)
 - ``income_productivity.json``      (br_coeficientes_renda.renda_produtividade)
@@ -41,6 +41,19 @@ ZIP_PATH = REPO_ROOT / "gold_export.zip"
 
 log = get_logger(dataset_id=DATASET_ID, zone=ZONE)
 
+GENERATED_FILES = {
+    "cost_coefficients.csv",
+    "consumption_coefficients.csv",
+    "cost_values.csv",
+    "consumption_values.csv",
+    "pa_coeficientes_custo_values.csv",
+    "br_coeficientes_consumo_values.csv",
+    "investment_coefficients.json",
+    "export_coefficients.json",
+    "income_productivity.json",
+    "income_salary.json",
+}
+
 
 @contextmanager
 def _gold_db(schema: str) -> Iterator[PostgresETL]:
@@ -64,38 +77,32 @@ def _write_json(path: Path, payload) -> None:
         json.dump(payload, fh, ensure_ascii=False, indent=2, default=float)
 
 
-def export_cost_coefficients() -> Path:
+def export_cost_values() -> Path:
     df = _read(
         "pa_coeficientes_custo",
-        "SELECT ano, nome_regiao_integracao, tipo_coeff, coeff "
+        "SELECT ano, nome_regiao_integracao, tipo_coeff, valor "
         "FROM pa_coeficientes_custo.preparacao_camada_custo",
     )
-    out = OUTPUT_DIR / "cost_coefficients.csv"
+    out = OUTPUT_DIR / "pa_coeficientes_custo_values.csv"
     df.to_csv(out, index=False, encoding="utf-8")
-    log.info("export.cost_coefficients", rows=len(df), path=str(out))
+    log.info("export.cost_values", rows=len(df), path=str(out))
     return out
 
 
-def export_consumption_coefficients() -> Path:
+def export_consumption_values() -> Path:
     df = _read(
         "br_coeficientes_consumo",
-        "SELECT ano, coeff_key, coeff "
+        "SELECT ano, coeff_key, valor "
         "FROM br_coeficientes_consumo.preparacao_camada_consumo",
     )
     if df["ano"].nunique() > 1:
         latest = int(df["ano"].max())
-        log.info("export.consumption_coefficients.pick_year", year=latest)
+        log.info("export.consumption_values.pick_year", year=latest)
         df = df[df["ano"] == latest]
 
-    wide = (
-        df.set_index("coeff_key")["coeff"]
-        .astype(float)
-        .to_frame()
-        .T.reset_index(drop=True)
-    )
-    out = OUTPUT_DIR / "consumption_coefficients.csv"
-    wide.to_csv(out, index=False, encoding="utf-8")
-    log.info("export.consumption_coefficients", cols=len(wide.columns), path=str(out))
+    out = OUTPUT_DIR / "br_coeficientes_consumo_values.csv"
+    df.to_csv(out, index=False, encoding="utf-8")
+    log.info("export.consumption_values", rows=len(df), path=str(out))
     return out
 
 
@@ -169,8 +176,8 @@ def export_income_salary() -> Path:
 
 
 GENERATORS = (
-    export_cost_coefficients,
-    export_consumption_coefficients,
+    export_cost_values,
+    export_consumption_values,
     export_investment_coefficients,
     export_export_coefficients,
     export_income_productivity,
@@ -181,7 +188,11 @@ GENERATORS = (
 def bundle_zip() -> Path:
     if ZIP_PATH.exists():
         ZIP_PATH.unlink()
-    files = sorted(p for p in OUTPUT_DIR.iterdir() if p.is_file())
+    files = sorted(
+        p
+        for p in OUTPUT_DIR.iterdir()
+        if p.is_file() and not p.name.startswith(".~lock.")
+    )
     with zipfile.ZipFile(ZIP_PATH, "w", zipfile.ZIP_DEFLATED) as zf:
         for f in files:
             zf.write(f, arcname=f"gold_export/{f.name}")
@@ -193,6 +204,12 @@ def flow() -> None:
     log.info("flow.start", output_dir=str(OUTPUT_DIR))
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     try:
+        for path in OUTPUT_DIR.glob(".~lock.*"):
+            path.unlink()
+        for filename in GENERATED_FILES:
+            path = OUTPUT_DIR / filename
+            if path.exists():
+                path.unlink()
         for gen in GENERATORS:
             gen()
         bundle_zip()

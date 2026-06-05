@@ -1,4 +1,4 @@
-"""Gold flow: br_coeficientes_consumo — coeficientes de consumo a partir da POF.
+"""Gold flow: br_coeficientes_consumo — valores de consumo a partir da POF.
 
 Reads silver ``br_ibge_pof.tbl_6970`` directly (previously read from gold
 ``brasil_despesas_familiares`` — a gold→gold violation).
@@ -14,7 +14,7 @@ import pandas as pd
 from dotenv import load_dotenv
 
 from dados.gold.br_coeficientes_consumo.utils import (
-    construir_coeficientes_consumo,
+    construir_valores_consumo,
 )
 from dados.gold.br_coeficientes_consumo.models import (
     BrCoeficientesConsumoPreparacaoCamadaConsumo,
@@ -36,7 +36,7 @@ DEFAULT_EQUIVALENCE_PATH = Path(__file__).with_name("equivalencia_despesas.json"
 PARAMETROS_CONSUMO = {
     "coluna_chave_mip": "TipoDespesaDestinoProvável",
     "coluna_tipo_despesa_mip": "TiposDeDespesa",
-    "variavel_alvo": "Distribuição da despesa monetária e não monetária média mensal familiar",
+    "variavel_alvo": "Despesa monetária e não monetária média mensal familiar",
     "ano_alvo": 2018,
     "rotulo_urbano": "Urbana",
     "rotulo_rural": "Rural",
@@ -96,7 +96,7 @@ def extract() -> tuple[pd.DataFrame, pd.DataFrame]:
 
 def transform(payload: tuple[pd.DataFrame, pd.DataFrame]) -> pd.DataFrame:
     pof_data, mip_mapping = payload
-    df = construir_coeficientes_consumo(pof_data, mip_mapping, PARAMETROS_CONSUMO)
+    df = construir_valores_consumo(pof_data, mip_mapping, PARAMETROS_CONSUMO)
     return df[list(MODEL.model_fields.keys())].copy()
 
 
@@ -110,7 +110,7 @@ def validate(df: pd.DataFrame) -> pd.DataFrame:
         log.error("validate.error", reason="duplicate_pk", count=int(dupes.sum()))
         raise ValueError(f"Found {int(dupes.sum())} rows duplicating PK {PK_COLS}")
 
-    df["coeff"] = df["coeff"].apply(lambda v: None if pd.isna(v) else Decimal(str(v)))
+    df["valor"] = df["valor"].apply(lambda v: None if pd.isna(v) else Decimal(str(v)))
     [MODEL(**r) for r in df.to_dict("records")]
     return df
 

@@ -89,9 +89,7 @@ def gerar_grafico_series(
     return caminho_saida
 
 
-def salvar_resumo(
-    coeficientes: pd.DataFrame, caminho_saida: Path | None = None
-) -> Path:
+def salvar_resumo(coeficientes: pd.DataFrame, caminho_saida: Path | None = None) -> Path:
     if caminho_saida is None:
         caminho_saida = tmp_dir(DATASET_ID, "output") / "resumo_coeficientes.csv"
 

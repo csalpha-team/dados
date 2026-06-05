@@ -126,9 +126,9 @@ class AlIbgePamLavouraPermanente(_PamBase):
     )
 ```
 
-Unidades padronizadas: `BRL`, `USD`, `kg`, `ton`, `L`, `head_count`,
-`hectare`, `m2`, `ratio`, `percent`, `dimensionless`, `YYYY`, `YYYY-MM`,
-`date`, `code` (lista completa em `REFACTORING.md` §4).
+Unidades padronizadas: `BRL`, `thousand_BRL`, `USD`, `kg`, `ton`, `L`,
+`head_count`, `hectare`, `m2`, `ratio`, `percent`, `dimensionless`, `YYYY`,
+`YYYY-MM`, `date`, `code` (lista completa em `REFACTORING.md` §4).
 
 O linter `tests/test_pydantic_metadata.py` percorre todos os models de
 silver/gold e falha se algum campo não tem `description` + `unit`.
@@ -177,7 +177,7 @@ Helpers de limpeza específicos da camada estão em `dados/silver/utils.py`
 
 Papel: **camada que conversa diretamente com o algoritmo**. Cada dataset
 gold prepara um artefato analítico — tipicamente um conjunto de
-coeficientes ou indexadores — no formato que a Layer 2 do
+valores observados, coeficientes ou indexadores — no formato que a Layer 2 do
 [csalpha](https://github.com/csalpha-team/csalpha) consome.
 
 - **Entrada**: apenas silver. Nunca raw, nunca outra gold.
@@ -188,13 +188,14 @@ coeficientes ou indexadores — no formato que a Layer 2 do
 Datasets atualmente em gold:
 
 ```
-br_coeficientes_consumo/         # POF → coeficientes de consumo
+br_coeficientes_consumo/         # POF → valores monetários de consumo
 br_coeficientes_exportacao/      # Comex → coeficientes de exportação
 br_coeficientes_investimento/    # PAC/PAIC → coeficientes de investimento
 br_coeficientes_renda/           # RAIS/PIA → produtividade e salário
 br_despesas_familiares/          # POF → despesas familiares
+brasil_despesas_familiares/      # variante nacional
 br_servicos/                     # PAS/PIA → serviços/indústria/comércio
-pa_coeficientes_custo/           # custos rurais — Pará
+pa_coeficientes_custo/           # valores monetários de custos rurais — Pará
 pa_indexadores_custo_producao_rural/
 pa_indexadores_producao_rural/
 pa_indexadores_salarios_producao_rural/
@@ -206,7 +207,7 @@ Cada diretório de gold mantém, além do `flow.py`/scripts de tabela:
 
 - `models/<dataset_id>.py` — schemas pydantic (mesma regra de
   `description` + `unit` da silver).
-- `utils.py` — funções de cálculo específicas do coeficiente.
+- `utils.py` — funções de cálculo específicas do dataset.
 - `testing_utils.py` — fixtures e helpers para testes do dataset.
 - arquivos de parâmetros (`*.json`) quando o cálculo depende de
   configuração externa (ex.:
@@ -228,8 +229,8 @@ Layer 2 espera, em formatos fixos:
 
 | Artefato                          | Origem (gold)                                                      | Formato |
 |-----------------------------------|--------------------------------------------------------------------|---------|
-| `cost_coefficients.csv`           | `pa_coeficientes_custo.preparacao_camada_custo`                    | CSV     |
-| `consumption_coefficients.csv`    | `br_coeficientes_consumo.preparacao_camada_consumo` (último ano)   | CSV wide|
+| `pa_coeficientes_custo_values.csv`   | `pa_coeficientes_custo.preparacao_camada_custo`                    | CSV     |
+| `br_coeficientes_consumo_values.csv` | `br_coeficientes_consumo.preparacao_camada_consumo` (último ano)   | CSV     |
 | `investment_coefficients.json`    | `br_coeficientes_investimento.coeficientes_investimento`           | JSON    |
 | `export_coefficients.json`        | `br_coeficientes_exportacao.preparacao_camada_exportacao`          | JSON por ano |
 | `income_productivity.json`        | `br_coeficientes_renda.renda_produtividade`                        | JSON por ano |
@@ -246,6 +247,12 @@ Comportamento do flow:
 3. `bundle_zip()` compacta todo o conteúdo de `gold_export/` em
    `gold_export.zip` na raiz do repositório. Esse zip é o entregável que
    alimenta o algoritmo.
+
+Observação metodológica: `pa_coeficientes_custo_values.csv` e
+`br_coeficientes_consumo_values.csv` não publicam coeficientes técnicos. Eles
+carregam valores monetários observados em `valor`; a divisão pelo VBP ou pela
+base de incidência deve ocorrer na modelagem, onde existem produto, região,
+ano, agregação e matriz de incidência.
 
 Executar:
 
@@ -267,6 +274,7 @@ As zonas e suas variáveis de ambiente são definidas em `.env` (template em
 DB_PREFIX=zona
 DB_RAW_ZONE=${DB_PREFIX}_brutos
 DB_SILVER_ZONE=${DB_PREFIX}_tratados
+DB_GOLD_ZONE=${DB_PREFIX}_gold
 DB_AGREGATED_ZONE=${DB_PREFIX}_agregated
 ```
 
