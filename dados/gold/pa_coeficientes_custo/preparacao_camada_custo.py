@@ -27,10 +27,8 @@ from dados.gold.pa_coeficientes_custo.utils import (
     expandir_coeficientes,
 )
 from dados.gold.pa_indexadores_producao_rural._common import (
+    enrich_with_regiao,
     extract_silver,
-)
-from dados.gold.pa_indexadores_producao_rural.utils import (
-    dicionario_regioes_integracao,
 )
 from dados.raw.utils.postgres_interactions import PostgresETL
 from dados.utils.logging import get_logger
@@ -70,12 +68,7 @@ def extract() -> pd.DataFrame:
         WHERE id_municipio LIKE '15%'
     """
     df = extract_silver(query, SILVER_SCHEMA)
-    df["nome"] = df["id_municipio"].astype(str)
-    df["sigla_uf"] = "PA"
-    df["nome_regiao_integracao"] = df["id_municipio"].map(
-        dicionario_regioes_integracao
-    )
-    return df
+    return enrich_with_regiao(df)
 
 
 def transform(df: pd.DataFrame) -> pd.DataFrame:
