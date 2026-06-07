@@ -17,7 +17,7 @@ class PaCoeficientesCustoPreparacaoCamadaCusto(BaseModel):
         description="Cost coefficient type label",
         json_schema_extra={"unit": "code"},
     )
-    coeff: Decimal | None = Field(
-        description="Cost coefficient (share of total establishment expenses)",
-        json_schema_extra={"unit": "ratio"},
+    valor: Decimal | None = Field(
+        description="Observed cost expense value in thousands of BRL",
+        json_schema_extra={"unit": "1000xBRL"},
     )

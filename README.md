@@ -229,8 +229,8 @@ Layer 2 espera, em formatos fixos:
 
 | Artefato                          | Origem (gold)                                                      | Formato |
 |-----------------------------------|--------------------------------------------------------------------|---------|
-| `cost_coefficients.csv`           | `pa_coeficientes_custo.preparacao_camada_custo`                    | CSV     |
-| `consumption_coefficients.csv`    | `br_coeficientes_consumo.preparacao_camada_consumo` (último ano)   | CSV     |
+| `cost_values.csv`                 | `pa_coeficientes_custo.preparacao_camada_custo`                    | CSV     |
+| `consumption_values.csv`          | `br_coeficientes_consumo.preparacao_camada_consumo` (último ano)   | CSV     |
 | `investment_coefficients.json`    | `br_coeficientes_investimento.coeficientes_investimento`           | JSON    |
 | `export_coefficients.json`        | `br_coeficientes_exportacao.preparacao_camada_exportacao`          | JSON por ano |
 | `income_productivity.json`        | `br_coeficientes_renda.renda_produtividade`                        | JSON por ano |
@@ -248,9 +248,9 @@ Comportamento do flow:
    `gold_export.zip` na raiz do repositório. Esse zip é o entregável que
    alimenta o algoritmo.
 
-Observação metodológica: `cost_coefficients.csv` e
-`consumption_coefficients.csv` publicam a coluna contratual `coeff`, igual aos
-models das respectivas tabelas gold.
+Observação metodológica: `cost_values.csv` e `consumption_values.csv` publicam
+`valor`, não `coeff`. A Layer 2 consome esses valores monetários e calcula os
+coeficientes técnicos no contexto correto de aplicação.
 
 Executar:
 

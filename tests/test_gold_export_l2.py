@@ -29,12 +29,12 @@ from dados.export import dump_gold_l2
 
 
 class GoldExportL2Tests(unittest.TestCase):
-    def test_consumption_coefficients_export_uses_long_format(self) -> None:
+    def test_consumption_values_export_uses_long_format(self) -> None:
         source = pd.DataFrame(
             {
                 "ano": [2018, 2018],
                 "coeff_key": ["DemandaA", "DemandaB"],
-                "coeff": [0.1, 0.2],
+                "valor": [0.1, 0.2],
             }
         )
 
@@ -44,11 +44,11 @@ class GoldExportL2Tests(unittest.TestCase):
                 patch.object(dump_gold_l2, "OUTPUT_DIR", output_dir),
                 patch.object(dump_gold_l2, "_read", return_value=source),
             ):
-                out = dump_gold_l2.export_consumption_coefficients()
+                out = dump_gold_l2.export_consumption_values()
 
             exported = pd.read_csv(out)
 
-        self.assertEqual(exported.columns.tolist(), ["ano", "coeff_key", "coeff"])
+        self.assertEqual(exported.columns.tolist(), ["ano", "coeff_key", "valor"])
         pd.testing.assert_frame_equal(exported, source)
 
 
