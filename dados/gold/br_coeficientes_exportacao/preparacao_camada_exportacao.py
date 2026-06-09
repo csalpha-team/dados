@@ -193,9 +193,9 @@ def gerar_auditoria_matches() -> Path:
     parametros = carregar_parametros_brutos(CONFIG_PATH)
     caminho = salvar_verificacao_matches(
         parametros,
-        RESULTADOS_DIR / "auditoria_matches_ncm.xlsx",
+        RESULTADOS_DIR / "relatorio_matches_ncm.xlsx",
     )
-    log.info("auditoria_matches_ncm.done", xlsx=str(caminho))
+    log.info("relatorio_matches_ncm.done", xlsx=str(caminho))
     return caminho
 
 

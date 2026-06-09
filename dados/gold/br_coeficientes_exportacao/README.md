@@ -166,7 +166,7 @@ python -m dados.gold.br_coeficientes_exportacao.preparacao_camada_exportacao --a
 ```
 
 Essa auditoria nao executa algoritmo de descoberta textual nem gera CSVs. Ela
-gera apenas `dados/gold/br_coeficientes_exportacao/resultados/auditoria_matches_ncm.xlsx`,
+gera apenas `dados/gold/br_coeficientes_exportacao/resultados/relatorio_matches_ncm.xlsx`,
 com uma aba `matches` e tres colunas: `produto`, `id_ncm` e `nome_ncm`. Esse
 arquivo e a verificacao final do de-para consolidado no JSON.
 

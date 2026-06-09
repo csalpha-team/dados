@@ -128,7 +128,7 @@ def test_auditoria_matches_ncm_gera_verificacao_sintetica(tmp_path) -> None:
     parametros = carregar_parametros_brutos(PARAMETROS_PATH)
     verificacao = construir_verificacao_matches(parametros)
     caminho = salvar_verificacao_matches(
-        parametros, tmp_path / "auditoria_matches_ncm.xlsx"
+        parametros, tmp_path / "relatorio_matches_ncm.xlsx"
     )
 
     assert not verificacao.empty
