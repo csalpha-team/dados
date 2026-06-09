@@ -66,6 +66,69 @@ ordem:
 9. validar os models Pydantic;
 10. publicar as tabelas na zona gold.
 
+## Parâmetros
+
+O arquivo `parametros_coeficientes_renda.json` concentra os pressupostos do
+fluxo:
+
+- `config_previsao`: define o método e as restrições da projeção. O método
+  atual é `theil_sen`, com pelo menos `2` anos observados por série,
+  truncamento de valores negativos quando `clamp_non_negative = true`, janela
+  móvel de `3` anos para métodos que usam média móvel e limite de crescimento
+  anual positivo de `0.5`.
+- `anos_alvo`: intervalo fechado de anos publicados. Com `start = 1995` e
+  `end = 2023`, a saída contém todos os anos entre 1995 e 2023.
+- `valores_producao_aa`: valores constantes usados para preencher
+  `AAProdução` enquanto não houver fonte própria para essa conta.
+- `mapa_setores`: mapeia códigos de `divisao_grupo_cnae_2` para as contas
+  alfa. O carregador aceita chaves auxiliares começando com `_` como metadados
+  e não as usa no cálculo.
+
+Em `mapa_setores.PAC_COMERCIO`, as contas de atacado usam o prefixo `3` e as
+contas de varejo usam o prefixo `4`.
+
+Em `mapa_setores.PIA_INDUSTRIA`, as contas de indústria beneficiada usam os
+prefixos `10`, `11`, `12`, `17`, `19`, `20` e `24`. As contas de indústria de
+transformação usam os prefixos `13`, `14`, `15`, `16`, `18`, `21`, `22`, `23`,
+`25`, `26`, `27`, `28`, `29`, `30`, `31`, `32` e `33`.
+
+Os significados documentados dos códigos da PIA ficam em
+`mapa_setores.PIA_INDUSTRIA._codigos`:
+
+| Código | Descrição |
+| --- | --- |
+| `10` | Fabricação de produtos alimentícios |
+| `11` | Fabricação de bebidas |
+| `12` | Fabricação de produtos de fumo |
+| `13` | Fabricação de produtos têxteis |
+| `14` | Confecção de artigos do vestuário e acessórios |
+| `15` | Preparação de couros e fabricação de artefatos de couro, artigos para viagem e calçados |
+| `16` | Fabricação de produtos de madeira |
+| `17` | Fabricação de celulose, papel e produtos de papel |
+| `19` | Fabricação de coque, de produtos derivados do petróleo e de biocombustíveis |
+| `20` | Fabricação de produtos químicos |
+| `21` | Fabricação de produtos farmoquímicos e farmacêuticos |
+| `22` | Fabricação de produtos de borracha e de material plástico |
+| `23` | Fabricação de produtos de minerais não-metálicos |
+| `24` | Metalurgia |
+
+### Produtos associados aos CNAEs
+
+A relação abaixo é apenas indicativa. Ela registra possibilidades de associação
+entre produtos da sociobiodiversidade e atividades CNAE, com vínculo
+condicional fraco: a presença de um produto não implica enquadramento automático
+na atividade, e a atividade não é usada para inferir diretamente a origem dos
+produtos. O uso deve ser interpretativo e depende de validação caso a caso.
+
+| CNAE | Atividade | Produtos associados |
+| ---: | --- | --- |
+| `10` | Fabricação de produtos alimentícios | Açaí, cacau, castanha, palmito, cupuaçu, mel, pupunha, bacuri, murici, taperebá, bacaba, uxi, piquiá, leites vegetais etc. |
+| `11` | Fabricação de bebidas | Sucos, polpas, néctares, fermentados, bebidas de açaí, cupuaçu, bacuri, taperebá, bacaba etc. |
+| `16` | Fabricação de produtos de madeira | Pode se relacionar com cumaru, piquiá, artesanato, madeira manejada e artefatos. |
+| `20` | Fabricação de produtos químicos | Óleos, resinas, corantes, extratos, cosméticos, sabões, bioinsumos, breu-branco, andiroba, copaíba, urucum etc. |
+| `21` | Farmoquímicos e farmacêuticos | Plantas medicinais, copaíba, andiroba, breu-branco, óleos vegetais, extratos bioativos. |
+| `22` | Borracha e material plástico | Borracha natural, látex, artefatos de borracha e possíveis bioplásticos/biomateriais. |
+
 ## AAProdução
 
 A conta `AAProdução` continua sendo tratada por pressuposto temporário. Sua

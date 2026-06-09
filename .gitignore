@@ -42,3 +42,9 @@ logs/
 
 # local Codex skills
 .codex/skills/
+
+# dumps locais da camada gold
+gold_export*
+
+# artefatos locais de exploração
+exploracao_*
