@@ -25,30 +25,86 @@ Os parâmetros pedem uma série anual de `1995` a `2023`, mas as bases PIA/PAC
 usadas aqui começam apenas em `2007`. Os anos não observados são imputados
 antes do cálculo dos coeficientes finais.
 
-O método padrão de previsão é `theil_sen`, baseado no estimador de Theil-Sen:
+O método padrão de previsão é `theil_sen`, implementado em `previsao_renda.py`
+pelo `IncomeForecaster`. A previsão é feita antes da agregação final dos
+coeficientes: primeiro cada variável bruta é projetada por
+`divisao_grupo_cnae_2`, depois os valores projetados são agregados para
+`conta_alfa`, e só então são calculados `prod_mon_trab` e `salario_medio`.
+
+Para cada série anual observada, o estimador de Theil-Sen segue esta regra:
 
 1. calcular todas as inclinações entre pares de pontos observados;
-2. usar a mediana dessas inclinações como tendência anual robusta;
-3. usar a mediana dos interceptos `valor - slope * ano`;
-4. projetar cada variável bruta por `ano` e `divisao_grupo_cnae_2`;
-5. calcular `prod_mon_trab` e `salario_medio` a partir das variáveis projetadas.
+2. usar a mediana dessas inclinações como tendência anual robusta (`slope`);
+3. calcular os interceptos `valor - slope * ano` para os pontos observados;
+4. usar a mediana dos interceptos como intercepto da reta;
+5. projetar cada ano-alvo com `intercept + slope * ano`.
 
-Essa escolha reduz a influência de outliers em comparação com uma regressão
-linear simples ou com CAGR ponta-a-ponta.
+Com menos de `min_history` observações válidas, ou menos de dois pontos, o
+forecaster não estima tendência e replica o último valor observado.
+
+### Diferença estatística
+
+Na regressão linear simples, a inclinação é estimada por mínimos quadrados. Isso
+minimiza o erro quadrático médio e, por isso, dá muito peso a valores extremos:
+um outlier em um único ano pode deslocar bastante a reta.
+
+No Theil-Sen, a inclinação é a mediana das inclinações par-a-par. Como a mediana
+depende da posição central da distribuição, e não da soma dos erros quadráticos,
+o estimador é mais robusto a outliers e a saltos pontuais. Em termos práticos,
+uma observação anormalmente alta em um ano tende a contaminar apenas parte das
+inclinações calculadas, sem dominar a tendência final.
+
+Isso também difere do CAGR ponta-a-ponta. O CAGR usa apenas o primeiro e o
+último valor positivo da série para calcular uma taxa composta. Se uma das
+pontas for atípica, toda a trajetória projetada muda. O Theil-Sen usa todos os
+pares de anos observados e resume a tendência pela mediana.
+
+A opção `rolling_mean` existente no código tem outro papel: ela suaviza a série
+por média móvel e repete a última média para anos fora do histórico. Ela não
+estima uma tendência anual robusta.
+
+### Relação com o que era feito antes
+
+A mudança para `theil_sen` substitui uma lógica mais sensível a tendência linear
+simples ou a regras ponta-a-ponta. Na prática, o fluxo anterior ficava mais
+exposto a oscilações fortes das bases PIA/PAC: um ano de choque podia inclinar a
+reta de previsão e afetar todos os anos imputados.
+
+Com `theil_sen`, a projeção continua sendo uma reta anual, mas a reta é definida
+por estatísticas robustas. A mudança não altera o contrato da tabela nem as
+contas publicadas; ela altera apenas como os anos sem observação direta são
+estimados antes do cálculo final dos coeficientes.
 
 ## Tolerância de crescimento
 
-Depois que `prod_mon_trab` e `salario_medio` são calculados, a série final passa
-por uma tolerância de crescimento anual. O parâmetro
+O fluxo usa dois clamps diferentes.
+
+O primeiro vem de `clamp_non_negative = true`. Ele é aplicado nas variáveis
+projetadas pelo `IncomeForecaster`: qualquer previsão negativa é truncada para
+`0`. Em previsões retroativas com tendência linear ou Theil-Sen, o código também
+evita que anos anteriores ao primeiro observado colapsem para zero ou valores
+negativos depois que a tendência cruza zero; nesses casos, mantém a última
+projeção positiva encontrada no backcast.
+
+O segundo é a tolerância de crescimento anual da série final de coeficientes.
+Depois que `prod_mon_trab` e `salario_medio` são calculados, o parâmetro
 `max_annual_growth_rate = 0.5` limita aumentos a no máximo 50% ao ano dentro de
 cada par `conta_alfa` + `tipo_coeff`.
 
+O limite é composto quando há salto de mais de um ano entre observações:
+
+```text
+max_allowed = coeff_anterior * (1 + max_annual_growth_rate) ** delta_anos
+```
+
 Exemplo: se uma série tem `coeff = 50` em um ano, o ano seguinte pode chegar no
 máximo a `75`. Se a projeção calculada produzir `100`, o valor publicado será
-limitado a `75`.
+limitado a `75`. Em dois anos de distância, o limite seria
+`50 * 1.5 ** 2 = 112.5`.
 
-O clamp é aplicado sobre crescimento positivo. Quedas não são limitadas por
-essa regra, e a regra só opera quando o valor anterior é positivo.
+Esse clamp é aplicado apenas sobre crescimento positivo. Quedas não são
+limitadas por essa regra, e a regra só opera quando o valor anterior é positivo.
+Se `max_annual_growth_rate` for `null`, essa tolerância final é desativada.
 
 ## Fluxo
 
