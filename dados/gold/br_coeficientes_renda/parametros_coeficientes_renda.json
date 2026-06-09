@@ -28,9 +28,9 @@
       "AFIndustBenef": ["10", "11", "20"],
       "BFIndustBenef": ["10", "11", "20"],
       "CFIndustBenef": ["10", "11", "20"],
-      "AGIndustTransf": ["10", "11", "20", "16", "21", "22"],
-      "BGIndustTransf": ["10", "11", "20", "16", "21", "22"],
-      "CGIndustTransf": ["10", "11", "20", "16", "21", "22"]
+      "AGIndustTransf": ["10","11"],
+      "BGIndustTransf": ["10", "11"],
+      "CGIndustTransf": ["10", "11"]
     }
   }
 }
