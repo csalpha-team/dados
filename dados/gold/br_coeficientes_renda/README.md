@@ -25,9 +25,9 @@ Os parâmetros pedem uma série anual de `1995` a `2023`, mas as bases PIA/PAC
 usadas aqui começam apenas em `2007`. Os anos não observados são imputados
 antes do cálculo dos coeficientes finais.
 
-O método padrão de previsão é `theil_sen`, implementado em `previsao_renda.py`
-pelo `IncomeForecaster`. A previsão é feita antes da agregação final dos
-coeficientes: primeiro cada variável bruta é projetada por
+O método padrão de previsão é `theil_sen`, implementado em `previsao_renda.py`.
+A previsão é feita antes da agregação final dos coeficientes: primeiro cada
+variável bruta é projetada por
 `divisao_grupo_cnae_2`, depois os valores projetados são agregados para
 `conta_alfa`, e só então são calculados `prod_mon_trab` e `salario_medio`.
 
@@ -40,7 +40,7 @@ Para cada série anual observada, o estimador de Theil-Sen segue esta regra:
 5. projetar cada ano-alvo com `intercept + slope * ano`.
 
 Com menos de `min_history` observações válidas, ou menos de dois pontos, o
-forecaster não estima tendência e replica o último valor observado.
+código não estima tendência e replica o último valor observado.
 
 ### Diferença estatística
 
@@ -80,11 +80,11 @@ estimados antes do cálculo final dos coeficientes.
 O fluxo usa dois clamps diferentes.
 
 O primeiro vem de `clamp_non_negative = true`. Ele é aplicado nas variáveis
-projetadas pelo `IncomeForecaster`: qualquer previsão negativa é truncada para
-`0`. Em previsões retroativas com tendência linear ou Theil-Sen, o código também
-evita que anos anteriores ao primeiro observado colapsem para zero ou valores
-negativos depois que a tendência cruza zero; nesses casos, mantém a última
-projeção positiva encontrada no backcast.
+projetadas: qualquer previsão negativa é truncada para `0`. Em previsões
+retroativas com tendência linear ou Theil-Sen, o código também evita que anos
+anteriores ao primeiro observado colapsem para zero ou valores negativos depois
+que a tendência cruza zero; nesses casos, mantém a última projeção positiva
+encontrada na previsão para trás.
 
 O segundo é a tolerância de crescimento anual da série final de coeficientes.
 Depois que `prod_mon_trab` e `salario_medio` são calculados, o parâmetro
@@ -114,7 +114,7 @@ ordem:
 1. carregar PIA e PAC da silver;
 2. limpar e padronizar colunas numéricas;
 3. agregar as bases por `ano` + `divisao_grupo_cnae_2`;
-4. projetar variáveis brutas com `IncomeForecaster(method="theil_sen")`;
+4. projetar variáveis brutas com o método `theil_sen`;
 5. agregar os dados projetados por `conta_alfa`;
 6. calcular `prod_mon_trab` e `salario_medio`;
 7. adicionar `AAProdução` como série constante por pressuposto temporário;
