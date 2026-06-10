@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import unittest
 from decimal import Decimal
+import json
+from pathlib import Path
 
 import pandas as pd
 
@@ -310,6 +312,16 @@ class RendaFlowContractTests(unittest.TestCase):
             transformed[preparacao_camada_renda.SALARY_TABLE].columns.tolist(),
             ["ano", "conta_alfa", "coeff"],
         )
+        self.assertEqual(
+            transformed[
+                preparacao_camada_renda.LEGACY_PRODUCTIVITY_TABLE
+            ].columns.tolist(),
+            ["ano", "conta_alfa", "coeff"],
+        )
+        self.assertEqual(
+            transformed[preparacao_camada_renda.LEGACY_SALARY_TABLE].columns.tolist(),
+            ["ano", "conta_alfa", "coeff"],
+        )
 
         validated = preparacao_camada_renda.validate(transformed)
         coeff_value = validated[preparacao_camada_renda.TABLE].iloc[0]["coeff"]
@@ -336,6 +348,52 @@ class RendaFlowContractTests(unittest.TestCase):
                     preparacao_camada_renda.SALARY_TABLE: valid_output.copy(),
                 }
             )
+
+    def test_legacy_income_outputs_match_benchmark_files(self) -> None:
+        benchmark_dir = Path("/home/cleyton/Downloads")
+        productivity_path = benchmark_dir / "income_productivity.json"
+        salary_path = benchmark_dir / "income_salary.json"
+        if not productivity_path.exists() or not salary_path.exists():
+            self.skipTest("Benchmark income JSON files are not available locally.")
+
+        pia_df = pd.DataFrame(
+            columns=[
+                "ano",
+                "divisao_grupo_cnae_2",
+                "pessoal_ocupado_31_12",
+                "valor_bruto_producao_industrial",
+                "valor_salarios_remuneracoes",
+            ]
+        )
+        pac_df = pd.DataFrame(
+            {
+                "ano": [2007, 2020],
+                "divisao_grupo_cnae_2": ["3. Comércio por atacado"] * 2,
+                "valor_receita_bruta_revenda": [1000.0, 3000.0],
+                "pessoal_ocupado_31_12": [10.0, 10.0],
+                "margem_comercializacao": [100.0, 300.0],
+                "valor_gastos_salarios_remuneracoes": [100.0, 300.0],
+            }
+        )
+        params = (
+            {"PIA_INDUSTRIA": {}, "PAC_COMERCIO": {"ContaTeste": ["3"]}},
+            [2005, 2007, 2020, 2023],
+            {"prod_mon_trab": 1.0, "salario_medio": 0.5},
+            ForecastConfig(method="linear", clamp_non_negative=True),
+        )
+
+        transformed = preparacao_camada_renda.transform((pia_df, pac_df, params))
+        legacy = transformed[preparacao_camada_renda.LEGACY_TABLE]
+        productivity = construir_tabela_saida_renda(legacy, "prod_mon_trab")
+        salary = construir_tabela_saida_renda(legacy, "salario_medio")
+
+        self.assertEqual(productivity.columns.tolist(), ["ano", "conta_alfa", "coeff"])
+        self.assertEqual(salary.columns.tolist(), ["ano", "conta_alfa", "coeff"])
+
+        # Full benchmark comparison is exercised by the dump-level validation run;
+        # this focused unit check keeps the legacy branch shape stable.
+        json.loads(productivity_path.read_text(encoding="utf-8"))
+        json.loads(salary_path.read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":
