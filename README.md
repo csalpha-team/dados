@@ -240,12 +240,12 @@ Comportamento do flow:
 
 1. Cada `export_*` lê a tabela gold correspondente, transforma para o
    formato esperado pelo algoritmo (CSV achatado, dicionário por ano,
-   etc.) e grava em `gold_export/`.
-2. Arquivos exógenos já presentes em `gold_export/` (os três
+   etc.) e grava em `gold_export/layer2_new_values/`.
+2. Arquivos exógenos já presentes em `gold_export/layer2_new_values/` (os três
    `*_incidence.json` e o `l2_input_schemas_examples.md`) são **preservados** —
    o flow não os recalcula, apenas os empacota.
-3. `bundle_zip()` compacta todo o conteúdo de `gold_export/` em
-   `gold_export.zip` na raiz do repositório. Esse zip é o entregável que
+3. `bundle_zip()` compacta todo o conteúdo de `gold_export/layer2_new_values/`
+   em `gold_export/layer2_new_values.zip`. Esse zip é o entregável que
    alimenta o algoritmo.
 
 Observação metodológica: `cost_values.csv` e `consumption_values.csv` publicam

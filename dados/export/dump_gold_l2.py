@@ -1,7 +1,8 @@
 """Export the gold tables that feed the downstream Layer 2 algorithm.
 
 Reads the gold zone via :class:`PostgresETL` and materialises the six dynamic
-artefacts described in ``gold_export/l2_input_schemas_examples.md``:
+artefacts described in ``gold_export/l2_input_schemas_examples.md`` under
+``gold_export/layer2_new_values/``:
 
 - ``cost_values.csv``               (pa_coeficientes_custo.preparacao_camada_custo)
 - ``consumption_values.csv``        (br_coeficientes_consumo.preparacao_camada_consumo)
@@ -11,7 +12,7 @@ artefacts described in ``gold_export/l2_input_schemas_examples.md``:
 - ``income_salary.json``            (br_coeficientes_renda.renda_salario)
 
 The three ``*_incidence.json`` files and ``l2_input_schemas_examples.md``
-already living in ``gold_export/`` are exogenous configuration — this flow
+already living in the output directory are exogenous configuration — this flow
 leaves them in place and packages them as-is into the final zip.
 """
 
@@ -36,8 +37,9 @@ DATASET_ID = "gold_export"
 ZONE = "export"
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-OUTPUT_DIR = REPO_ROOT / "gold_export"
-ZIP_PATH = REPO_ROOT / "gold_export.zip"
+OUTPUT_ROOT = REPO_ROOT / "gold_export"
+OUTPUT_DIR = OUTPUT_ROOT / "layer2_new_values"
+ZIP_PATH = OUTPUT_ROOT / "layer2_new_values.zip"
 
 log = get_logger(dataset_id=DATASET_ID, zone=ZONE)
 
@@ -193,7 +195,7 @@ def bundle_zip() -> Path:
     )
     with zipfile.ZipFile(ZIP_PATH, "w", zipfile.ZIP_DEFLATED) as zf:
         for f in files:
-            zf.write(f, arcname=f"gold_export/{f.name}")
+            zf.write(f, arcname=f"gold_export/{OUTPUT_DIR.name}/{f.name}")
     log.info("export.zip", files=len(files), path=str(ZIP_PATH))
     return ZIP_PATH
 
