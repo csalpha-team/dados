@@ -35,6 +35,24 @@
       },
       {
         "coeff_keys": [
+          "EmbalagemBenefEstad",
+          "EmbalagemBenefLoc",
+          "EmbalagemTransfEstad",
+          "EmbalagemTransfLoc"
+        ],
+        "expense_types": ["Sacarias e embalagens"]
+      },
+      {
+        "coeff_keys": [
+          "CustosVariáveisDiversosBenefEstad",
+          "CustosVariáveisDiversosBenefLoc",
+          "CustosVariáveisDiversosTransfEstad",
+          "CustosVariáveisDiversosTransfLoc"
+        ],
+        "expense_types": ["Outras despesas"]
+      },
+      {
+        "coeff_keys": [
           "ServiçosConstCivilBenefEstad",
           "ServiçosConstCivilBenefLoc",
           "ServiçosConstCivilTransfEstad",

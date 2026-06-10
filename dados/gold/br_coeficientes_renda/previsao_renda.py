@@ -1,4 +1,4 @@
-"""Simple annual interpolation and forecasting helpers for income panels."""
+"""Annual interpolation and robust forecasting helpers for income panels."""
 
 from __future__ import annotations
 
@@ -20,6 +20,7 @@ import pandas as pd
 
 ForecastValues = Mapping[int, float]
 NON_POSITIVE_TOLERANCE = 1e-9
+DEFAULT_MAX_ANNUAL_GROWTH_RATE = 0.50
 
 
 def _ensure_tuple(value: Union[str, Sequence[str]]) -> Tuple[str, ...]:
@@ -40,10 +41,11 @@ def _clean_forecast_value(value: float, clamp_non_negative: bool) -> float:
 class ForecastConfig:
     """Basic settings for the annual forecast."""
 
-    method: str = "linear"
+    method: str = "theil_sen"
     min_history: int = 2
     clamp_non_negative: bool = True
     rolling_window: int = 3
+    max_annual_growth_rate: float | None = DEFAULT_MAX_ANNUAL_GROWTH_RATE
 
 
 class IncomeForecaster:
@@ -159,6 +161,8 @@ class IncomeForecaster:
             return {year: np.nan for year in targets}
 
         method = self.config.method.lower()
+        if method == "theil_sen":
+            return self._predict_theil_sen(years, values, targets)
         if method == "linear":
             return self._predict_linear(years, values, targets)
         if method == "cagr":
@@ -181,14 +185,14 @@ class IncomeForecaster:
 
         slope, intercept = np.polyfit(years, values, 1)
         predictions = {int(year): float(intercept + slope * year) for year in targets}
-        return self._stabilize_backward_linear_predictions(
+        return self._stabilize_backward_trend_predictions(
             predictions,
             years=years,
             values=values,
             targets=targets,
         )
 
-    def _stabilize_backward_linear_predictions(
+    def _stabilize_backward_trend_predictions(
         self,
         predictions: Dict[int, float],
         *,
@@ -204,7 +208,7 @@ class IncomeForecaster:
         last_positive_backcast: Optional[float] = None
 
         # Walk backwards from the first missing year before the observed history.
-        # If the linear backcast crosses zero, keep the last positive value instead
+        # If the trend backcast crosses zero, keep the last positive value instead
         # of letting the series collapse to zero/negative values in older years.
         for year in sorted(
             {int(year) for year in targets if int(year) < first_observed_year},
@@ -229,6 +233,40 @@ class IncomeForecaster:
             predictions[year] = last_positive_backcast
 
         return predictions
+
+    def _predict_theil_sen(
+        self,
+        years: np.ndarray,
+        values: np.ndarray,
+        targets: Sequence[int],
+    ) -> Dict[int, float]:
+        if years.size < max(self.config.min_history, 2):
+            return self._predict_last_value(years, values, targets)
+
+        slope = self._theil_sen_slope(years, values)
+        intercept = float(np.median(values - slope * years))
+        predictions = {int(year): float(intercept + slope * year) for year in targets}
+        return self._stabilize_backward_trend_predictions(
+            predictions,
+            years=years,
+            values=values,
+            targets=targets,
+        )
+
+    @staticmethod
+    def _theil_sen_slope(years: np.ndarray, values: np.ndarray) -> float:
+        slopes: list[float] = []
+        for left in range(years.size - 1):
+            year_delta = years[left + 1 :] - years[left]
+            valid = year_delta != 0
+            if not np.any(valid):
+                continue
+            value_delta = values[left + 1 :] - values[left]
+            slopes.extend((value_delta[valid] / year_delta[valid]).tolist())
+
+        if not slopes:
+            return 0.0
+        return float(np.median(np.asarray(slopes, dtype=float)))
 
     def _predict_cagr(
         self,

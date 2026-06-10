@@ -7,24 +7,18 @@ from pathlib import Path
 
 import pandas as pd
 
-from dados.gold.br_coeficientes_exportacao.models import (
+from dados.gold.br_coeficientes_exportacao.preparacao_camada_exportacao import (
     BrCoeficientesExportacaoPreparacaoCamadaExportacao,
 )
 from dados.gold.br_coeficientes_exportacao.utils import (
     COLUNAS_FINAIS,
+    carregar_parametros_brutos,
     carregar_parametros_exportacao,
+    construir_verificacao_matches,
+    gerar_grafico_series_coeficientes,
     preparar_dados_coeficientes_exportacao,
-)
-from dados.gold.br_coeficientes_exportacao.auditoria_series_coeficientes import (
-    gerar_grafico_series,
-    salvar_resumo,
-)
-from dados.gold.br_coeficientes_exportacao.auditoria_matches_ncm import (
-    auditar_parametros_vs_ncm,
-    carregar_catalogo_ncm,
-    carregar_parametros,
-    carregar_produtos_unicos,
-    gerar_candidatos_produto,
+    salvar_resumo_coeficientes,
+    salvar_verificacao_matches,
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -110,7 +104,16 @@ def test_parametros_gold_sao_compativeis_com_raws_de_apoio() -> None:
     for produto, composicao in parametros["composicao_produtos"].items():
         assert isinstance(composicao, list), produto
         for item in composicao:
-            assert set(item) == {"id_ncm", "nome_ncm"}
+            assert {"id_ncm", "nome_ncm"}.issubset(set(item))
+            assert set(item).issubset(
+                {
+                    "id_ncm",
+                    "nome_ncm",
+                    "tipo_match",
+                    "participacao",
+                    "grupo_distribuicao",
+                }
+            )
             assert item["id_ncm"] in catalogo_por_codigo
             assert (
                 _normalizar_texto(item["nome_ncm"])
@@ -121,24 +124,17 @@ def test_parametros_gold_sao_compativeis_com_raws_de_apoio() -> None:
     assert set(parametros["anos_previsao"]).issubset(anos_taxa)
 
 
-def test_auditoria_matches_ncm_valida_linguagem_dos_parametros() -> None:
-    parametros = carregar_parametros()
-    catalogo_ncm = carregar_catalogo_ncm()
-    produtos_unicos = carregar_produtos_unicos()
-
-    parametros_vs_ncm = auditar_parametros_vs_ncm(parametros, catalogo_ncm)
-    candidatos = gerar_candidatos_produto(
-        produtos_unicos,
-        parametros,
-        catalogo_ncm,
-        limite_por_produto=5,
+def test_auditoria_matches_ncm_gera_verificacao_sintetica(tmp_path) -> None:
+    parametros = carregar_parametros_brutos(PARAMETROS_PATH)
+    verificacao = construir_verificacao_matches(parametros)
+    caminho = salvar_verificacao_matches(
+        parametros, tmp_path / "relatorio_matches_ncm.xlsx"
     )
 
-    assert not parametros_vs_ncm.empty
-    assert parametros_vs_ncm["codigo_existe_no_catalogo"].all()
-    assert parametros_vs_ncm["nome_por_match_normalizado"].all()
-    assert not candidatos.empty
-    assert {"por", "esp", "ing"}.issuperset(set(candidatos["melhor_linguagem"]))
+    assert not verificacao.empty
+    assert verificacao.columns.tolist() == ["produto", "id_ncm", "nome_ncm"]
+    assert caminho.exists()
+    assert pd.ExcelFile(caminho).sheet_names == ["matches"]
 
 
 def test_preparacao_aplica_taxa_cambio_por_ano() -> None:
@@ -239,8 +235,10 @@ def test_auditoria_series_gera_grafico_e_resumo(tmp_path) -> None:
         }
     )
 
-    grafico = gerar_grafico_series(coeficientes, tmp_path / "grafico.png")
-    resumo = salvar_resumo(coeficientes, tmp_path / "resumo.csv")
+    grafico = gerar_grafico_series_coeficientes(
+        coeficientes, tmp_path / "grafico.png"
+    )
+    resumo = salvar_resumo_coeficientes(coeficientes, tmp_path / "resumo.csv")
 
     assert grafico.exists()
     assert grafico.stat().st_size > 0

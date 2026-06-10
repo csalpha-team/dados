@@ -126,9 +126,9 @@ class AlIbgePamLavouraPermanente(_PamBase):
     )
 ```
 
-Unidades padronizadas: `BRL`, `USD`, `kg`, `ton`, `L`, `head_count`,
-`hectare`, `m2`, `ratio`, `percent`, `dimensionless`, `YYYY`, `YYYY-MM`,
-`date`, `code` (lista completa em `REFACTORING.md` §4).
+Unidades padronizadas: `BRL`, `thousand_BRL`, `USD`, `kg`, `ton`, `L`,
+`head_count`, `hectare`, `m2`, `ratio`, `percent`, `dimensionless`, `YYYY`,
+`YYYY-MM`, `date`, `code` (lista completa em `REFACTORING.md` §4).
 
 O linter `tests/test_pydantic_metadata.py` percorre todos os models de
 silver/gold e falha se algum campo não tem `description` + `unit`.
@@ -177,7 +177,7 @@ Helpers de limpeza específicos da camada estão em `dados/silver/utils.py`
 
 Papel: **camada que conversa diretamente com o algoritmo**. Cada dataset
 gold prepara um artefato analítico — tipicamente um conjunto de
-coeficientes ou indexadores — no formato que a Layer 2 do
+valores observados, coeficientes ou indexadores — no formato que a Layer 2 do
 [csalpha](https://github.com/csalpha-team/csalpha) consome.
 
 - **Entrada**: apenas silver. Nunca raw, nunca outra gold.
@@ -188,13 +188,14 @@ coeficientes ou indexadores — no formato que a Layer 2 do
 Datasets atualmente em gold:
 
 ```
-br_coeficientes_consumo/         # POF → coeficientes de consumo
+br_coeficientes_consumo/         # POF → valores monetários de consumo
 br_coeficientes_exportacao/      # Comex → coeficientes de exportação
 br_coeficientes_investimento/    # PAC/PAIC → coeficientes de investimento
 br_coeficientes_renda/           # RAIS/PIA → produtividade e salário
 br_despesas_familiares/          # POF → despesas familiares
+brasil_despesas_familiares/      # variante nacional
 br_servicos/                     # PAS/PIA → serviços/indústria/comércio
-pa_coeficientes_custo/           # custos rurais — Pará
+pa_coeficientes_custo/           # valores monetários de custos rurais — Pará
 pa_indexadores_custo_producao_rural/
 pa_indexadores_producao_rural/
 pa_indexadores_salarios_producao_rural/
@@ -206,7 +207,7 @@ Cada diretório de gold mantém, além do `flow.py`/scripts de tabela:
 
 - `models/<dataset_id>.py` — schemas pydantic (mesma regra de
   `description` + `unit` da silver).
-- `utils.py` — funções de cálculo específicas do coeficiente.
+- `utils.py` — funções de cálculo específicas do dataset.
 - `testing_utils.py` — fixtures e helpers para testes do dataset.
 - arquivos de parâmetros (`*.json`) quando o cálculo depende de
   configuração externa (ex.:
@@ -222,14 +223,22 @@ algoritmo.
 ## 6. Estratégia de exportação — `dados/export/`
 
 A integração com o algoritmo é feita por um único flow:
-[`dados/export/dump_gold.py`](./dados/export/dump_gold.py). Ele lê tabelas
-selecionadas da gold via `PostgresETL` e materializa os artefatos que a
-Layer 2 espera, em formatos fixos:
+[`dados/export/dump_gold_l2.py`](./dados/export/dump_gold_l2.py). Ele lê tabelas
+selecionadas da gold via `PostgresETL` e materializa dois pacotes completos
+para a Layer 2:
+
+- `gold_export/gold_old/`: contrato antigo da `main`, preservando os arquivos
+  de coeficientes já calculados.
+- `gold_export/gold_new/`: contrato novo desta branch, publicando os valores
+  monetários que a Layer 2 usa para calcular os coeficientes no contexto de
+  aplicação.
 
 | Artefato                          | Origem (gold)                                                      | Formato |
 |-----------------------------------|--------------------------------------------------------------------|---------|
-| `cost_coefficients.csv`           | `pa_coeficientes_custo.preparacao_camada_custo`                    | CSV     |
-| `consumption_coefficients.csv`    | `br_coeficientes_consumo.preparacao_camada_consumo` (último ano)   | CSV wide|
+| `gold_old/cost_coefficients.csv`  | `pa_coeficientes_custo.preparacao_camada_custo`                    | CSV     |
+| `gold_old/consumption_coefficients.csv` | `br_coeficientes_consumo.preparacao_camada_consumo` (último ano) | CSV wide |
+| `gold_new/cost_values.csv`        | `pa_coeficientes_custo.preparacao_camada_custo`                    | CSV     |
+| `gold_new/consumption_values.csv` | `br_coeficientes_consumo.preparacao_camada_consumo` (último ano)   | CSV     |
 | `investment_coefficients.json`    | `br_coeficientes_investimento.coeficientes_investimento`           | JSON    |
 | `export_coefficients.json`        | `br_coeficientes_exportacao.preparacao_camada_exportacao`          | JSON por ano |
 | `income_productivity.json`        | `br_coeficientes_renda.renda_produtividade`                        | JSON por ano |
@@ -239,13 +248,16 @@ Comportamento do flow:
 
 1. Cada `export_*` lê a tabela gold correspondente, transforma para o
    formato esperado pelo algoritmo (CSV achatado, dicionário por ano,
-   etc.) e grava em `gold_export/`.
-2. Arquivos exógenos já presentes em `gold_export/` (os três
+   etc.) e grava em `gold_export/gold_old/` ou `gold_export/gold_new/`.
+2. Arquivos exógenos já presentes nos diretórios de pacote (os três
    `*_incidence.json` e o `l2_input_schemas_examples.md`) são **preservados** —
    o flow não os recalcula, apenas os empacota.
-3. `bundle_zip()` compacta todo o conteúdo de `gold_export/` em
-   `gold_export.zip` na raiz do repositório. Esse zip é o entregável que
-   alimenta o algoritmo.
+3. `bundle_zip()` compacta cada pacote em `gold_export/gold_old.zip` e
+   `gold_export/gold_new.zip`.
+
+Observação metodológica: `cost_values.csv` e `consumption_values.csv` publicam
+`valor`, não `coeff`. A Layer 2 consome esses valores monetários e calcula os
+coeficientes técnicos no contexto correto de aplicação.
 
 Executar:
 
@@ -267,6 +279,7 @@ As zonas e suas variáveis de ambiente são definidas em `.env` (template em
 DB_PREFIX=zona
 DB_RAW_ZONE=${DB_PREFIX}_brutos
 DB_SILVER_ZONE=${DB_PREFIX}_tratados
+DB_GOLD_ZONE=${DB_PREFIX}_gold
 DB_AGREGATED_ZONE=${DB_PREFIX}_agregated
 ```
 

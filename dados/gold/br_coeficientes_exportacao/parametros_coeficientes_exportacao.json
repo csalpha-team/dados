@@ -46,20 +46,8 @@
         "nome_ncm": "Doces, pures e pastas, de outras frutas"
       },
       {
-        "id_ncm": "20089710",
-        "nome_ncm": "Misturas de frutas preparadas em água edulcorada, inclusive corantes"
-      },
-      {
-        "id_ncm": "20089790",
-        "nome_ncm": "Misturas de frutas preparadas,conservadas de outro modo"
-      },
-      {
         "id_ncm": "20098990",
         "nome_ncm": "Sucos (sumo) de outras frutas, não fermentado, sem adição de açúcar"
-      },
-      {
-        "id_ncm": "21069060",
-        "nome_ncm": "Caramelos, confeitos, pastilhas e produtos semelhantes, sem açúcar"
       },
       {
         "id_ncm": "21069090",
@@ -85,7 +73,8 @@
       },
       {
         "id_ncm": "20094900",
-        "nome_ncm": "Outros sucos de abacaxi"
+        "nome_ncm": "Outros sucos de abacaxi",
+        "tipo_match": "exato"
       },
       {
         "id_ncm": "20079910",
@@ -104,20 +93,8 @@
         "nome_ncm": "Abacaxis (ananases), preparados ou conservados de outro modo"
       },
       {
-        "id_ncm": "20089710",
-        "nome_ncm": "Misturas de frutas preparadas em água edulcorada, inclusive corantes"
-      },
-      {
         "id_ncm": "20098990",
         "nome_ncm": "Sucos (sumo) de outras frutas, não fermentado, sem adição de açúcar"
-      },
-      {
-        "id_ncm": "21069010",
-        "nome_ncm": "Outras preparações para elaboração de bebidas"
-      },
-      {
-        "id_ncm": "21069060",
-        "nome_ncm": "Caramelos, confeitos, pastilhas e produtos semelhantes, sem açúcar"
       },
       {
         "id_ncm": "21069090",
@@ -269,24 +246,12 @@
         "nome_ncm": "Doces, pures e pastas, de outras frutas"
       },
       {
-        "id_ncm": "20089710",
-        "nome_ncm": "Misturas de frutas preparadas em água edulcorada, inclusive corantes"
-      },
-      {
-        "id_ncm": "20089790",
-        "nome_ncm": "Misturas de frutas preparadas,conservadas de outro modo"
-      },
-      {
         "id_ncm": "20098990",
         "nome_ncm": "Sucos (sumo) de outras frutas, não fermentado, sem adição de açúcar"
       },
       {
         "id_ncm": "21069010",
         "nome_ncm": "Outras preparações para elaboração de bebidas"
-      },
-      {
-        "id_ncm": "21069060",
-        "nome_ncm": "Caramelos, confeitos, pastilhas e produtos semelhantes, sem açúcar"
       },
       {
         "id_ncm": "21069090",
@@ -303,24 +268,12 @@
         "nome_ncm": "Doces, pures e pastas, de outras frutas"
       },
       {
-        "id_ncm": "20089710",
-        "nome_ncm": "Misturas de frutas preparadas em água edulcorada, inclusive corantes"
-      },
-      {
-        "id_ncm": "20089790",
-        "nome_ncm": "Misturas de frutas preparadas,conservadas de outro modo"
-      },
-      {
         "id_ncm": "20098990",
         "nome_ncm": "Sucos (sumo) de outras frutas, não fermentado, sem adição de açúcar"
       },
       {
         "id_ncm": "21069010",
         "nome_ncm": "Outras preparações para elaboração de bebidas"
-      },
-      {
-        "id_ncm": "21069060",
-        "nome_ncm": "Caramelos, confeitos, pastilhas e produtos semelhantes, sem açúcar"
       },
       {
         "id_ncm": "21069090",
@@ -359,20 +312,8 @@
         "nome_ncm": "Purês de outras frutas"
       },
       {
-        "id_ncm": "20089710",
-        "nome_ncm": "Misturas de frutas preparadas em água edulcorada, inclusive corantes"
-      },
-      {
-        "id_ncm": "20089790",
-        "nome_ncm": "Misturas de frutas preparadas,conservadas de outro modo"
-      },
-      {
         "id_ncm": "21069010",
         "nome_ncm": "Outras preparações para elaboração de bebidas"
-      },
-      {
-        "id_ncm": "21069060",
-        "nome_ncm": "Caramelos, confeitos, pastilhas e produtos semelhantes, sem açúcar"
       },
       {
         "id_ncm": "21069090",
@@ -408,7 +349,8 @@
       },
       {
         "id_ncm": "44029000",
-        "nome_ncm": "Outro carvão vegetal (incluindo o carvão de cascas ou de caroços), mesmo aglomerado"
+        "nome_ncm": "Outro carvão vegetal (incluindo o carvão de cascas ou de caroços), mesmo aglomerado",
+        "tipo_match": "exato"
       }
     ],
     "CascaBarbaTimao": [],
@@ -487,7 +429,8 @@
       },
       {
         "id_ncm": "08011190",
-        "nome_ncm": "Outros cocos secos"
+        "nome_ncm": "Outros cocos secos",
+        "tipo_match": "exato"
       },
       {
         "id_ncm": "08011200",
@@ -503,7 +446,8 @@
       },
       {
         "id_ncm": "15131900",
-        "nome_ncm": "Outros óleos de coco (óleos de copra)"
+        "nome_ncm": "Outros óleos de coco (óleos de copra)",
+        "tipo_match": "exato"
       },
       {
         "id_ncm": "15132111",
@@ -515,15 +459,13 @@
       },
       {
         "id_ncm": "15132919",
-        "nome_ncm": "Outros óleos de \"palmiste\""
-      },
-      {
-        "id_ncm": "15132920",
-        "nome_ncm": "Outros óleos de babaçu"
+        "nome_ncm": "Outros óleos de \"palmiste\"",
+        "tipo_match": "exato"
       },
       {
         "id_ncm": "23065000",
-        "nome_ncm": "Tortas e outros resíduos sólidos, de coco ou de copra"
+        "nome_ncm": "Tortas e outros resíduos sólidos, de coco ou de copra",
+        "tipo_match": "generico_outros"
       },
       {
         "id_ncm": "53051100",
@@ -536,10 +478,6 @@
       {
         "id_ncm": "53081000",
         "nome_ncm": "Fios de cairo (fios de fibras de coco)"
-      },
-      {
-        "id_ncm": "21069060",
-        "nome_ncm": "Caramelos, confeitos, pastilhas e produtos semelhantes, sem açúcar"
       },
       {
         "id_ncm": "21069090",
@@ -563,7 +501,8 @@
       },
       {
         "id_ncm": "07135090",
-        "nome_ncm": "Outras favas (Vicia faba var. major) e fava forrageira (Vicia faba var. equina, Vicia faba var. minor), secas, em grãos"
+        "nome_ncm": "Outras favas (Vicia faba var. major) e fava forrageira (Vicia faba var. equina, Vicia faba var. minor), secas, em grãos",
+        "tipo_match": "exato"
       }
     ],
     "Feijao": [
@@ -630,10 +569,6 @@
         "nome_ncm": "Outras preparações para elaboração de bebidas"
       },
       {
-        "id_ncm": "21069060",
-        "nome_ncm": "Caramelos, confeitos, pastilhas e produtos semelhantes, sem açúcar"
-      },
-      {
         "id_ncm": "21069090",
         "nome_ncm": "Outras preparações alimentícias"
       },
@@ -657,7 +592,8 @@
       },
       {
         "id_ncm": "20091900",
-        "nome_ncm": "Outros sucos de laranjas, não fermentados, sem adição de álcool, com ou sem adição de açúcar ou de outros edulcorantes"
+        "nome_ncm": "Outros sucos de laranjas, não fermentados, sem adição de álcool, com ou sem adição de açúcar ou de outros edulcorantes",
+        "tipo_match": "exato"
       },
       {
         "id_ncm": "33011210",
@@ -665,7 +601,8 @@
       },
       {
         "id_ncm": "33011290",
-        "nome_ncm": "Outros óleos essenciais, de laranja"
+        "nome_ncm": "Outros óleos essenciais, de laranja",
+        "tipo_match": "exato"
       },
       {
         "id_ncm": "20079910",
@@ -682,10 +619,6 @@
       {
         "id_ncm": "21069010",
         "nome_ncm": "Outras preparações para elaboração de bebidas"
-      },
-      {
-        "id_ncm": "21069060",
-        "nome_ncm": "Caramelos, confeitos, pastilhas e produtos semelhantes, sem açúcar"
       },
       {
         "id_ncm": "21069090",
@@ -750,24 +683,12 @@
         "nome_ncm": "Doces, pures e pastas, de outras frutas"
       },
       {
-        "id_ncm": "20089710",
-        "nome_ncm": "Misturas de frutas preparadas em água edulcorada, inclusive corantes"
-      },
-      {
-        "id_ncm": "20089790",
-        "nome_ncm": "Misturas de frutas preparadas,conservadas de outro modo"
-      },
-      {
         "id_ncm": "20098990",
         "nome_ncm": "Sucos (sumo) de outras frutas, não fermentado, sem adição de açúcar"
       },
       {
         "id_ncm": "21069010",
         "nome_ncm": "Outras preparações para elaboração de bebidas"
-      },
-      {
-        "id_ncm": "21069060",
-        "nome_ncm": "Caramelos, confeitos, pastilhas e produtos semelhantes, sem açúcar"
       },
       {
         "id_ncm": "21069090",
@@ -801,20 +722,12 @@
         "nome_ncm": "Doces, pures e pastas, de outras frutas"
       },
       {
-        "id_ncm": "20089790",
-        "nome_ncm": "Misturas de frutas preparadas,conservadas de outro modo"
-      },
-      {
         "id_ncm": "20098990",
         "nome_ncm": "Sucos (sumo) de outras frutas, não fermentado, sem adição de açúcar"
       },
       {
         "id_ncm": "21069010",
         "nome_ncm": "Outras preparações para elaboração de bebidas"
-      },
-      {
-        "id_ncm": "21069060",
-        "nome_ncm": "Caramelos, confeitos, pastilhas e produtos semelhantes, sem açúcar"
       },
       {
         "id_ncm": "21069090",
@@ -859,24 +772,12 @@
         "nome_ncm": "Doces, pures e pastas, de outras frutas"
       },
       {
-        "id_ncm": "20089710",
-        "nome_ncm": "Misturas de frutas preparadas em água edulcorada, inclusive corantes"
-      },
-      {
-        "id_ncm": "20089790",
-        "nome_ncm": "Misturas de frutas preparadas,conservadas de outro modo"
-      },
-      {
         "id_ncm": "20098990",
         "nome_ncm": "Sucos (sumo) de outras frutas, não fermentado, sem adição de açúcar"
       },
       {
         "id_ncm": "21069010",
         "nome_ncm": "Outras preparações para elaboração de bebidas"
-      },
-      {
-        "id_ncm": "21069060",
-        "nome_ncm": "Caramelos, confeitos, pastilhas e produtos semelhantes, sem açúcar"
       },
       {
         "id_ncm": "21069090",
@@ -926,7 +827,8 @@
       },
       {
         "id_ncm": "11042300",
-        "nome_ncm": "Outros grãos trabalhados (por exemplo, descascados, em pérolas, cortados ou partidos), de milho"
+        "nome_ncm": "Outros grãos trabalhados (por exemplo, descascados, em pérolas, cortados ou partidos), de milho",
+        "tipo_match": "exato"
       },
       {
         "id_ncm": "11081200",
@@ -938,7 +840,8 @@
       },
       {
         "id_ncm": "15152900",
-        "nome_ncm": "Outros óleos de milho"
+        "nome_ncm": "Outros óleos de milho",
+        "tipo_match": "exato"
       },
       {
         "id_ncm": "15152910",
@@ -1096,7 +999,8 @@
       },
       {
         "id_ncm": "20029000",
-        "nome_ncm": "Outros tomates preparados ou conservados, exceto em vinagre ou em ácido acético, exceto tomates inteiros ou em pedaços"
+        "nome_ncm": "Outros tomates preparados ou conservados, exceto em vinagre ou em ácido acético, exceto tomates inteiros ou em pedaços",
+        "tipo_match": "exato"
       },
       {
         "id_ncm": "20029010",
@@ -1104,7 +1008,8 @@
       },
       {
         "id_ncm": "20029090",
-        "nome_ncm": "Outros tomates preparados ou conservados, exceto em vinagre ou em ácido acético"
+        "nome_ncm": "Outros tomates preparados ou conservados, exceto em vinagre ou em ácido acético",
+        "tipo_match": "exato"
       },
       {
         "id_ncm": "20095000",
@@ -1116,7 +1021,8 @@
       },
       {
         "id_ncm": "21032090",
-        "nome_ncm": "Outros ketchup e molhos de tomate, preparados"
+        "nome_ncm": "Outros ketchup e molhos de tomate, preparados",
+        "tipo_match": "exato"
       },
       {
         "id_ncm": "21069090",

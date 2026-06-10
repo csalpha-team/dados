@@ -16,7 +16,16 @@ COLUNAS_OBRIGATORIAS_EXPORTACAO = [
 ]
 
 COLUNAS_FINAIS = ["ano", "produto", "valor_fob_dolar", "valor_fob_real", "coeff"]
+COLUNAS_VERIFICACAO_MATCHES = ["produto", "id_ncm", "nome_ncm"]
 TaxaCambio = float | Mapping[int, float]
+
+
+class RegraNCM(dict[str, Any]):
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, str):
+            return str(self.get("nome_ncm", "")) == other
+        return super().__eq__(other)
+
 
 # Aliases para compatibilidade com a interface anterior em ingles.
 REQUIRED_EXPORT_COLUMNS = COLUNAS_OBRIGATORIAS_EXPORTACAO
@@ -143,6 +152,85 @@ def _extrair_nome_ncm(item: Any) -> str:
     return str(item).strip()
 
 
+def _normalizar_tipo_match(valor: Any, nome_ncm: str) -> str:
+    tipo = str(valor or "").strip().lower()
+    if tipo:
+        return tipo
+
+    nome = nome_ncm.strip().lower()
+    if nome.startswith(("outro ", "outros ", "outra ", "outras ")):
+        return "generico_outros"
+    if " de outras " in nome or " de outros " in nome:
+        return "generico_outros"
+    return "exato"
+
+
+def _extrair_regra_ncm(item: Any) -> RegraNCM:
+    nome_ncm = _extrair_nome_ncm(item)
+    if not nome_ncm:
+        return {}
+
+    if not isinstance(item, dict):
+        return RegraNCM(
+            {
+                "id_ncm": "",
+                "nome_ncm": nome_ncm,
+                "tipo_match": _normalizar_tipo_match(None, nome_ncm),
+            }
+        )
+
+    id_ncm = str(
+        item.get("id_ncm", item.get("CO_NCM", item.get("codigo_ncm", "")))
+    ).strip()
+    regra = RegraNCM(
+        {
+            "id_ncm": id_ncm,
+            "nome_ncm": nome_ncm,
+            "tipo_match": _normalizar_tipo_match(
+                item.get("tipo_match", item.get("tipo")), nome_ncm
+            ),
+        }
+    )
+
+    if "grupo_distribuicao" in item:
+        regra["grupo_distribuicao"] = str(item["grupo_distribuicao"]).strip()
+    if "participacao" in item:
+        regra["participacao"] = float(item["participacao"])
+
+    return regra
+
+
+def _normalizar_regra_ncm(item: Any) -> RegraNCM:
+    regra = _extrair_regra_ncm(item)
+    if not regra:
+        return {}
+    regra.setdefault("id_ncm", "")
+    regra.setdefault("nome_ncm", _extrair_nome_ncm(item))
+    regra.setdefault("tipo_match", _normalizar_tipo_match(None, regra["nome_ncm"]))
+    return regra
+
+
+def _chaves_regra_ncm(regra: Mapping[str, Any]) -> list[str]:
+    id_ncm = str(regra.get("id_ncm", "")).strip()
+    nome_ncm = str(regra.get("nome_ncm", "")).strip()
+    chaves = []
+    if id_ncm:
+        chaves.append(f"id:{id_ncm}")
+    if nome_ncm:
+        chaves.append(f"nome:{nome_ncm}")
+    return chaves
+
+
+def _chave_linha_ncm(linha: pd.Series, coluna_id_ncm: str, coluna_ncm: str) -> list[str]:
+    id_ncm = str(linha[coluna_id_ncm]).strip() if coluna_id_ncm in linha else ""
+    nome_ncm = str(linha[coluna_ncm]).strip()
+    chaves = []
+    if id_ncm:
+        chaves.append(f"id:{id_ncm}")
+    chaves.append(f"nome:{nome_ncm}")
+    return chaves
+
+
 def _carregar_taxas_cambio_csv(
     caminho_configuracao: Path,
     configuracao_taxa: Mapping[str, Any],
@@ -164,7 +252,9 @@ def _carregar_taxas_cambio_csv(
 
     taxas_df = pd.read_csv(caminho_csv)
     colunas_faltantes = [
-        coluna for coluna in [coluna_ano, coluna_taxa] if coluna not in taxas_df.columns
+        coluna
+        for coluna in [coluna_ano, coluna_taxa]
+        if coluna not in taxas_df.columns
     ]
     if colunas_faltantes:
         raise ValueError(
@@ -234,7 +324,7 @@ def _obter_taxa_cambio_ano(taxa_cambio_brl_por_usd: TaxaCambio, ano: int) -> flo
 def carregar_parametros_exportacao(
     caminho_configuracao: Path,
 ) -> tuple[
-    dict[str, list[str]],
+    dict[str, list[RegraNCM]],
     dict[tuple[str, str], float],
     list[int],
     TaxaCambio,
@@ -255,19 +345,19 @@ def carregar_parametros_exportacao(
             "preparacoes_produtos deve ser um dicionario no arquivo de configuracao"
         )
 
-    preparacoes_produtos: dict[str, list[str]] = {}
+    preparacoes_produtos: dict[str, list[RegraNCM]] = {}
     for produto, itens_ncm in preparacoes_produtos_raw.items():
         produto_normalizado = str(produto).strip()
         if not isinstance(itens_ncm, list):
             raise ValueError(
                 "Cada valor de composicao_produtos/preparacoes_produtos deve ser "
-                "uma lista de nomes NCM ou objetos com nome_ncm"
+                "uma lista de nomes NCM ou objetos com id_ncm/nome_ncm"
             )
 
         preparacoes_produtos[produto_normalizado] = [
-            nome_ncm
-            for nome_ncm in (_extrair_nome_ncm(item) for item in itens_ncm)
-            if nome_ncm
+            regra
+            for regra in (_extrair_regra_ncm(item) for item in itens_ncm)
+            if regra
         ]
 
     participacoes_especificas_raw = config.get(
@@ -288,6 +378,7 @@ def carregar_parametros_exportacao(
 
         produto = str(item.get("produto", item.get("product", ""))).strip()
         nome_ncm = str(item.get("nome_ncm", item.get("ncm_name", ""))).strip()
+        id_ncm = str(item.get("id_ncm", item.get("ncm_id", ""))).strip()
 
         if not produto or not nome_ncm:
             raise ValueError(
@@ -302,6 +393,8 @@ def carregar_parametros_exportacao(
             )
 
         participacoes_especificas[(produto, nome_ncm)] = participacao
+        if id_ncm:
+            participacoes_especificas[(produto, f"id:{id_ncm}")] = participacao
 
     anos = _construir_anos_previsao(
         config.get("anos_previsao", config.get("forecast_years"))
@@ -441,7 +534,7 @@ def prever_exportacoes_linear(
 
 def distribuir_exportacoes_por_produto(
     exportacoes_por_ncm: pd.DataFrame,
-    preparacoes_produtos: Mapping[str, Sequence[str]],
+    preparacoes_produtos: Mapping[str, Sequence[Any]],
     *,
     coluna_ncm: str = "nome_ncm_portugues",
     coluna_id_ncm: str = "id_ncm",
@@ -469,9 +562,16 @@ def distribuir_exportacoes_por_produto(
     )
 
     ncm_para_produtos: Dict[str, set[str]] = defaultdict(set)
-    for produto, nomes_ncm in preparacoes_produtos.items():
-        for nome_ncm in nomes_ncm:
-            ncm_para_produtos[str(nome_ncm)].add(str(produto))
+    regras_por_produto_ncm: dict[tuple[str, str], RegraNCM] = {}
+    for produto, itens_ncm in preparacoes_produtos.items():
+        produto_normalizado = str(produto)
+        for item in itens_ncm:
+            regra = _normalizar_regra_ncm(item)
+            if not regra or regra.get("tipo_match") == "excluir":
+                continue
+            for chave in _chaves_regra_ncm(regra):
+                ncm_para_produtos[chave].add(produto_normalizado)
+                regras_por_produto_ncm[(produto_normalizado, chave)] = regra
 
     participacoes_normalizadas = {
         (str(produto), str(nome_ncm)): participacao
@@ -482,17 +582,34 @@ def distribuir_exportacoes_por_produto(
 
     linhas_distribuidas: list[dict[str, Any]] = []
     for _, linha in dados_numericos.iterrows():
+        chaves_linha = _chave_linha_ncm(linha, coluna_id_ncm, coluna_ncm)
+        chave_match = next(
+            (chave for chave in chaves_linha if chave in ncm_para_produtos),
+            "",
+        )
+        if not chave_match:
+            continue
+
         nome_ncm = str(linha[coluna_ncm])
-        produtos_relacionados = sorted(ncm_para_produtos.get(nome_ncm, []))
+        produtos_relacionados = sorted(ncm_para_produtos[chave_match])
         if not produtos_relacionados:
             continue
 
         valores = linha[colunas_metricas]
         participacoes_definidas = {
-            produto: participacoes_normalizadas[(produto, nome_ncm)]
+            produto: participacoes_normalizadas[(produto, chave_participacao)]
             for produto in produtos_relacionados
-            if (produto, nome_ncm) in participacoes_normalizadas
+            for chave_participacao in [
+                chave_match,
+                nome_ncm,
+                *chaves_linha,
+            ]
+            if (produto, chave_participacao) in participacoes_normalizadas
         }
+        for produto in produtos_relacionados:
+            regra = regras_por_produto_ncm.get((produto, chave_match), {})
+            if "participacao" in regra and produto not in participacoes_definidas:
+                participacoes_definidas[produto] = float(regra["participacao"])
 
         total_participacoes_definidas = sum(participacoes_definidas.values())
         if total_participacoes_definidas > 1.0 + 1e-12:
@@ -548,7 +665,7 @@ def distribuir_exportacoes_por_produto(
 
 def preparar_dados_coeficientes_exportacao(
     exportacoes_df: pd.DataFrame,
-    preparacoes_produtos: Mapping[str, Sequence[str]],
+    preparacoes_produtos: Mapping[str, Sequence[Any]],
     participacoes_especificas: Mapping[Tuple[str, str], float],
     anos: Sequence[int],
     taxa_cambio_brl_por_usd: TaxaCambio,
@@ -609,8 +726,10 @@ def preparar_dados_coeficientes_exportacao(
             continue
 
         dados_ano_agrupados = (
-            dados_ano.groupby("nome_ncm_portugues", as_index=False)
-            .agg({"id_ncm": "first", "valor_fob_dolar": "sum"})
+            dados_ano.groupby(["id_ncm", "nome_ncm_portugues"], as_index=False)[
+                "valor_fob_dolar"
+            ]
+            .sum()
             .loc[:, ["nome_ncm_portugues", "id_ncm", "valor_fob_dolar"]]
         )
 
@@ -680,6 +799,109 @@ def salvar_json_coeficientes_exportacao(
         json.dump(payload, file, ensure_ascii=False, indent=2)
 
 
+def carregar_parametros_brutos(caminho_configuracao: Path) -> dict[str, Any]:
+    return json.loads(caminho_configuracao.read_text(encoding="utf-8"))
+
+
+def construir_verificacao_matches(parametros: Mapping[str, Any]) -> pd.DataFrame:
+    linhas: list[dict[str, str]] = []
+    composicao_produtos = parametros.get("composicao_produtos", {})
+    for produto, composicao in composicao_produtos.items():
+        for item in composicao:
+            if not isinstance(item, Mapping):
+                continue
+            linhas.append(
+                {
+                    "produto": str(produto).strip(),
+                    "id_ncm": str(item.get("id_ncm", "")).strip(),
+                    "nome_ncm": str(item.get("nome_ncm", "")).strip(),
+                }
+            )
+
+    return (
+        pd.DataFrame(linhas, columns=COLUNAS_VERIFICACAO_MATCHES)
+        .drop_duplicates()
+        .sort_values(COLUNAS_VERIFICACAO_MATCHES)
+        .reset_index(drop=True)
+    )
+
+
+def salvar_verificacao_matches(
+    parametros: Mapping[str, Any],
+    caminho_saida: Path,
+) -> Path:
+    verificacao = construir_verificacao_matches(parametros)
+    caminho_saida.parent.mkdir(parents=True, exist_ok=True)
+    with pd.ExcelWriter(caminho_saida) as writer:
+        verificacao.to_excel(writer, sheet_name="matches", index=False)
+    return caminho_saida
+
+
+def salvar_resumo_coeficientes(
+    coeficientes: pd.DataFrame,
+    caminho_saida: Path,
+) -> Path:
+    resumo = (
+        coeficientes.assign(coeff=pd.to_numeric(coeficientes["coeff"], errors="coerce"))
+        .groupby("produto", as_index=False)
+        .agg(
+            coeff_medio=("coeff", "mean"),
+            coeff_maximo=("coeff", "max"),
+            anos=("ano", "nunique"),
+        )
+        .sort_values("coeff_medio", ascending=False)
+    )
+    caminho_saida.parent.mkdir(parents=True, exist_ok=True)
+    resumo.to_csv(caminho_saida, index=False)
+    return caminho_saida
+
+
+def gerar_grafico_series_coeficientes(
+    coeficientes: pd.DataFrame,
+    caminho_saida: Path,
+    *,
+    max_produtos: int = 12,
+) -> Path:
+    if coeficientes.empty:
+        raise ValueError("Tabela de coeficientes de exportacao esta vazia")
+
+    import matplotlib.pyplot as plt
+
+    dados = coeficientes.copy()
+    dados["ano"] = pd.to_numeric(dados["ano"], errors="coerce")
+    dados["coeff"] = pd.to_numeric(dados["coeff"], errors="coerce")
+    dados = dados.dropna(subset=["ano", "produto", "coeff"])
+    dados["ano"] = dados["ano"].astype(int)
+
+    produtos_principais = (
+        dados.groupby("produto")["coeff"]
+        .mean()
+        .sort_values(ascending=False)
+        .head(max_produtos)
+        .index
+    )
+    serie = dados[dados["produto"].isin(produtos_principais)].pivot_table(
+        index="ano",
+        columns="produto",
+        values="coeff",
+        aggfunc="sum",
+        fill_value=0.0,
+    )
+
+    ax = serie.plot(figsize=(14, 8), linewidth=2)
+    ax.set_title("Coeficientes de exportacao por produto")
+    ax.set_xlabel("Ano")
+    ax.set_ylabel("Coeficiente")
+    ax.grid(True, alpha=0.3)
+    ax.legend(title="Produto", bbox_to_anchor=(1.02, 1), loc="upper left")
+
+    caminho_saida.parent.mkdir(parents=True, exist_ok=True)
+    plt.tight_layout()
+    plt.savefig(caminho_saida, dpi=160)
+    plt.close()
+    return caminho_saida
+
+
 def list_table_columns(db: Any, schema: str, table: str) -> set[str]:
     return listar_colunas_tabela(db, schema, table)
 
@@ -703,7 +925,7 @@ def build_export_query(
 def load_export_parameters(
     config_path: Path,
 ) -> tuple[
-    dict[str, list[str]],
+    dict[str, list[RegraNCM]],
     dict[tuple[str, str], float],
     list[int],
     TaxaCambio,
@@ -735,7 +957,7 @@ def forecast_exports_linear(
 
 def distribute_exports_by_product(
     exports_by_ncm: pd.DataFrame,
-    products_preparations: Mapping[str, Sequence[str]],
+    products_preparations: Mapping[str, Sequence[Any]],
     *,
     ncm_col: str = "nome_ncm_portugues",
     id_ncm_col: str = "id_ncm",
@@ -754,7 +976,7 @@ def distribute_exports_by_product(
 
 def prepare_export_coefficients_data(
     export_df: pd.DataFrame,
-    products_preparations: Mapping[str, Sequence[str]],
+    products_preparations: Mapping[str, Sequence[Any]],
     specific_shares: Mapping[Tuple[str, str], float],
     years: Sequence[int],
     exchange_rate_brl_per_usd: TaxaCambio,

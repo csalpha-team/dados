@@ -40,8 +40,11 @@ gerar_relatorio*
 tmp_data/
 logs/
 
-# Gold exports that feed layer2 algorithm;
-gold_export
+# local Codex skills
+.codex/skills/
 
-benchmark/
-gold_export_l1/
+# dumps locais da camada gold
+gold_export*
+
+# artefatos locais de exploração
+exploracao_*

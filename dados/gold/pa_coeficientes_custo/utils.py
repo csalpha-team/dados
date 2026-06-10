@@ -14,7 +14,9 @@ MUNICIPALITY_GROUP_COLUMNS = [
 ]
 
 REGIONAL_GROUP_COLUMNS = ["ano", "nome_regiao_integracao", "tipo_coeff"]
-FINAL_COLUMNS = ["ano", "nome_regiao_integracao", "tipo_coeff", "coeff"]
+VALUE_COLUMNS = ["ano", "nome_regiao_integracao", "tipo_coeff", "valor"]
+COEFFICIENT_COLUMNS = ["ano", "nome_regiao_integracao", "tipo_coeff", "coeff"]
+FINAL_COLUMNS = VALUE_COLUMNS
 
 
 def clean_region_name(name: str) -> str:
@@ -68,6 +70,23 @@ def carregar_parametros_custo(
                 value_to_key_map.append((expense_type, coeff_keys))
 
     return value_to_key_map, region_rename_map, total_expense_label
+
+
+def calcular_valores_municipais(
+    data: pd.DataFrame,
+    total_expense_label: str = "Total",
+) -> pd.DataFrame:
+    grouped = data.groupby(MUNICIPALITY_GROUP_COLUMNS, as_index=False).agg(
+        {
+            "quantidade_estabelecimentos_fizeram_despesa": "sum",
+            "valor_despesa": "sum",
+        }
+    )
+
+    grouped["valor_despesa"] = pd.to_numeric(grouped["valor_despesa"], errors="coerce")
+    grouped = grouped[grouped["tipo_despesa"] != total_expense_label].copy()
+    grouped = grouped.rename(columns={"valor_despesa": "valor"})
+    return grouped
 
 
 def calcular_coeficientes_municipais(
@@ -132,9 +151,24 @@ def expandir_coeficientes(
     return pd.concat(rows, ignore_index=True)
 
 
+def agregar_valores_regionais(value_df: pd.DataFrame) -> pd.DataFrame:
+    if value_df.empty:
+        return pd.DataFrame(columns=VALUE_COLUMNS)
+
+    regional_values = value_df.groupby(
+        REGIONAL_GROUP_COLUMNS, as_index=False
+    ).agg({"valor": "sum"})
+
+    regional_values = regional_values.sort_values(
+        ["ano", "nome_regiao_integracao", "tipo_coeff"]
+    ).reset_index(drop=True)
+
+    return regional_values[VALUE_COLUMNS]
+
+
 def agregar_coeficientes_regional_mais_recente(coeff_df: pd.DataFrame) -> pd.DataFrame:
     if coeff_df.empty:
-        return pd.DataFrame(columns=FINAL_COLUMNS)
+        return pd.DataFrame(columns=COEFFICIENT_COLUMNS)
 
     regional_coefficients = coeff_df.groupby(
         REGIONAL_GROUP_COLUMNS, as_index=False
@@ -145,4 +179,4 @@ def agregar_coeficientes_regional_mais_recente(coeff_df: pd.DataFrame) -> pd.Dat
         subset=["nome_regiao_integracao", "tipo_coeff"], keep="first"
     ).reset_index(drop=True)
 
-    return latest_coefficients[FINAL_COLUMNS]
+    return latest_coefficients[COEFFICIENT_COLUMNS]
