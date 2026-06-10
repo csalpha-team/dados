@@ -14,7 +14,9 @@ MUNICIPALITY_GROUP_COLUMNS = [
 ]
 
 REGIONAL_GROUP_COLUMNS = ["ano", "nome_regiao_integracao", "tipo_coeff"]
-FINAL_COLUMNS = ["ano", "nome_regiao_integracao", "tipo_coeff", "valor"]
+VALUE_COLUMNS = ["ano", "nome_regiao_integracao", "tipo_coeff", "valor"]
+COEFFICIENT_COLUMNS = ["ano", "nome_regiao_integracao", "tipo_coeff", "coeff"]
+FINAL_COLUMNS = VALUE_COLUMNS
 
 
 def clean_region_name(name: str) -> str:
@@ -87,6 +89,48 @@ def calcular_valores_municipais(
     return grouped
 
 
+def calcular_coeficientes_municipais(
+    data: pd.DataFrame,
+    total_expense_label: str = "Total",
+) -> pd.DataFrame:
+    grouped = data.groupby(MUNICIPALITY_GROUP_COLUMNS, as_index=False).agg(
+        {
+            "quantidade_estabelecimentos_fizeram_despesa": "sum",
+            "valor_despesa": "sum",
+        }
+    )
+
+    total_df = grouped[grouped["tipo_despesa"] == total_expense_label][
+        [
+            "ano",
+            "id_municipio",
+            "nome",
+            "nome_regiao_integracao",
+            "sigla_uf",
+            "valor_despesa",
+        ]
+    ].rename(columns={"valor_despesa": "total_despesa"})
+
+    grouped = grouped.merge(
+        total_df,
+        on=["ano", "id_municipio", "nome", "nome_regiao_integracao", "sigla_uf"],
+        how="left",
+    )
+
+    grouped["valor_despesa"] = pd.to_numeric(grouped["valor_despesa"], errors="coerce")
+    grouped["total_despesa"] = pd.to_numeric(grouped["total_despesa"], errors="coerce")
+
+    valid_denominator = grouped["total_despesa"].notna() & (
+        grouped["total_despesa"] != 0
+    )
+    grouped["coeff"] = pd.NA
+    grouped.loc[valid_denominator, "coeff"] = (
+        grouped.loc[valid_denominator, "valor_despesa"]
+        / grouped.loc[valid_denominator, "total_despesa"]
+    )
+    return grouped
+
+
 def expandir_coeficientes(
     grouped_coefficients: pd.DataFrame,
     value_to_key_map: list[tuple[str, tuple[str, ...]]],
@@ -109,7 +153,7 @@ def expandir_coeficientes(
 
 def agregar_valores_regionais(value_df: pd.DataFrame) -> pd.DataFrame:
     if value_df.empty:
-        return pd.DataFrame(columns=FINAL_COLUMNS)
+        return pd.DataFrame(columns=VALUE_COLUMNS)
 
     regional_values = value_df.groupby(
         REGIONAL_GROUP_COLUMNS, as_index=False
@@ -119,4 +163,20 @@ def agregar_valores_regionais(value_df: pd.DataFrame) -> pd.DataFrame:
         ["ano", "nome_regiao_integracao", "tipo_coeff"]
     ).reset_index(drop=True)
 
-    return regional_values[FINAL_COLUMNS]
+    return regional_values[VALUE_COLUMNS]
+
+
+def agregar_coeficientes_regional_mais_recente(coeff_df: pd.DataFrame) -> pd.DataFrame:
+    if coeff_df.empty:
+        return pd.DataFrame(columns=COEFFICIENT_COLUMNS)
+
+    regional_coefficients = coeff_df.groupby(
+        REGIONAL_GROUP_COLUMNS, as_index=False
+    ).agg({"coeff": "mean"})
+
+    ordered_coefficients = regional_coefficients.sort_values(by="ano", ascending=False)
+    latest_coefficients = ordered_coefficients.drop_duplicates(
+        subset=["nome_regiao_integracao", "tipo_coeff"], keep="first"
+    ).reset_index(drop=True)
+
+    return latest_coefficients[COEFFICIENT_COLUMNS]

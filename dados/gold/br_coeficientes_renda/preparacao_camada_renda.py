@@ -17,6 +17,7 @@ from dotenv import load_dotenv
 from dados.gold.br_coeficientes_renda.utils import (
     carregar_parametros_renda,
     construir_tabela_saida_renda,
+    preparar_dados_coeficientes_renda_antigos,
     preparar_dados_coeficientes_renda,
 )
 from dados.gold.br_coeficientes_renda.models import (
@@ -35,8 +36,12 @@ ZONE = "gold"
 TABLE = "preparacao_camada_renda"
 PRODUCTIVITY_TABLE = "renda_produtividade"
 SALARY_TABLE = "renda_salario"
+LEGACY_TABLE = "preparacao_camada_renda_old"
+LEGACY_PRODUCTIVITY_TABLE = "renda_produtividade_old"
+LEGACY_SALARY_TABLE = "renda_salario_old"
 
 CONFIG_PATH = Path(__file__).with_name("parametros_coeficientes_renda.json")
+LEGACY_CONFIG_PATH = Path(__file__).with_name("parametros_coeficientes_renda_old.json")
 
 PIA_SOURCE_SCHEMA = os.getenv(
     "INCOME_PIA_SOURCE_SCHEMA", os.getenv("ESQUEMA_ORIGEM_PIA", "br_ibge_pia")
@@ -68,8 +73,9 @@ def _read_silver(query: str, schema: str) -> pd.DataFrame:
         return db.download_data(query)
 
 
-def extract() -> tuple[pd.DataFrame, pd.DataFrame, tuple]:
+def extract() -> tuple[pd.DataFrame, pd.DataFrame, tuple, tuple]:
     params = carregar_parametros_renda(CONFIG_PATH)
+    legacy_params = carregar_parametros_renda(LEGACY_CONFIG_PATH)
 
     pia_query = f"""
         SELECT ano, nome_localidade, divisao_grupo_cnae_2,
@@ -86,14 +92,25 @@ def extract() -> tuple[pd.DataFrame, pd.DataFrame, tuple]:
     """
     pia_data = _read_silver(pia_query, PIA_SOURCE_SCHEMA)
     pac_data = _read_silver(pac_query, PAC_SOURCE_SCHEMA)
-    return pia_data, pac_data, params
+    return pia_data, pac_data, params, legacy_params
 
 
 def transform(
-    payload: tuple[pd.DataFrame, pd.DataFrame, tuple],
+    payload: tuple[pd.DataFrame, pd.DataFrame, tuple, tuple]
+    | tuple[pd.DataFrame, pd.DataFrame, tuple],
 ) -> dict[str, pd.DataFrame]:
-    pia_data, pac_data, params = payload
+    if len(payload) == 3:
+        pia_data, pac_data, params = payload
+        legacy_params = params
+    else:
+        pia_data, pac_data, params, legacy_params = payload
     sector_mappings, years, aa_production_values, forecast_config = params
+    (
+        legacy_sector_mappings,
+        legacy_years,
+        legacy_aa_production_values,
+        legacy_forecast_config,
+    ) = legacy_params
 
     coefficients = preparar_dados_coeficientes_renda(
         pia_data,
@@ -103,17 +120,40 @@ def transform(
         aa_production_values=aa_production_values,
         forecast_config=forecast_config,
     )
+    legacy_coefficients = preparar_dados_coeficientes_renda_antigos(
+        pia_data,
+        pac_data,
+        sector_mappings=legacy_sector_mappings,
+        years=legacy_years,
+        aa_production_values=legacy_aa_production_values,
+        forecast_config=legacy_forecast_config,
+    )
     productivity = construir_tabela_saida_renda(coefficients, "prod_mon_trab")
     salary = construir_tabela_saida_renda(coefficients, "salario_medio")
+    legacy_productivity = construir_tabela_saida_renda(
+        legacy_coefficients, "prod_mon_trab"
+    )
+    legacy_salary = construir_tabela_saida_renda(
+        legacy_coefficients, "salario_medio"
+    )
 
     return {
         TABLE: coefficients[
+            list(BrCoeficientesRendaPreparacaoCamadaRenda.model_fields.keys())
+        ].copy(),
+        LEGACY_TABLE: legacy_coefficients[
             list(BrCoeficientesRendaPreparacaoCamadaRenda.model_fields.keys())
         ].copy(),
         PRODUCTIVITY_TABLE: productivity[
             list(BrCoeficientesRendaRendaProdutividade.model_fields.keys())
         ].copy(),
         SALARY_TABLE: salary[
+            list(BrCoeficientesRendaRendaSalario.model_fields.keys())
+        ].copy(),
+        LEGACY_PRODUCTIVITY_TABLE: legacy_productivity[
+            list(BrCoeficientesRendaRendaProdutividade.model_fields.keys())
+        ].copy(),
+        LEGACY_SALARY_TABLE: legacy_salary[
             list(BrCoeficientesRendaRendaSalario.model_fields.keys())
         ].copy(),
     }
@@ -137,29 +177,28 @@ def _validate_one(
 
 
 def validate(dfs: dict[str, pd.DataFrame]) -> dict[str, pd.DataFrame]:
-    dfs[TABLE] = _validate_one(
-        dfs[TABLE], BrCoeficientesRendaPreparacaoCamadaRenda, PK_MAIN, TABLE
-    )
-    dfs[PRODUCTIVITY_TABLE] = _validate_one(
-        dfs[PRODUCTIVITY_TABLE],
-        BrCoeficientesRendaRendaProdutividade,
-        PK_OUTPUT,
-        PRODUCTIVITY_TABLE,
-    )
-    dfs[SALARY_TABLE] = _validate_one(
-        dfs[SALARY_TABLE],
-        BrCoeficientesRendaRendaSalario,
-        PK_OUTPUT,
-        SALARY_TABLE,
-    )
+    targets = {
+        TABLE: (BrCoeficientesRendaPreparacaoCamadaRenda, PK_MAIN),
+        LEGACY_TABLE: (BrCoeficientesRendaPreparacaoCamadaRenda, PK_MAIN),
+        PRODUCTIVITY_TABLE: (BrCoeficientesRendaRendaProdutividade, PK_OUTPUT),
+        SALARY_TABLE: (BrCoeficientesRendaRendaSalario, PK_OUTPUT),
+        LEGACY_PRODUCTIVITY_TABLE: (BrCoeficientesRendaRendaProdutividade, PK_OUTPUT),
+        LEGACY_SALARY_TABLE: (BrCoeficientesRendaRendaSalario, PK_OUTPUT),
+    }
+    for table, (model, pk_cols) in targets.items():
+        if table in dfs:
+            dfs[table] = _validate_one(dfs[table], model, pk_cols, table)
     return dfs
 
 
 def load(dfs: dict[str, pd.DataFrame]) -> None:
     targets = {
         TABLE: BrCoeficientesRendaPreparacaoCamadaRenda,
+        LEGACY_TABLE: BrCoeficientesRendaPreparacaoCamadaRenda,
         PRODUCTIVITY_TABLE: BrCoeficientesRendaRendaProdutividade,
         SALARY_TABLE: BrCoeficientesRendaRendaSalario,
+        LEGACY_PRODUCTIVITY_TABLE: BrCoeficientesRendaRendaProdutividade,
+        LEGACY_SALARY_TABLE: BrCoeficientesRendaRendaSalario,
     }
     with PostgresETL(
         host="localhost",
@@ -169,6 +208,8 @@ def load(dfs: dict[str, pd.DataFrame]) -> None:
         schema=DATASET_ID,
     ) as db:
         for name, model in targets.items():
+            if name not in dfs:
+                continue
             columns = pydantic_to_postgres_columns(model)
             db.create_table(name, columns, drop_if_exists=True)
             db.load_data(name, dfs[name], if_exists="append")

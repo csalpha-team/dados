@@ -1,0 +1,205 @@
+{
+  "uf_alvo": "PA",
+  "taxa_cambio_brl_por_usd": 4.99,
+  "anos_previsao": {
+    "start": 1995,
+    "end": 2023
+  },
+  "preparacoes_produtos": {
+    "Abacate": [
+      "Geleias e marmelades, de outras frutas",
+      "Doces, pures e pastas, de outras frutas",
+      "Misturas de frutas preparadas em água edulcorada, inclusive corantes",
+      "Misturas de frutas preparadas, conservadas de outro modo",
+      "Sucos (sumo) de outras frutas, não fermentado, sem adição de açúcar",
+      "Caramelos, confeitos, pastilhas e produtos semelhantes, sem açúcar",
+      "Outras preparações alimentícias",
+      "Purês de outras frutas"
+    ],
+    "Abacaxi": [
+      "Geleias e marmelades, de outras frutas",
+      "Doces, pures e pastas, de outras frutas",
+      "Abacaxis (ananases), preparados ou conservados em água edulcorada, incluindo os xaropes",
+      "Abacaxis (ananases), preparados ou conservados de outro modo",
+      "Misturas de frutas preparadas em água edulcorada, inclusive corantes",
+      "Sucos (sumo) de outras frutas, não fermentado, sem adição de açúcar",
+      "Outras preparações para elaboração de bebidas",
+      "Caramelos, confeitos, pastilhas e produtos semelhantes, sem açúcar",
+      "Outras preparações alimentícias"
+    ],
+    "AcaiCaroco": [],
+    "AcaiFruto": [
+      "Purês de açaí (Euterpe oleracea)",
+      "Sucos (sumo) de outras frutas, não fermentado, sem adição de açúcar",
+      "Outras frutas não cozidas ou cozidas em água ou vapor, congeladas, mesmo adicionadas de açúcar ou de outros edulcorantes",
+      "Outras frutas, partes de plantas, preparadas/conservadas de outro modo"
+    ],
+    "Arroz": [
+      "Outras preparações alimentícias"
+    ],
+    "Banana": [
+      "Purês de banana (Musa spp.)",
+      "Doces, pures e pastas, de outras frutas",
+      "Misturas de frutas preparadas em água edulcorada, inclusive corantes",
+      "Misturas de frutas preparadas, conservadas de outro modo",
+      "Sucos (sumo) de outras frutas, não fermentado, sem adição de açúcar",
+      "Outras preparações para elaboração de bebidas",
+      "Caramelos, confeitos, pastilhas e produtos semelhantes, sem açúcar",
+      "Outras preparações alimentícias"
+    ],
+    "BorrachaLatex": [],
+    "BuritiFruto": [
+      "Geleias e marmelades, de outras frutas",
+      "Doces, pures e pastas, de outras frutas",
+      "Misturas de frutas preparadas em água edulcorada, inclusive corantes",
+      "Misturas de frutas preparadas, conservadas de outro modo",
+      "Sucos (sumo) de outras frutas, não fermentado, sem adição de açúcar",
+      "Outras preparações para elaboração de bebidas",
+      "Caramelos, confeitos, pastilhas e produtos semelhantes, sem açúcar",
+      "Outras preparações alimentícias",
+      "Purês de outras frutas"
+    ],
+    "CacauAmendoa": [
+      "Outras preparações alimentícias",
+      "Purês de outras frutas"
+    ],
+    "CajuAcuFruto": [
+      "Geleias e marmelades, de outras frutas",
+      "Doces, pures e pastas, de outras frutas",
+      "Purês de outras frutas",
+      "Misturas de frutas preparadas em água edulcorada, inclusive corantes",
+      "Misturas de frutas preparadas, conservadas de outro modo",
+      "Outras preparações para elaboração de bebidas",
+      "Caramelos, confeitos, pastilhas e produtos semelhantes, sem açúcar",
+      "Outras preparações alimentícias"
+    ],
+    "CastanhaDeCaju": [
+      "Outras preparações alimentícias",
+      "Purês de outras frutas"
+    ],
+    "CastanhaDoBrasil": [
+      "Outras preparações alimentícias",
+      "Purês de outras frutas"
+    ],
+    "CastanhaDoPara": [
+      "Outras preparações alimentícias",
+      "Purês de outras frutas"
+    ],
+    "Coco": [
+      "Caramelos, confeitos, pastilhas e produtos semelhantes, sem açúcar",
+      "Outras preparações alimentícias",
+      "Purês de outras frutas"
+    ],
+    "CopaibaOleo": [
+      "Outras gorduras e óleos vegetais, mesmo refinado"
+    ],
+    "Goiaba": [
+      "Purês de goiaba (Psidium guajava)",
+      "Doces, pures e pastas, de outras frutas",
+      "Sucos (sumo) de outras frutas, não fermentado, sem adição de açúcar",
+      "Outras preparações para elaboração de bebidas",
+      "Caramelos, confeitos, pastilhas e produtos semelhantes, sem açúcar",
+      "Outras preparações alimentícias",
+      "Purês de outras frutas"
+    ],
+    "Laranja": [
+      "Geleias e marmelades, de outras frutas",
+      "Doces, pures e pastas, de outras frutas",
+      "Sucos (sumo) de outras frutas, não fermentado, sem adição de açúcar",
+      "Outras preparações para elaboração de bebidas",
+      "Caramelos, confeitos, pastilhas e produtos semelhantes, sem açúcar",
+      "Outras preparações alimentícias",
+      "Purês de outras frutas"
+    ],
+    "Lenha": [],
+    "Limao": [
+      "Geleias e marmelades, de outras frutas",
+      "Doces, pures e pastas, de outras frutas",
+      "Misturas de frutas preparadas em água edulcorada, inclusive corantes",
+      "Misturas de frutas preparadas, conservadas de outro modo",
+      "Sucos (sumo) de outras frutas, não fermentado, sem adição de açúcar",
+      "Outras preparações para elaboração de bebidas",
+      "Caramelos, confeitos, pastilhas e produtos semelhantes, sem açúcar",
+      "Outras preparações alimentícias",
+      "Purês de outras frutas"
+    ],
+    "MadeiraBranca": [],
+    "MadeiraVermelha": [],
+    "Malva": [],
+    "Mamao": [
+      "Purês de mamão (papaia) (Carica papaya L.)",
+      "Geleias e marmelades, de outras frutas",
+      "Doces, pures e pastas, de outras frutas",
+      "Misturas de frutas preparadas, conservadas de outro modo",
+      "Sucos (sumo) de outras frutas, não fermentado, sem adição de açúcar",
+      "Outras preparações para elaboração de bebidas",
+      "Caramelos, confeitos, pastilhas e produtos semelhantes, sem açúcar",
+      "Outras preparações alimentícias"
+    ],
+    "Melancia": [
+      "Geleias e marmelades, de outras frutas",
+      "Doces, pures e pastas, de outras frutas",
+      "Misturas de frutas preparadas em água edulcorada, inclusive corantes",
+      "Misturas de frutas preparadas, conservadas de outro modo",
+      "Sucos (sumo) de outras frutas, não fermentado, sem adição de açúcar",
+      "Outras preparações para elaboração de bebidas",
+      "Caramelos, confeitos, pastilhas e produtos semelhantes, sem açúcar",
+      "Outras preparações alimentícias"
+    ],
+    "Milho": [
+      "Purês de outras frutas",
+      "Outras preparações alimentícias"
+    ],
+    "OleoCopaiba": [
+      "Outras gorduras e óleos vegetais, mesmo refinado"
+    ],
+    "PalmitoInNatura": [
+      "Outras preparações alimentícias"
+    ],
+    "PimentaDoReino": [
+      "Outras preparações alimentícias"
+    ],
+    "Soja": [
+      "Outras preparações alimentícias"
+    ],
+    "Tomate": [
+      "Outras preparações alimentícias",
+      "Purês de outras frutas"
+    ],
+    "TucumaFruto": [
+      "Geleias e marmelades, de outras frutas",
+      "Doces, pures e pastas, de outras frutas",
+      "Misturas de frutas preparadas em água edulcorada, inclusive corantes",
+      "Misturas de frutas preparadas, conservadas de outro modo",
+      "Sucos (sumo) de outras frutas, não fermentado, sem adição de açúcar",
+      "Outras preparações para elaboração de bebidas",
+      "Caramelos, confeitos, pastilhas e produtos semelhantes, sem açúcar",
+      "Outras preparações alimentícias"
+    ],
+    "Urucum": [
+      "Outras preparações alimentícias"
+    ]
+  },
+  "participacoes_especificas": [
+    {
+      "produto": "AcaiFruto",
+      "nome_ncm": "Purês de açaí (Euterpe oleracea)",
+      "participacao": 1.0
+    },
+    {
+      "produto": "AcaiFruto",
+      "nome_ncm": "Sucos (sumo) de outras frutas, não fermentado, sem adição de açúcar",
+      "participacao": 0.87
+    },
+    {
+      "produto": "AcaiFruto",
+      "nome_ncm": "Outras frutas não cozidas ou cozidas em água ou vapor, congeladas, mesmo adicionadas de açúcar ou de outros edulcorantes",
+      "participacao": 0.87
+    },
+    {
+      "produto": "AcaiFruto",
+      "nome_ncm": "Outras frutas, partes de plantas, preparadas/conservadas de outro modo",
+      "participacao": 0.87
+    }
+  ]
+}

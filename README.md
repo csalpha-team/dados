@@ -224,13 +224,21 @@ algoritmo.
 
 A integração com o algoritmo é feita por um único flow:
 [`dados/export/dump_gold_l2.py`](./dados/export/dump_gold_l2.py). Ele lê tabelas
-selecionadas da gold via `PostgresETL` e materializa os artefatos que a
-Layer 2 espera, em formatos fixos:
+selecionadas da gold via `PostgresETL` e materializa dois pacotes completos
+para a Layer 2:
+
+- `gold_export/gold_old/`: contrato antigo da `main`, preservando os arquivos
+  de coeficientes já calculados.
+- `gold_export/gold_new/`: contrato novo desta branch, publicando os valores
+  monetários que a Layer 2 usa para calcular os coeficientes no contexto de
+  aplicação.
 
 | Artefato                          | Origem (gold)                                                      | Formato |
 |-----------------------------------|--------------------------------------------------------------------|---------|
-| `cost_values.csv`                 | `pa_coeficientes_custo.preparacao_camada_custo`                    | CSV     |
-| `consumption_values.csv`          | `br_coeficientes_consumo.preparacao_camada_consumo` (último ano)   | CSV     |
+| `gold_old/cost_coefficients.csv`  | `pa_coeficientes_custo.preparacao_camada_custo`                    | CSV     |
+| `gold_old/consumption_coefficients.csv` | `br_coeficientes_consumo.preparacao_camada_consumo` (último ano) | CSV wide |
+| `gold_new/cost_values.csv`        | `pa_coeficientes_custo.preparacao_camada_custo`                    | CSV     |
+| `gold_new/consumption_values.csv` | `br_coeficientes_consumo.preparacao_camada_consumo` (último ano)   | CSV     |
 | `investment_coefficients.json`    | `br_coeficientes_investimento.coeficientes_investimento`           | JSON    |
 | `export_coefficients.json`        | `br_coeficientes_exportacao.preparacao_camada_exportacao`          | JSON por ano |
 | `income_productivity.json`        | `br_coeficientes_renda.renda_produtividade`                        | JSON por ano |
@@ -240,13 +248,12 @@ Comportamento do flow:
 
 1. Cada `export_*` lê a tabela gold correspondente, transforma para o
    formato esperado pelo algoritmo (CSV achatado, dicionário por ano,
-   etc.) e grava em `gold_export/layer2_new_values/`.
-2. Arquivos exógenos já presentes em `gold_export/layer2_new_values/` (os três
+   etc.) e grava em `gold_export/gold_old/` ou `gold_export/gold_new/`.
+2. Arquivos exógenos já presentes nos diretórios de pacote (os três
    `*_incidence.json` e o `l2_input_schemas_examples.md`) são **preservados** —
    o flow não os recalcula, apenas os empacota.
-3. `bundle_zip()` compacta todo o conteúdo de `gold_export/layer2_new_values/`
-   em `gold_export/layer2_new_values.zip`. Esse zip é o entregável que
-   alimenta o algoritmo.
+3. `bundle_zip()` compacta cada pacote em `gold_export/gold_old.zip` e
+   `gold_export/gold_new.zip`.
 
 Observação metodológica: `cost_values.csv` e `consumption_values.csv` publicam
 `valor`, não `coeff`. A Layer 2 consome esses valores monetários e calcula os

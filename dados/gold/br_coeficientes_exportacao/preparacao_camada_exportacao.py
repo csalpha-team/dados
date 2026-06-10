@@ -35,6 +35,7 @@ load_dotenv()
 DATASET_ID = "br_coeficientes_exportacao"
 ZONE = "gold"
 TABLE = "preparacao_camada_exportacao"
+LEGACY_TABLE = "preparacao_camada_exportacao_old"
 
 DATABASE_ORIGEM = (
     os.getenv("DATABASE_ORIGEM_EXPORTACAO")
@@ -55,6 +56,9 @@ TABELA_NCM = os.getenv("TABELA_NCM_EXPORTACAO") or os.getenv(
 )
 
 CONFIG_PATH = Path(__file__).with_name("parametros_coeficientes_exportacao.json")
+LEGACY_CONFIG_PATH = Path(__file__).with_name(
+    "parametros_coeficientes_exportacao_old.json"
+)
 RESULTADOS_DIR = Path(__file__).with_name("resultados")
 
 PK_COLS = ["ano", "produto"]
@@ -95,14 +99,27 @@ def _database_gold() -> str:
     return database
 
 
-def extract() -> tuple[pd.DataFrame, dict]:
+def _load_params(config_path: Path) -> dict:
     (
         preparacoes_produtos,
         participacoes_especificas,
         anos,
         taxa_cambio_brl_por_usd,
         uf_alvo,
-    ) = carregar_parametros_exportacao(CONFIG_PATH)
+    ) = carregar_parametros_exportacao(config_path)
+
+    return {
+        "preparacoes_produtos": preparacoes_produtos,
+        "participacoes_especificas": participacoes_especificas,
+        "anos": anos,
+        "taxa_cambio_brl_por_usd": taxa_cambio_brl_por_usd,
+        "uf_alvo": uf_alvo,
+    }
+
+
+def extract() -> tuple[pd.DataFrame, dict, dict]:
+    params = _load_params(CONFIG_PATH)
+    legacy_params = _load_params(LEGACY_CONFIG_PATH)
 
     if not DATABASE_ORIGEM:
         raise ValueError(
@@ -126,31 +143,34 @@ def extract() -> tuple[pd.DataFrame, dict]:
         )
         dados_exportacao = db.download_data(consulta)
 
-    params = {
-        "preparacoes_produtos": preparacoes_produtos,
-        "participacoes_especificas": participacoes_especificas,
-        "anos": anos,
-        "taxa_cambio_brl_por_usd": taxa_cambio_brl_por_usd,
-        "uf_alvo": uf_alvo,
-    }
-    return dados_exportacao, params
+    return dados_exportacao, params, legacy_params
 
 
-def transform(payload: tuple[pd.DataFrame, dict]) -> pd.DataFrame:
-    dados_exportacao, params = payload
+def transform(payload: tuple[pd.DataFrame, dict, dict]) -> dict[str, pd.DataFrame]:
+    dados_exportacao, params, legacy_params = payload
     df = preparar_dados_coeficientes_exportacao(dados_exportacao, **params)
-    return df[list(MODEL.model_fields.keys())].copy()
+    legacy_df = preparar_dados_coeficientes_exportacao(
+        dados_exportacao, **legacy_params
+    )
+    return {
+        TABLE: df[list(MODEL.model_fields.keys())].copy(),
+        LEGACY_TABLE: legacy_df[list(MODEL.model_fields.keys())].copy(),
+    }
 
 
-def validate(df: pd.DataFrame) -> pd.DataFrame:
+def _validate_one(df: pd.DataFrame, label: str) -> pd.DataFrame:
     if df.empty:
-        log.error("validate.error", reason="empty_dataframe")
-        raise ValueError("transform produced empty dataframe")
+        log.error("validate.error", reason="empty_dataframe", table=label)
+        raise ValueError(f"transform produced empty dataframe for {label}")
 
     dupes = df.duplicated(subset=PK_COLS, keep=False)
     if dupes.any():
-        log.error("validate.error", reason="duplicate_pk", count=int(dupes.sum()))
-        raise ValueError(f"Found {int(dupes.sum())} rows duplicating PK {PK_COLS}")
+        log.error(
+            "validate.error", reason="duplicate_pk", table=label, count=int(dupes.sum())
+        )
+        raise ValueError(
+            f"Found {int(dupes.sum())} rows duplicating PK {PK_COLS} in {label}"
+        )
 
     for col in NUMERIC_COLS:
         df[col] = df[col].apply(lambda v: None if pd.isna(v) else Decimal(str(v)))
@@ -159,7 +179,13 @@ def validate(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def load(df: pd.DataFrame) -> None:
+def validate(dfs: dict[str, pd.DataFrame]) -> dict[str, pd.DataFrame]:
+    for table in [TABLE, LEGACY_TABLE]:
+        dfs[table] = _validate_one(dfs[table], table)
+    return dfs
+
+
+def load(dfs: dict[str, pd.DataFrame]) -> None:
     columns = pydantic_to_postgres_columns(MODEL)
     with PostgresETL(
         host="localhost",
@@ -168,14 +194,15 @@ def load(df: pd.DataFrame) -> None:
         password=os.getenv("POSTGRES_PASSWORD"),
         schema=DATASET_ID,
     ) as db:
-        db.create_table(TABLE, columns, drop_if_exists=True)
-        db.load_data(TABLE, df, if_exists="append")
+        for table, df in dfs.items():
+            db.create_table(table, columns, drop_if_exists=True)
+            db.load_data(table, df, if_exists="append")
 
     output_json_path = os.getenv(
         "CAMINHO_SAIDA_JSON_COEFICIENTES_EXPORTACAO"
     ) or os.getenv("EXPORT_COEFFICIENTS_OUTPUT_JSON_PATH")
     if output_json_path:
-        salvar_json_coeficientes_exportacao(df, Path(output_json_path))
+        salvar_json_coeficientes_exportacao(dfs[TABLE], Path(output_json_path))
 
 
 def carregar_coeficientes() -> pd.DataFrame:
@@ -222,16 +249,16 @@ def flow() -> None:
     try:
         payload = extract()
         log.info("extract.done", rows=len(payload[0]))
-        df = transform(payload)
-        log.info("transform.done", rows=len(df))
-        df = validate(df)
-        log.info("validate.done", rows=len(df))
-        load(df)
-        log.info("load.done", rows=len(df))
+        dfs = transform(payload)
+        log.info("transform.done", rows={k: len(v) for k, v in dfs.items()})
+        dfs = validate(dfs)
+        log.info("validate.done", rows={k: len(v) for k, v in dfs.items()})
+        load(dfs)
+        log.info("load.done", rows={k: len(v) for k, v in dfs.items()})
     except Exception as exc:
         log.exception("flow.error", error=str(exc))
         raise
-    log.info("flow.end", rows=len(df))
+    log.info("flow.end", rows={k: len(v) for k, v in dfs.items()})
 
 
 def main() -> None:

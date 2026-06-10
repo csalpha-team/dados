@@ -14,6 +14,7 @@ import pandas as pd
 from dotenv import load_dotenv
 
 from dados.gold.br_coeficientes_consumo.utils import (
+    construir_coeficientes_consumo,
     construir_valores_consumo,
 )
 from dados.gold.br_coeficientes_consumo.models import (
@@ -33,7 +34,7 @@ SILVER_SCHEMA = "br_ibge_pof"
 SILVER_TABLE = "tbl_6970"
 DEFAULT_EQUIVALENCE_PATH = Path(__file__).with_name("equivalencia_despesas.json")
 
-PARAMETROS_CONSUMO = {
+PARAMETROS_VALORES_CONSUMO = {
     "coluna_chave_mip": "TipoDespesaDestinoProvável",
     "coluna_tipo_despesa_mip": "TiposDeDespesa",
     "variavel_alvo": "Despesa monetária e não monetária média mensal familiar",
@@ -42,6 +43,11 @@ PARAMETROS_CONSUMO = {
     "rotulo_rural": "Rural",
     "padrao_estado": "Estad|Estadual",
 }
+PARAMETROS_COEFICIENTES_CONSUMO = {
+    **PARAMETROS_VALORES_CONSUMO,
+    "variavel_alvo": "Distribuição da despesa monetária e não monetária média mensal familiar",
+}
+PARAMETROS_CONSUMO = PARAMETROS_VALORES_CONSUMO
 
 MODEL = BrCoeficientesConsumoPreparacaoCamadaConsumo
 PK_COLS = ["ano", "coeff_key"]
@@ -63,15 +69,15 @@ def _load_mip_mapping() -> pd.DataFrame:
 
     mapping = pd.read_json(path)
     required = [
-        PARAMETROS_CONSUMO["coluna_chave_mip"],
-        PARAMETROS_CONSUMO["coluna_tipo_despesa_mip"],
+        PARAMETROS_VALORES_CONSUMO["coluna_chave_mip"],
+        PARAMETROS_VALORES_CONSUMO["coluna_tipo_despesa_mip"],
     ]
     missing = [c for c in required if c not in mapping.columns]
     if missing:
         raise ValueError(f"Colunas obrigatórias ausentes na equivalência: {missing}")
 
     mapping = mapping[required].dropna(subset=required).drop_duplicates(subset=required)
-    coluna_tipo = PARAMETROS_CONSUMO["coluna_tipo_despesa_mip"]
+    coluna_tipo = PARAMETROS_VALORES_CONSUMO["coluna_tipo_despesa_mip"]
     mapping[coluna_tipo] = mapping[coluna_tipo].astype("string").str.strip()
     return mapping
 
@@ -96,7 +102,13 @@ def extract() -> tuple[pd.DataFrame, pd.DataFrame]:
 
 def transform(payload: tuple[pd.DataFrame, pd.DataFrame]) -> pd.DataFrame:
     pof_data, mip_mapping = payload
-    df = construir_valores_consumo(pof_data, mip_mapping, PARAMETROS_CONSUMO)
+    values = construir_valores_consumo(
+        pof_data, mip_mapping, PARAMETROS_VALORES_CONSUMO
+    )
+    coefficients = construir_coeficientes_consumo(
+        pof_data, mip_mapping, PARAMETROS_COEFICIENTES_CONSUMO
+    )
+    df = values.merge(coefficients, on=PK_COLS, how="outer")
     return df[list(MODEL.model_fields.keys())].copy()
 
 
@@ -110,7 +122,10 @@ def validate(df: pd.DataFrame) -> pd.DataFrame:
         log.error("validate.error", reason="duplicate_pk", count=int(dupes.sum()))
         raise ValueError(f"Found {int(dupes.sum())} rows duplicating PK {PK_COLS}")
 
-    df["valor"] = df["valor"].apply(lambda v: None if pd.isna(v) else Decimal(str(v)))
+    for column in ["valor", "coeff"]:
+        df[column] = df[column].apply(
+            lambda v: None if pd.isna(v) else Decimal(str(v))
+        )
     [MODEL(**r) for r in df.to_dict("records")]
     return df
 
