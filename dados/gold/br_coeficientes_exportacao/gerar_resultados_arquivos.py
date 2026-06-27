@@ -1,7 +1,14 @@
-"""Gera arquivos CSV/XLSX dos coeficientes de exportacao sem depender do DB local.
+"""Gera arquivos CSV/XLSX dos coeficientes de exportacao e carrega a gold.
 
-Este utilitario usa a API publica do ComexStat como fonte operacional, aplica a
-mesma transformacao da gold e salva artefatos auditaveis no repositorio.
+Este utilitario usa a API publica do ComexStat como fonte operacional (em vez da
+zona raw local, que nem sempre esta populada), aplica a mesma transformacao da
+gold e salva artefatos auditaveis no repositorio.
+
+Alem dos artefatos em ``resultados/``, o mesmo dataframe de coeficientes e
+carregado na tabela gold ``br_coeficientes_exportacao.preparacao_camada_exportacao``,
+reutilizando o contrato pydantic e as etapas ``validate``/``load`` de
+``preparacao_camada_exportacao``. Assim ``dados.export.dump_gold_l2`` consome a
+gold e gera ``export_coefficients.json`` no formato esperado.
 """
 
 from __future__ import annotations
@@ -17,6 +24,15 @@ from dotenv import load_dotenv
 
 from dados.gold.br_coeficientes_exportacao.auditoria_series_coeficientes import (
     gerar_grafico_series,
+)
+from dados.gold.br_coeficientes_exportacao.preparacao_camada_exportacao import (
+    MODEL,
+)
+from dados.gold.br_coeficientes_exportacao.preparacao_camada_exportacao import (
+    load as carregar_tabela_gold,
+)
+from dados.gold.br_coeficientes_exportacao.preparacao_camada_exportacao import (
+    validate as validar_camada_gold,
 )
 from dados.gold.br_coeficientes_exportacao.utils import (
     carregar_parametros_exportacao,
@@ -235,6 +251,30 @@ def salvar_resultados(coeficientes: pd.DataFrame, exportacoes: pd.DataFrame) -> 
         )
 
 
+def carregar_camada_gold(coeficientes: pd.DataFrame) -> pd.DataFrame:
+    """Valida e carrega os coeficientes na tabela gold.
+
+    Reutiliza o contrato pydantic (``MODEL``) e as etapas ``validate``/``load`` de
+    ``preparacao_camada_exportacao`` para garantir que a tabela populada pela API
+    seja identica a produzida pelo flow baseado no DB, que e exatamente a fonte
+    consumida por ``dados.export.dump_gold_l2``.
+    """
+    colunas_modelo = list(MODEL.model_fields.keys())
+    faltantes = [
+        coluna for coluna in colunas_modelo if coluna not in coeficientes.columns
+    ]
+    if faltantes:
+        raise ValueError(
+            "Coeficientes sem colunas exigidas pelo modelo gold: "
+            f"{', '.join(faltantes)}"
+        )
+
+    df = coeficientes[colunas_modelo].copy()
+    df = validar_camada_gold(df)
+    carregar_tabela_gold(df)
+    return df
+
+
 def main() -> None:
     (
         preparacoes_produtos,
@@ -254,10 +294,12 @@ def main() -> None:
         uf_alvo=uf_alvo,
     )
     salvar_resultados(coeficientes, exportacoes)
+    carregar_camada_gold(coeficientes)
     log.info(
         "resultados_arquivos.done",
         output_dir=str(RESULTADOS_DIR),
         rows=len(coeficientes),
+        gold_table=f"{DATASET_ID}.preparacao_camada_exportacao",
     )
 
 

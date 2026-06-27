@@ -37,7 +37,7 @@ ZONE = "export"
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 OUTPUT_DIR = REPO_ROOT / "gold_export"
-ZIP_PATH = REPO_ROOT / "gold_export.zip"
+ZIP_PATH = OUTPUT_DIR / "gold_export.zip"
 
 log = get_logger(dataset_id=DATASET_ID, zone=ZONE)
 
