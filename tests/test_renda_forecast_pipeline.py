@@ -163,6 +163,10 @@ class RendaPreparationTests(unittest.TestCase):
             coefficients.columns.tolist(), ["ano", "conta_alfa", "tipo_coeff", "coeff"]
         )
 
+        self.assertEqual(
+            coefficients.columns.tolist(), ["ano", "conta_alfa", "tipo_coeff", "coeff"]
+        )
+
         conta_teste = coefficients.loc[
             coefficients["conta_alfa"] == "ContaTeste"
         ].copy()

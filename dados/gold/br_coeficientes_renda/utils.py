@@ -739,6 +739,10 @@ def preparar_dados_coeficientes_renda(
 
     final = pd.concat([projected_coefficients, aa_coefficients], ignore_index=True)
     final["coeff"] = pd.to_numeric(final["coeff"], errors="coerce")
+    final = _aplicar_tolerancia_crescimento_anual(
+        final,
+        forecast_config.max_annual_growth_rate,
+    )
     final = final.sort_values(["ano", "conta_alfa", "tipo_coeff"]).reset_index(
         drop=True
     )
