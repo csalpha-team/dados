@@ -18,8 +18,8 @@ class BrCoeficientesRendaPreparacaoCamadaRenda(BaseModel):
         json_schema_extra={"unit": "code"},
     )
     coeff: Decimal | None = Field(
-        description="Coefficient value for the (year, sector, type) cell",
-        json_schema_extra={"unit": "BRL"},
+        description="Annual income coefficient in constant 2022 prices per worker",
+        json_schema_extra={"unit": "thousand_BRL_2022_per_worker_year"},
     )
 
 
@@ -30,8 +30,8 @@ class BrCoeficientesRendaRendaProdutividade(BaseModel):
         json_schema_extra={"unit": "code"},
     )
     coeff: Decimal | None = Field(
-        description="Monthly worker productivity coefficient",
-        json_schema_extra={"unit": "BRL"},
+        description="Annual worker productivity in constant 2022 prices",
+        json_schema_extra={"unit": "thousand_BRL_2022_per_worker_year"},
     )
 
 
@@ -42,6 +42,6 @@ class BrCoeficientesRendaRendaSalario(BaseModel):
         json_schema_extra={"unit": "code"},
     )
     coeff: Decimal | None = Field(
-        description="Average salary coefficient",
-        json_schema_extra={"unit": "BRL"},
+        description="Annual average remuneration in constant 2022 prices",
+        json_schema_extra={"unit": "thousand_BRL_2022_per_worker_year"},
     )

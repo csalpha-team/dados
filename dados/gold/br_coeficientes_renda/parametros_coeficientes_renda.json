@@ -10,6 +10,11 @@
     "start": 1995,
     "end": 2023
   },
+  "correcao_monetaria": {
+    "enabled": true,
+    "serie_sgs": 433,
+    "ano_ancora": 2022
+  },
   "valores_producao_aa": {
     "prod_mon_trab": 10.789,
     "salario_medio": 0.068

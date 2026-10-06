@@ -19,11 +19,11 @@ class BrIbgePacTbl1407(BaseModel):
     )
     valor_gastos_salarios_remuneracoes: Decimal | None = Field(
         description="Total spent on salaries, withdrawals and other remunerations in commercial firms",
-        json_schema_extra={"unit": "BRL"},
+        json_schema_extra={"unit": "thousand_BRL"},
     )
     margem_comercializacao: Decimal | None = Field(
         description="Commercialization margin in commercial firms",
-        json_schema_extra={"unit": "BRL"},
+        json_schema_extra={"unit": "thousand_BRL"},
     )
     quantidade_unidades_empresas_receita_revenda: Decimal | None = Field(
         description="Number of local units with resale revenue",
@@ -35,5 +35,5 @@ class BrIbgePacTbl1407(BaseModel):
     )
     valor_receita_bruta_revenda: Decimal | None = Field(
         description="Gross revenue from resale of goods",
-        json_schema_extra={"unit": "BRL"},
+        json_schema_extra={"unit": "thousand_BRL"},
     )

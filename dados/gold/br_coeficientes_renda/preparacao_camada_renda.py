@@ -50,6 +50,8 @@ PAC_SOURCE_SCHEMA = os.getenv(
 PAC_SOURCE_TABLE = os.getenv(
     "INCOME_PAC_SOURCE_TABLE", os.getenv("TABELA_ORIGEM_PAC", "tbl_1407")
 )
+IPCA_SOURCE_SCHEMA = os.getenv("INCOME_IPCA_SOURCE_SCHEMA", "br_bcb_sgs_ipca")
+IPCA_SOURCE_TABLE = os.getenv("INCOME_IPCA_SOURCE_TABLE", "ipca_anual")
 
 PK_MAIN = ["ano", "conta_alfa", "tipo_coeff"]
 PK_OUTPUT = ["ano", "conta_alfa"]
@@ -68,8 +70,9 @@ def _read_silver(query: str, schema: str) -> pd.DataFrame:
         return db.download_data(query)
 
 
-def extract() -> tuple[pd.DataFrame, pd.DataFrame, tuple]:
+def extract() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, tuple]:
     params = carregar_parametros_renda(CONFIG_PATH)
+    years = params[1]
 
     pia_query = f"""
         SELECT ano, nome_localidade, divisao_grupo_cnae_2,
@@ -84,24 +87,46 @@ def extract() -> tuple[pd.DataFrame, pd.DataFrame, tuple]:
                margem_comercializacao, valor_gastos_salarios_remuneracoes
         FROM {PAC_SOURCE_SCHEMA}.{PAC_SOURCE_TABLE}
     """
+    ipca_query = f"""
+        SELECT ano, indice_ipca, variacao_acumulada_ano_pct,
+               meses_observados, ano_completo, serie_sgs, fonte
+        FROM {IPCA_SOURCE_SCHEMA}.{IPCA_SOURCE_TABLE}
+        WHERE ano BETWEEN {min(years)} AND {max(years)}
+        ORDER BY ano
+    """
     pia_data = _read_silver(pia_query, PIA_SOURCE_SCHEMA)
     pac_data = _read_silver(pac_query, PAC_SOURCE_SCHEMA)
-    return pia_data, pac_data, params
+    ipca_data = _read_silver(ipca_query, IPCA_SOURCE_SCHEMA)
+    return pia_data, pac_data, ipca_data, params
 
 
 def transform(
-    payload: tuple[pd.DataFrame, pd.DataFrame, tuple],
+    payload: tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, tuple],
 ) -> dict[str, pd.DataFrame]:
-    pia_data, pac_data, params = payload
-    sector_mappings, years, aa_production_values, forecast_config = params
+    pia_data, pac_data, ipca_data, params = payload
+    (
+        sector_mappings,
+        years,
+        aa_production_values,
+        forecast_config,
+        monetary_config,
+    ) = params
 
     coefficients = preparar_dados_coeficientes_renda(
         pia_data,
         pac_data,
+        ipca_data,
         sector_mappings=sector_mappings,
         years=years,
         aa_production_values=aa_production_values,
         forecast_config=forecast_config,
+        monetary_config=monetary_config,
+    )
+    log.info(
+        "transform.monetary_correction",
+        enabled=monetary_config.enabled,
+        serie_sgs=monetary_config.series_code,
+        anchor_year=monetary_config.anchor_year,
     )
     productivity = construir_tabela_saida_renda(coefficients, "prod_mon_trab")
     salary = construir_tabela_saida_renda(coefficients, "salario_medio")
@@ -173,7 +198,12 @@ def flow() -> None:
     log.info("flow.start", table=TABLE)
     try:
         payload = extract()
-        log.info("extract.done", rows_pia=len(payload[0]), rows_pac=len(payload[1]))
+        log.info(
+            "extract.done",
+            rows_pia=len(payload[0]),
+            rows_pac=len(payload[1]),
+            rows_ipca=len(payload[2]),
+        )
         dfs = transform(payload)
         log.info("transform.done", rows={k: len(v) for k, v in dfs.items()})
         dfs = validate(dfs)

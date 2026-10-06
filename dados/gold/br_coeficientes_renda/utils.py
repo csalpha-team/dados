@@ -4,6 +4,11 @@ from typing import Any
 
 import pandas as pd
 
+from dados.gold.br_coeficientes_renda.correcao_monetaria import (
+    MonetaryCorrectionConfig,
+    construir_fatores_correcao_ipca,
+    corrigir_colunas_monetarias,
+)
 from dados.gold.br_coeficientes_renda.previsao_renda import (
     ForecastConfig,
     IncomeForecaster,
@@ -33,9 +38,20 @@ PIA_VALUE_COLUMNS = [
     "valor_salarios_remuneracoes",
 ]
 
+PIA_MONETARY_COLUMNS = [
+    "valor_bruto_producao_industrial",
+    "valor_salarios_remuneracoes",
+]
+
 PAC_VALUE_COLUMNS = [
     "valor_receita_bruta_revenda",
     "pessoal_ocupado_31_12",
+    "margem_comercializacao",
+    "valor_gastos_salarios_remuneracoes",
+]
+
+PAC_MONETARY_COLUMNS = [
+    "valor_receita_bruta_revenda",
     "margem_comercializacao",
     "valor_gastos_salarios_remuneracoes",
 ]
@@ -65,7 +81,11 @@ def _construir_anos(config_value: Any) -> list[int]:
 def carregar_parametros_renda(
     config_path: Path,
 ) -> tuple[
-    dict[str, dict[str, list[str]]], list[int], dict[str, float], ForecastConfig
+    dict[str, dict[str, list[str]]],
+    list[int],
+    dict[str, float],
+    ForecastConfig,
+    MonetaryCorrectionConfig,
 ]:
     with config_path.open("r", encoding="utf-8") as file:
         config = json.load(file)
@@ -121,9 +141,24 @@ def carregar_parametros_renda(
         ),
     )
 
+    monetary_config_raw = config.get("correcao_monetaria", {})
+    if not isinstance(monetary_config_raw, dict):
+        raise ValueError("correcao_monetaria deve ser um dicionario")
+    monetary_config = MonetaryCorrectionConfig(
+        enabled=bool(monetary_config_raw.get("enabled", True)),
+        series_code=int(monetary_config_raw.get("serie_sgs", 433)),
+        anchor_year=int(monetary_config_raw.get("ano_ancora", 2022)),
+    )
+
     years = _construir_anos(config.get("target_years", config.get("anos_alvo")))
 
-    return normalized_sector_mappings, years, normalized_aa_values, forecast_config
+    return (
+        normalized_sector_mappings,
+        years,
+        normalized_aa_values,
+        forecast_config,
+        monetary_config,
+    )
 
 
 def validar_colunas_entrada(
@@ -489,23 +524,25 @@ def _completar_coeficientes_finais_cagr(
 def _construir_coeficientes_aa(
     years: list[int],
     aa_production_values: dict[str, float],
+    monetary_factors: pd.Series,
 ) -> pd.DataFrame:
     target_years = sorted({int(year) for year in years})
     rows = []
     for year in target_years:
+        factor = float(monetary_factors.loc[year])
         rows.extend(
             [
                 {
                     "ano": year,
                     "conta_alfa": "AAProdução",
                     "tipo_coeff": "prod_mon_trab",
-                    "coeff": float(aa_production_values["prod_mon_trab"]),
+                    "coeff": float(aa_production_values["prod_mon_trab"]) * factor,
                 },
                 {
                     "ano": year,
                     "conta_alfa": "AAProdução",
                     "tipo_coeff": "salario_medio",
-                    "coeff": float(aa_production_values["salario_medio"]),
+                    "coeff": float(aa_production_values["salario_medio"]) * factor,
                 },
             ]
         )
@@ -519,44 +556,63 @@ def _construir_coeficientes_aa(
 def _aplicar_tolerancia_crescimento_anual(
     coefficients_df: pd.DataFrame,
     max_annual_growth_rate: float | None,
+    *,
+    observed_years: list[int],
 ) -> pd.DataFrame:
     if coefficients_df.empty or max_annual_growth_rate is None:
         return coefficients_df
     if max_annual_growth_rate < 0:
         raise ValueError("max_annual_growth_rate deve ser maior ou igual a zero")
 
+    if not observed_years:
+        return coefficients_df
+
     tolerated = coefficients_df.copy()
     rows = []
+    first_observed_year = min(int(year) for year in observed_years)
+    last_observed_year = max(int(year) for year in observed_years)
     group_columns = ["conta_alfa", "tipo_coeff"]
     for _, group in tolerated.groupby(group_columns, dropna=False):
         ordered = group.sort_values("ano").copy()
-        previous_value: float | None = None
-        previous_year: int | None = None
+        indexed = ordered.set_index("ano")["coeff"].astype(float)
 
-        for index, row in ordered.iterrows():
-            current_value = row["coeff"]
-            if pd.isna(current_value):
-                rows.append(row)
-                continue
-
-            current_value = float(current_value)
-            current_year = int(row["ano"])
-            if (
-                previous_value is not None
-                and previous_year is not None
-                and previous_value > 0
-                and current_year > previous_year
+        if first_observed_year in indexed.index:
+            next_value = float(indexed.loc[first_observed_year])
+            next_year = first_observed_year
+            for current_year in sorted(
+                [int(year) for year in indexed.index if int(year) < first_observed_year],
+                reverse=True,
             ):
-                year_delta = current_year - previous_year
-                max_allowed = previous_value * (
-                    (1.0 + max_annual_growth_rate) ** year_delta
-                )
-                current_value = min(current_value, max_allowed)
+                current_value = float(indexed.loc[current_year])
+                if next_value > 0:
+                    year_delta = next_year - current_year
+                    minimum_allowed = next_value / (
+                        (1.0 + max_annual_growth_rate) ** year_delta
+                    )
+                    current_value = max(current_value, minimum_allowed)
+                    indexed.loc[current_year] = current_value
+                next_value = current_value
+                next_year = current_year
 
-            ordered.at[index, "coeff"] = current_value
-            previous_value = current_value
-            previous_year = current_year
-            rows.append(ordered.loc[index])
+        if last_observed_year in indexed.index:
+            previous_value = float(indexed.loc[last_observed_year])
+            previous_year = last_observed_year
+            for current_year in sorted(
+                [int(year) for year in indexed.index if int(year) > last_observed_year]
+            ):
+                current_value = float(indexed.loc[current_year])
+                if previous_value > 0:
+                    year_delta = current_year - previous_year
+                    maximum_allowed = previous_value * (
+                        (1.0 + max_annual_growth_rate) ** year_delta
+                    )
+                    current_value = min(current_value, maximum_allowed)
+                    indexed.loc[current_year] = current_value
+                previous_value = current_value
+                previous_year = current_year
+
+        ordered["coeff"] = ordered["ano"].map(indexed)
+        rows.extend(row for _, row in ordered.iterrows())
 
     result = pd.DataFrame(rows)
     result = result.sort_values(["ano", "conta_alfa", "tipo_coeff"]).reset_index(
@@ -568,10 +624,12 @@ def _aplicar_tolerancia_crescimento_anual(
 def preparar_dados_coeficientes_renda(
     pia_df: pd.DataFrame,
     pac_df: pd.DataFrame,
+    ipca_df: pd.DataFrame,
     sector_mappings: dict[str, dict[str, list[str]]],
     years: list[int],
     aa_production_values: dict[str, float],
     forecast_config: ForecastConfig,
+    monetary_config: MonetaryCorrectionConfig,
 ) -> pd.DataFrame:
     validar_colunas_entrada(pia_df, PIA_REQUIRED_COLUMNS, "PIA")
     validar_colunas_entrada(pac_df, PAC_REQUIRED_COLUMNS, "PAC")
@@ -580,6 +638,53 @@ def preparar_dados_coeficientes_renda(
     pac_cleaned = _forcar_colunas_numericas(pac_df, PAC_VALUE_COLUMNS)
     pac_mapping = sector_mappings.get("PAC_COMERCIO", {})
     pia_mapping = sector_mappings.get("PIA_INDUSTRIA", {})
+
+    target_years = sorted({int(year) for year in years})
+    source_years = _listar_anos_observados(pia_cleaned) + _listar_anos_observados(
+        pac_cleaned
+    )
+    correction_years = sorted(set(target_years) | set(source_years))
+    if monetary_config.enabled:
+        observed_limits = [
+            max(observed_years)
+            for observed_years in [
+                _listar_anos_observados(pia_cleaned),
+                _listar_anos_observados(pac_cleaned),
+            ]
+            if observed_years
+        ]
+        latest_common_observed_year = (
+            min(observed_limits) if observed_limits else monetary_config.anchor_year
+        )
+        if monetary_config.anchor_year != latest_common_observed_year:
+            raise ValueError(
+                "Ano-ancora da correcao monetaria deve ser o ultimo ano "
+                "observado comum: "
+                f"configurado={monetary_config.anchor_year}, "
+                f"observado={latest_common_observed_year}"
+            )
+        monetary_factors = construir_fatores_correcao_ipca(
+            ipca_df,
+            years=correction_years,
+            config=monetary_config,
+        )
+        pia_cleaned = corrigir_colunas_monetarias(
+            pia_cleaned,
+            monetary_columns=PIA_MONETARY_COLUMNS,
+            factors=monetary_factors,
+            config=monetary_config,
+        )
+        pac_cleaned = corrigir_colunas_monetarias(
+            pac_cleaned,
+            monetary_columns=PAC_MONETARY_COLUMNS,
+            factors=monetary_factors,
+            config=monetary_config,
+        )
+    else:
+        monetary_factors = pd.Series(1.0, index=target_years, dtype=float)
+
+    pia_observed_years = _listar_anos_observados(pia_cleaned)
+    pac_observed_years = _listar_anos_observados(pac_cleaned)
 
     pia_forecast = _projetar_variaveis_brutas(
         pia_cleaned,
@@ -602,6 +707,11 @@ def preparar_dados_coeficientes_renda(
         numerator_column="valor_bruto_producao_industrial",
         salary_column="valor_salarios_remuneracoes",
     )
+    pia_coefficients = _aplicar_tolerancia_crescimento_anual(
+        pia_coefficients,
+        forecast_config.max_annual_growth_rate,
+        observed_years=pia_observed_years,
+    )
     pac_coefficients = _construir_coeficientes_por_anos(
         pac_forecast,
         years=sorted({int(year) for year in years}),
@@ -609,6 +719,11 @@ def preparar_dados_coeficientes_renda(
         numeric_columns=PAC_VALUE_COLUMNS,
         numerator_column="valor_receita_bruta_revenda",
         salary_column="valor_gastos_salarios_remuneracoes",
+    )
+    pac_coefficients = _aplicar_tolerancia_crescimento_anual(
+        pac_coefficients,
+        forecast_config.max_annual_growth_rate,
+        observed_years=pac_observed_years,
     )
 
     projected_frames = [
@@ -618,7 +733,9 @@ def preparar_dados_coeficientes_renda(
         projected_coefficients = pd.concat(projected_frames, ignore_index=True)
     else:
         projected_coefficients = pd.DataFrame(columns=FINAL_COLUMNS)
-    aa_coefficients = _construir_coeficientes_aa(years, aa_production_values)
+    aa_coefficients = _construir_coeficientes_aa(
+        years, aa_production_values, monetary_factors
+    )
 
     final = pd.concat([projected_coefficients, aa_coefficients], ignore_index=True)
     final["coeff"] = pd.to_numeric(final["coeff"], errors="coerce")

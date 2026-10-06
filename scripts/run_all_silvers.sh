@@ -11,6 +11,7 @@ while pgrep -f run_all_raws.sh >/dev/null 2>&1; do
 done
 
 FLOWS=(
+  dados.silver.br_bcb_sgs_ipca.ipca_anual
   dados.silver.al_ibge_censoagro.tbl_1909_2006
   dados.silver.al_ibge_censoagro.tbl_1931_2006
   dados.silver.al_ibge_censoagro.tbl_2233_2006

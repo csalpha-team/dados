@@ -4,6 +4,7 @@ set -u
 cd "$(dirname "$0")/.."
 
 FLOWS=(
+  dados.raw.br_bcb_sgs_ipca.ipca
   dados.raw.al_ibge_censoagro.tbl_1909_2006
   dados.raw.al_ibge_censoagro.tbl_1931_2006
   dados.raw.al_ibge_censoagro.tbl_2233_2006

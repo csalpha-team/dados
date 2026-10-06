@@ -1,0 +1,106 @@
+ano,versao,familia,coeff
+1995,antiga,Comércio atacadista,89.03243503357355
+2002,antiga,Comércio atacadista,76.27829577431841
+2005,antiga,Comércio atacadista,83.96789706755541
+2006,antiga,Comércio atacadista,121.61696855965818
+2007,antiga,Comércio atacadista,493.3368294838544
+2022,antiga,Comércio atacadista,1990.8136244749487
+2023,antiga,Comércio atacadista,1976.8905088255058
+1995,atual sem IPCA,Comércio atacadista,69.64664620508871
+2002,atual sem IPCA,Comércio atacadista,58.92563288912023
+2005,atual sem IPCA,Comércio atacadista,137.7548793136852
+2006,atual sem IPCA,Comércio atacadista,206.6323189705278
+2007,atual sem IPCA,Comércio atacadista,309.9484784557917
+2022,atual sem IPCA,Comércio atacadista,1990.8136244749487
+2023,atual sem IPCA,Comércio atacadista,1976.8905088255058
+1995,corrigida IPCA,Comércio atacadista,318.3559156765561
+2002,corrigida IPCA,Comércio atacadista,827.3611803818826
+2005,corrigida IPCA,Comércio atacadista,1045.1462913124265
+2006,corrigida IPCA,Comércio atacadista,1111.2759459710414
+2007,corrigida IPCA,Comércio atacadista,1174.5249542570084
+2022,corrigida IPCA,Comércio atacadista,1990.8136244749487
+2023,corrigida IPCA,Comércio atacadista,1890.0695966479536
+1995,antiga,Comércio varejista,14.82525431225647
+2002,antiga,Comércio varejista,14.855284398665296
+2005,antiga,Comércio varejista,18.63284698678056
+2006,antiga,Comércio varejista,37.50483952397884
+2007,antiga,Comércio varejista,101.23514745643216
+2022,antiga,Comércio varejista,398.0543078518685
+2023,antiga,Comércio varejista,430.4570030943522
+1995,atual sem IPCA,Comércio varejista,14.881297865938976
+2002,atual sem IPCA,Comércio varejista,14.1056494801885
+2005,atual sem IPCA,Comércio varejista,26.17065836039709
+2006,atual sem IPCA,Comércio varejista,39.25598754059564
+2007,atual sem IPCA,Comércio varejista,58.88398131089346
+2022,atual sem IPCA,Comércio varejista,398.0543078518685
+2023,atual sem IPCA,Comércio varejista,430.4570030943522
+1995,corrigida IPCA,Comércio varejista,43.5954679274106
+2002,corrigida IPCA,Comércio varejista,164.63454299991943
+2005,corrigida IPCA,Comércio varejista,212.21308416735425
+2006,corrigida IPCA,Comércio varejista,226.88526118291733
+2007,corrigida IPCA,Comércio varejista,241.01830601187436
+2022,corrigida IPCA,Comércio varejista,398.0543078518685
+2023,corrigida IPCA,Comércio varejista,411.552228401458
+1995,antiga,Indústria beneficiada,29.830211347320773
+2002,antiga,Indústria beneficiada,28.837650960117987
+2005,antiga,Indústria beneficiada,54.62441851545078
+2006,antiga,Indústria beneficiada,110.45048115055056
+2007,antiga,Indústria beneficiada,306.83425020481366
+2022,antiga,Indústria beneficiada,1119.7734168730938
+2023,antiga,Indústria beneficiada,886.713328821635
+1995,atual sem IPCA,Indústria beneficiada,23.81242093871565
+2002,atual sem IPCA,Indústria beneficiada,24.062204635349662
+2005,atual sem IPCA,Indústria beneficiada,81.2099406443051
+2006,atual sem IPCA,Indústria beneficiada,121.81491096645766
+2007,atual sem IPCA,Indústria beneficiada,182.72236644968652
+2022,atual sem IPCA,Indústria beneficiada,890.3017059551843
+2023,atual sem IPCA,Indústria beneficiada,607.9304168300009
+1995,corrigida IPCA,Indústria beneficiada,307.2533248533737
+2002,corrigida IPCA,Indústria beneficiada,480.099435473292
+2005,corrigida IPCA,Indústria beneficiada,541.3954750627389
+2006,corrigida IPCA,Indústria beneficiada,560.4413090669232
+2007,corrigida IPCA,Indústria beneficiada,578.8518502176889
+2022,corrigida IPCA,Indústria beneficiada,890.391181385839
+2023,corrigida IPCA,Indústria beneficiada,899.4747304976883
+1995,antiga,Indústria transformação,8.803999347152661
+2002,antiga,Indústria transformação,42.02038807596865
+2005,antiga,Indústria transformação,83.08789934394689
+2006,antiga,Indústria transformação,97.81116566051595
+2007,antiga,Indústria transformação,140.82057836205723
+2022,antiga,Indústria transformação,461.97028880895033
+2023,antiga,Indústria transformação,394.33529641635806
+1995,atual sem IPCA,Indústria transformação,17.989344551209438
+2002,atual sem IPCA,Indústria transformação,24.932849143849932
+2005,atual sem IPCA,Indústria transformação,84.14836586049351
+2006,atual sem IPCA,Indústria transformação,126.22254879074028
+2007,atual sem IPCA,Indústria transformação,189.3338231861104
+2022,atual sem IPCA,Indústria transformação,798.1846326993876
+2023,atual sem IPCA,Indústria transformação,695.859432610118
+1995,corrigida IPCA,Indústria transformação,546.9663552133503
+2002,corrigida IPCA,Indústria transformação,626.0870224977771
+2005,corrigida IPCA,Indústria transformação,655.482278412852
+2006,corrigida IPCA,Indústria transformação,664.7658440015473
+2007,corrigida IPCA,Indústria transformação,673.8086717768006
+2022,corrigida IPCA,Indústria transformação,799.368587907261
+2023,corrigida IPCA,Indústria transformação,804.8677766313589
+1995,antiga,Produção rural (AA),10.789
+2002,antiga,Produção rural (AA),10.789
+2005,antiga,Produção rural (AA),10.789
+2006,antiga,Produção rural (AA),10.789
+2007,antiga,Produção rural (AA),10.789
+2022,antiga,Produção rural (AA),10.789
+2023,antiga,Produção rural (AA),10.789
+1995,atual sem IPCA,Produção rural (AA),10.789
+2002,atual sem IPCA,Produção rural (AA),10.789
+2005,atual sem IPCA,Produção rural (AA),10.789
+2006,atual sem IPCA,Produção rural (AA),10.789
+2007,atual sem IPCA,Produção rural (AA),10.789
+2022,atual sem IPCA,Produção rural (AA),10.789
+2023,atual sem IPCA,Produção rural (AA),10.789
+1995,corrigida IPCA,Produção rural (AA),60.211935750320094
+2002,corrigida IPCA,Produção rural (AA),36.24570786771812
+2005,corrigida IPCA,Produção rural (AA),27.73529728828558
+2006,corrigida IPCA,Produção rural (AA),26.62152855112048
+2007,corrigida IPCA,Produção rural (AA),25.68620255807109
+2022,corrigida IPCA,Produção rural (AA),10.789
+2023,corrigida IPCA,Produção rural (AA),10.315169599529252

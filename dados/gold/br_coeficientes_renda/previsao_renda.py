@@ -185,6 +185,13 @@ class IncomeForecaster:
 
         slope, intercept = np.polyfit(years, values, 1)
         predictions = {int(year): float(intercept + slope * year) for year in targets}
+        predictions = self._anchor_trend_extrapolations(
+            predictions,
+            slope=float(slope),
+            years=years,
+            values=values,
+            targets=targets,
+        )
         return self._stabilize_backward_trend_predictions(
             predictions,
             years=years,
@@ -246,6 +253,13 @@ class IncomeForecaster:
         slope = self._theil_sen_slope(years, values)
         intercept = float(np.median(values - slope * years))
         predictions = {int(year): float(intercept + slope * year) for year in targets}
+        predictions = self._anchor_trend_extrapolations(
+            predictions,
+            slope=slope,
+            years=years,
+            values=values,
+            targets=targets,
+        )
         return self._stabilize_backward_trend_predictions(
             predictions,
             years=years,
@@ -296,6 +310,29 @@ class IncomeForecaster:
                 delta = year - start_year
                 base = start_value
             predictions[int(year)] = float(base * ((1.0 + rate) ** delta))
+        return predictions
+
+    @staticmethod
+    def _anchor_trend_extrapolations(
+        predictions: Dict[int, float],
+        *,
+        slope: float,
+        years: np.ndarray,
+        values: np.ndarray,
+        targets: Sequence[int],
+    ) -> Dict[int, float]:
+        """Anchor extrapolations at observed boundaries to avoid artificial jumps."""
+
+        first_year = int(years[0])
+        last_year = int(years[-1])
+        first_value = float(values[0])
+        last_value = float(values[-1])
+        for year in targets:
+            year = int(year)
+            if year < first_year:
+                predictions[year] = first_value + slope * (year - first_year)
+            elif year > last_year:
+                predictions[year] = last_value + slope * (year - last_year)
         return predictions
 
     def _predict_rolling_mean(

@@ -22,8 +22,26 @@ contrato usado pelos dumps da Layer 2: `ano`, `conta_alfa`, `coeff`.
 ## Previsão
 
 Os parâmetros pedem uma série anual de `1995` a `2023`, mas as bases PIA/PAC
-usadas aqui começam apenas em `2007`. Os anos não observados são imputados
-antes do cálculo dos coeficientes finais.
+usadas aqui começam apenas em `2007`. A PIA termina em 2022 e a PAC em 2023;
+por isso, 2022 é o último ano observado comum e a referência de preços. Os anos
+não observados são imputados antes do cálculo dos coeficientes finais.
+
+## Correção monetária
+
+Antes da previsão, as colunas monetárias são convertidas para preços médios de
+2022 com o IPCA mensal do BCB (SGS 433). A camada gold consome o índice anual
+validado de `br_bcb_sgs_ipca.ipca_anual`, preservando o encadeamento
+`raw → silver → gold`.
+
+```text
+valor_real(t) = valor_nominal(t) * indice_ipca(2022) / indice_ipca(t)
+```
+
+Na PIA, a correção alcança valor bruto da produção e salários. Na PAC, alcança
+receita bruta, margem de comercialização e gastos com salários. A coluna
+`pessoal_ocupado_31_12` não é monetária e nunca recebe o fator IPCA. O fator do
+ano-base é validado como exatamente 1, e anos incompletos ou ausentes causam
+erro explícito.
 
 O método padrão de previsão é `theil_sen`, implementado em `previsao_renda.py`.
 A previsão é feita antes da agregação final dos coeficientes: primeiro cada
@@ -37,7 +55,9 @@ Para cada série anual observada, o estimador de Theil-Sen segue esta regra:
 2. usar a mediana dessas inclinações como tendência anual robusta (`slope`);
 3. calcular os interceptos `valor - slope * ano` para os pontos observados;
 4. usar a mediana dos interceptos como intercepto da reta;
-5. projetar cada ano-alvo com `intercept + slope * ano`.
+5. usar `intercept + slope * ano` dentro do intervalo histórico e ancorar as
+   extrapolações no primeiro/último valor observado para evitar saltos na
+   transição do backcast e do forecast.
 
 Com menos de `min_history` observações válidas, ou menos de dois pontos, o
 código não estima tendência e replica o último valor observado.
@@ -71,9 +91,10 @@ exposto a oscilações fortes das bases PIA/PAC: um ano de choque podia inclinar
 reta de previsão e afetar todos os anos imputados.
 
 Com `theil_sen`, a projeção continua sendo uma reta anual, mas a reta é definida
-por estatísticas robustas. A mudança não altera o contrato da tabela nem as
-contas publicadas; ela altera apenas como os anos sem observação direta são
-estimados antes do cálculo final dos coeficientes.
+por estatísticas robustas e ancorada no valor observado da borda ao extrapolar.
+A mudança não altera o contrato da tabela nem as contas publicadas; ela altera
+apenas como os anos sem observação direta são estimados antes do cálculo final
+dos coeficientes.
 
 ## Tolerância de crescimento
 
@@ -102,9 +123,11 @@ máximo a `75`. Se a projeção calculada produzir `100`, o valor publicado ser�
 limitado a `75`. Em dois anos de distância, o limite seria
 `50 * 1.5 ** 2 = 112.5`.
 
-Esse clamp é aplicado apenas sobre crescimento positivo. Quedas não são
-limitadas por essa regra, e a regra só opera quando o valor anterior é positivo.
-Se `max_annual_growth_rate` for `null`, essa tolerância final é desativada.
+Anos observados nunca são modificados por esse clamp. No backcast, a aplicação
+começa no primeiro ano observado e caminha para trás; no forecast, começa no
+último ano observado e caminha para frente. A regra só opera quando o valor de
+referência é positivo. Se `max_annual_growth_rate` for `null`, essa tolerância
+final é desativada.
 
 ## Fluxo
 
@@ -113,14 +136,15 @@ ordem:
 
 1. carregar PIA e PAC da silver;
 2. limpar e padronizar colunas numéricas;
-3. agregar as bases por `ano` + `divisao_grupo_cnae_2`;
-4. projetar variáveis brutas com o método `theil_sen`;
-5. agregar os dados projetados por `conta_alfa`;
-6. calcular `prod_mon_trab` e `salario_medio`;
-7. adicionar `AAProdução` como série constante por pressuposto temporário;
-8. aplicar a tolerância de crescimento anual;
-9. validar os models Pydantic;
-10. publicar as tabelas na zona gold.
+3. corrigir somente as variáveis monetárias para preços médios de 2022;
+4. agregar as bases por `ano` + `divisao_grupo_cnae_2`;
+5. projetar variáveis brutas com o método `theil_sen`;
+6. agregar os dados projetados por `conta_alfa`;
+7. calcular `prod_mon_trab` e `salario_medio`;
+8. adicionar `AAProdução` corrigida pelo mesmo fator IPCA;
+9. aplicar a tolerância somente fora do histórico observado;
+10. validar os models Pydantic;
+11. publicar as tabelas na zona gold.
 
 ## Parâmetros
 
@@ -134,8 +158,11 @@ fluxo:
   anual positivo de `0.5`.
 - `anos_alvo`: intervalo fechado de anos publicados. Com `start = 1995` e
   `end = 2023`, a saída contém todos os anos entre 1995 e 2023.
-- `valores_producao_aa`: valores constantes usados para preencher
-  `AAProdução` enquanto não houver fonte própria para essa conta.
+- `valores_producao_aa`: pressupostos monetários nominais que o legado repetia
+  em todos os anos; cada réplica anual é convertida para preços de 2022 pelo
+  IPCA enquanto não houver fonte própria.
+- `correcao_monetaria`: ativa a correção e registra a série SGS `433` e o
+  ano-âncora `2022`.
 - `mapa_setores`: mapeia códigos de `divisao_grupo_cnae_2` para as contas
   alfa. O carregador aceita chaves auxiliares começando com `_` como metadados
   e não as usa no cálculo.
@@ -144,9 +171,10 @@ Em `mapa_setores.PAC_COMERCIO`, as contas de atacado usam o prefixo `3` e as
 contas de varejo usam o prefixo `4`.
 
 Em `mapa_setores.PIA_INDUSTRIA`, as contas de indústria beneficiada usam os
-prefixos `10`, `11`, `12`, `17`, `19`, `20` e `24`. As contas de indústria de
-transformação usam os prefixos `13`, `14`, `15`, `16`, `18`, `21`, `22`, `23`,
-`25`, `26`, `27`, `28`, `29`, `30`, `31`, `32` e `33`.
+prefixos `10`, `11` e `20`. As contas de indústria de transformação usam o
+prefixo `11`, conforme a configuração atual. Essa definição é mais restrita que
+a versão histórica e explica parte da divergência OLD/NEW independentemente do
+método de previsão.
 
 Os significados documentados dos códigos da PIA ficam em
 `mapa_setores.PIA_INDUSTRIA._codigos`:
@@ -187,6 +215,7 @@ produtos. O uso deve ser interpretativo e depende de validação caso a caso.
 
 ## AAProdução
 
-A conta `AAProdução` continua sendo tratada por pressuposto temporário. Sua
-produtividade monetária e seu salário médio são mantidos constantes conforme
-`parametros_coeficientes_renda.json`.
+A conta `AAProdução` continua sendo tratada por pressuposto temporário. O valor
+nominal configurado era replicado pelo legado em todos os anos; cada réplica é
+agora convertida para preços de 2022 pela razão dos índices anuais do IPCA. Em
+2022, o fator é 1 e o valor configurado permanece inalterado.

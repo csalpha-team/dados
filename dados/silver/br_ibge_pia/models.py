@@ -19,11 +19,11 @@ class BrIbgePiaTbl1849(BaseModel):
     )
     custos_materias_primas: Decimal | None = Field(
         description="Costs of raw materials, auxiliary materials, and components",
-        json_schema_extra={"unit": "BRL"},
+        json_schema_extra={"unit": "thousand_BRL"},
     )
     encargos_sociais_trabalhistas: Decimal | None = Field(
         description="Social and labor charges, indemnities, and benefits",
-        json_schema_extra={"unit": "BRL"},
+        json_schema_extra={"unit": "thousand_BRL"},
     )
     quantidade_unidades_locais: Decimal | None = Field(
         description="Number of local units",
@@ -35,33 +35,33 @@ class BrIbgePiaTbl1849(BaseModel):
     )
     receita_liquida_vendas_industriais: Decimal | None = Field(
         description="Net sales revenue from industrial activities",
-        json_schema_extra={"unit": "BRL"},
+        json_schema_extra={"unit": "thousand_BRL"},
     )
     receita_liquida_vendas_nao_industriais: Decimal | None = Field(
         description="Net sales revenue from non-industrial activities",
-        json_schema_extra={"unit": "BRL"},
+        json_schema_extra={"unit": "thousand_BRL"},
     )
     valor_salarios_remuneracoes: Decimal | None = Field(
         description="Salaries, withdrawals and other remunerations",
-        json_schema_extra={"unit": "BRL"},
+        json_schema_extra={"unit": "thousand_BRL"},
     )
     valor_custos_operacoes_industriais: Decimal | None = Field(
         description="Total costs of industrial operations",
-        json_schema_extra={"unit": "BRL"},
+        json_schema_extra={"unit": "thousand_BRL"},
     )
     valor_custos_despesas: Decimal | None = Field(
         description="Total costs and expenses",
-        json_schema_extra={"unit": "BRL"},
+        json_schema_extra={"unit": "thousand_BRL"},
     )
     valor_receitas_liquidas_vendas: Decimal | None = Field(
         description="Total net sales revenue",
-        json_schema_extra={"unit": "BRL"},
+        json_schema_extra={"unit": "thousand_BRL"},
     )
     valor_bruto_producao_industrial: Decimal | None = Field(
         description="Gross value of industrial production",
-        json_schema_extra={"unit": "BRL"},
+        json_schema_extra={"unit": "thousand_BRL"},
     )
     valor_transformacao_industrial: Decimal | None = Field(
         description="Value of industrial transformation",
-        json_schema_extra={"unit": "BRL"},
+        json_schema_extra={"unit": "thousand_BRL"},
     )
