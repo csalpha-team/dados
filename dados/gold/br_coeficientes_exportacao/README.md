@@ -40,9 +40,34 @@ descrever a parametrizacao adotada no modulo.
 O JSON tem dois blocos centrais:
 
 - `composicao_produtos`: define o "de para" entre cada produto do modelo e os
-  NCMs encontrados na base, usando objetos com `id_ncm` e `nome_ncm`;
+  NCMs encontrados na base, usando objetos com `id_ncm` e `nome_ncm`. O
+  processamento usa `id_ncm` como chave principal e mantém `nome_ncm` como
+  descrição/auditoria;
 - `participacoes_especificas`: sobrescreve a divisao padrao quando um produto
   precisa de um peso diferente de reparticao.
+
+Cada item de `composicao_produtos` tambem pode receber campos opcionais para
+explicitar a regra adotada:
+
+- `tipo_match`: `exato`, `generico_outros`, `estimado` ou `excluir`;
+- `participacao`: peso aplicado diretamente ao produto naquele NCM;
+- `grupo_distribuicao`: rotulo auditavel para NCMs genericos repartidos entre
+  varios produtos.
+
+Quando `tipo_match` nao e informado, descricoes iniciadas por "Outros/Outras"
+ou com "de outras/de outros" sao classificadas como `generico_outros`. Quando
+essa inferencia e ampla demais, o proprio item deve receber `tipo_match:
+exato`, como ocorre em NCMs do tipo "Outros sucos de abacaxi" ou "Outros oleos
+de milho". A distribuicao produtiva continua usando a regra historica:
+participacoes explicitas primeiro; saldo restante dividido igualmente entre os
+produtos relacionados ao mesmo NCM.
+
+Depois da revisao manual dos matches, foram removidos da parametrizacao os NCMs
+textuais que geravam falsos positivos recorrentes, como misturas genericas de
+frutas, caramelos sem acucar e casos especificos sem aderencia ao produto. Os
+itens anotados como falsos genericos foram mantidos no de-para com
+`tipo_match: exato`; o caso de residuos de coco/copra foi marcado como
+`generico_outros`.
 
 O arquivo tambem referencia `taxa_cambio.csv`, da raw `pa_me_comex_stat`, para
 converter `valor_fob_dolar` em `valor_fob_real` com a taxa correspondente a cada
@@ -76,9 +101,10 @@ O fluxo implementado em `preparacao_camada_exportacao.py` e direto:
 2. consultar a base de exportacao e obter `ano`, `id_ncm`,
    `nome_ncm_portugues`, `sigla_uf_ncm` e `valor_fob_dolar`;
 3. filtrar os registros da UF alvo, hoje `PA`;
-4. agregar os valores por ano e NCM;
+4. agregar os valores por ano, `id_ncm` e descricao NCM;
 5. projetar a serie anual com previsao linear quando necessario;
-6. distribuir os valores dos NCMs entre os produtos definidos no parametro;
+6. distribuir os valores dos NCMs entre os produtos definidos no parametro,
+   usando `id_ncm` como chave principal;
 7. aplicar as `participacoes_especificas` quando houver regra explicita, como o
    `0.87` do acai;
 8. converter o valor em dolar para real usando a taxa BRL/USD do ano;
@@ -120,7 +146,7 @@ historica do repositorio e a arquitetura de medalhoes documentada na raiz.
 Depois de carregar a tabela gold, gere o resumo e o grafico das series:
 
 ```bash
-python -m dados.gold.br_coeficientes_exportacao.auditoria_series_coeficientes
+python -m dados.gold.br_coeficientes_exportacao.preparacao_camada_exportacao --auditoria-series
 ```
 
 Os arquivos saem em `tmp_data/br_coeficientes_exportacao/output/`:
@@ -133,6 +159,17 @@ media. A primeira leitura esperada e se as series somam 1 por ano, se existem
 saltos provocados por mudanca de composicao NCM e se produtos amplos, como
 preparacoes alimenticias, nao dominam a serie sem justificativa metodologica.
 
+Para auditar os matches NCM-produto parametrizados:
+
+```bash
+python -m dados.gold.br_coeficientes_exportacao.preparacao_camada_exportacao --auditoria-matches
+```
+
+Essa auditoria nao executa algoritmo de descoberta textual nem gera CSVs. Ela
+gera apenas `dados/gold/br_coeficientes_exportacao/resultados/relatorio_matches_ncm.xlsx`,
+com uma aba `matches` e tres colunas: `produto`, `id_ncm` e `nome_ncm`. Esse
+arquivo e a verificacao final do de-para consolidado no JSON.
+
 ## Testes
 
 A bateria focada fica em `tests/test_export_coefficients.py` e valida:
@@ -143,20 +180,27 @@ A bateria focada fica em `tests/test_export_coefficients.py` e valida:
   e `taxa_cambio.csv`;
 - transformacao gold com filtro de UF, reparticao por participacao especifica,
   normalizacao anual de `coeff` e contrato pydantic;
-- geracao do resumo e do grafico de auditoria.
+- geracao do resumo/grafico de series e do XLSX sintetico de matches.
 
 Execute:
 
 ```bash
-python -m pytest tests/test_export_coefficients.py
+python -m pytest dados/tests/test_export_coefficients.py
 ```
 
 ## Observacoes de manutencao
 
+- A camada fica concentrada em dois arquivos Python: `preparacao_camada_exportacao.py`
+  para o flow, schema e comandos operacionais; `utils.py` para transformacoes,
+  distribuicao, exportacao JSON e geracao dos artefatos de auditoria.
 - Se a metodologia para o acai mudar, o ajuste deve ser feito primeiro em
   `participacoes_especificas`.
 - Se uma nova descricao de NCM passar a representar o produto, ela precisa
-  entrar em `composicao_produtos` com `id_ncm` e `nome_ncm`.
+  entrar em `composicao_produtos` com `id_ncm` e `nome_ncm`; use `tipo_match`
+  apenas quando a classificacao automatica por texto "Outros/Outras" precisar
+  ser corrigida.
+- NCMs genericos recorrentes so devem voltar ao JSON se houver criterio
+  metodologico claro de reparticao ou participacao.
 - Se a base passar a identificar o produto de forma direta e suficiente, a
   regra de estimacao por participacao media pode ser revista ou removida.
 - A documentacao desta camada assume a nomenclatura NCM tal como aparece na base

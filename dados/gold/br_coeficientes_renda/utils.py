@@ -110,10 +110,15 @@ def carregar_parametros_renda(
         raise ValueError("forecast_config deve ser um dicionario")
 
     forecast_config = ForecastConfig(
-        method=str(forecast_config_raw.get("method", "linear")),
+        method=str(forecast_config_raw.get("method", "theil_sen")),
         min_history=int(forecast_config_raw.get("min_history", 2)),
         clamp_non_negative=bool(forecast_config_raw.get("clamp_non_negative", True)),
         rolling_window=int(forecast_config_raw.get("rolling_window", 3)),
+        max_annual_growth_rate=(
+            None
+            if forecast_config_raw.get("max_annual_growth_rate") is None
+            else float(forecast_config_raw.get("max_annual_growth_rate", 0.50))
+        ),
     )
 
     years = _construir_anos(config.get("target_years", config.get("anos_alvo")))
@@ -385,6 +390,102 @@ def _completar_coeficientes_finais(
     return completed[FINAL_COLUMNS]
 
 
+def _calcular_cagr_serie(observed: pd.Series) -> float:
+    positive_observed = observed[observed > 0].dropna()
+    if positive_observed.size < 2:
+        return 0.0
+
+    first_year = int(positive_observed.index[0])
+    last_year = int(positive_observed.index[-1])
+    span = last_year - first_year
+    if span <= 0:
+        return 0.0
+
+    first_value = float(positive_observed.iloc[0])
+    last_value = float(positive_observed.iloc[-1])
+    if first_value <= 0 or last_value <= 0:
+        return 0.0
+
+    return float((last_value / first_value) ** (1.0 / span) - 1.0)
+
+
+def _completar_coeficientes_finais_cagr(
+    coefficients_df: pd.DataFrame,
+    years: list[int],
+    *,
+    clamp_non_negative: bool,
+) -> pd.DataFrame:
+    target_years = sorted({int(year) for year in years})
+    if coefficients_df.empty or not target_years:
+        return pd.DataFrame(columns=FINAL_COLUMNS)
+
+    completed_rows = []
+    grouped = coefficients_df.groupby(["conta_alfa", "tipo_coeff"], dropna=False)
+
+    for (account_name, coeff_type), group in grouped:
+        ordered = group.sort_values("ano").copy()
+        series = (
+            pd.Series(
+                pd.to_numeric(ordered["coeff"], errors="coerce").to_numpy(dtype=float),
+                index=ordered["ano"].astype(int).tolist(),
+                dtype=float,
+            )
+            .groupby(level=0)
+            .last()
+            .reindex(target_years)
+        )
+
+        observed = series.dropna()
+        if observed.empty:
+            continue
+
+        first_year = int(observed.index[0])
+        last_year = int(observed.index[-1])
+        first_value = float(observed.iloc[0])
+        last_value = float(observed.iloc[-1])
+        cagr = _calcular_cagr_serie(observed)
+
+        for year in series.index[series.index < first_year]:
+            if first_value > 0 and cagr > -1.0:
+                series.loc[year] = first_value / (
+                    (1.0 + cagr) ** (first_year - int(year))
+                )
+            else:
+                series.loc[year] = first_value
+
+        for year in series.index[series.index > last_year]:
+            if last_value > 0 and cagr > -1.0:
+                series.loc[year] = last_value * (
+                    (1.0 + cagr) ** (int(year) - last_year)
+                )
+            else:
+                series.loc[year] = last_value
+
+        series = series.ffill().bfill()
+
+        if clamp_non_negative:
+            series = series.clip(lower=0.0)
+
+        for year, coeff in series.items():
+            completed_rows.append(
+                {
+                    "ano": int(year),
+                    "conta_alfa": str(account_name),
+                    "tipo_coeff": str(coeff_type),
+                    "coeff": float(coeff),
+                }
+            )
+
+    if not completed_rows:
+        return pd.DataFrame(columns=FINAL_COLUMNS)
+
+    completed = pd.DataFrame(completed_rows)
+    completed = completed.sort_values(["ano", "conta_alfa", "tipo_coeff"]).reset_index(
+        drop=True
+    )
+    return completed[FINAL_COLUMNS]
+
+
 def _construir_coeficientes_aa(
     years: list[int],
     aa_production_values: dict[str, float],
@@ -413,6 +514,55 @@ def _construir_coeficientes_aa(
         return pd.DataFrame(columns=FINAL_COLUMNS)
 
     return pd.DataFrame(rows, columns=FINAL_COLUMNS)
+
+
+def _aplicar_tolerancia_crescimento_anual(
+    coefficients_df: pd.DataFrame,
+    max_annual_growth_rate: float | None,
+) -> pd.DataFrame:
+    if coefficients_df.empty or max_annual_growth_rate is None:
+        return coefficients_df
+    if max_annual_growth_rate < 0:
+        raise ValueError("max_annual_growth_rate deve ser maior ou igual a zero")
+
+    tolerated = coefficients_df.copy()
+    rows = []
+    group_columns = ["conta_alfa", "tipo_coeff"]
+    for _, group in tolerated.groupby(group_columns, dropna=False):
+        ordered = group.sort_values("ano").copy()
+        previous_value: float | None = None
+        previous_year: int | None = None
+
+        for index, row in ordered.iterrows():
+            current_value = row["coeff"]
+            if pd.isna(current_value):
+                rows.append(row)
+                continue
+
+            current_value = float(current_value)
+            current_year = int(row["ano"])
+            if (
+                previous_value is not None
+                and previous_year is not None
+                and previous_value > 0
+                and current_year > previous_year
+            ):
+                year_delta = current_year - previous_year
+                max_allowed = previous_value * (
+                    (1.0 + max_annual_growth_rate) ** year_delta
+                )
+                current_value = min(current_value, max_allowed)
+
+            ordered.at[index, "coeff"] = current_value
+            previous_value = current_value
+            previous_year = current_year
+            rows.append(ordered.loc[index])
+
+    result = pd.DataFrame(rows)
+    result = result.sort_values(["ano", "conta_alfa", "tipo_coeff"]).reset_index(
+        drop=True
+    )
+    return result[FINAL_COLUMNS]
 
 
 def preparar_dados_coeficientes_renda(
@@ -472,6 +622,10 @@ def preparar_dados_coeficientes_renda(
 
     final = pd.concat([projected_coefficients, aa_coefficients], ignore_index=True)
     final["coeff"] = pd.to_numeric(final["coeff"], errors="coerce")
+    final = _aplicar_tolerancia_crescimento_anual(
+        final,
+        forecast_config.max_annual_growth_rate,
+    )
     final = final.sort_values(["ano", "conta_alfa", "tipo_coeff"]).reset_index(
         drop=True
     )

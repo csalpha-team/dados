@@ -137,21 +137,14 @@ def _validate_one(
 
 
 def validate(dfs: dict[str, pd.DataFrame]) -> dict[str, pd.DataFrame]:
-    dfs[TABLE] = _validate_one(
-        dfs[TABLE], BrCoeficientesRendaPreparacaoCamadaRenda, PK_MAIN, TABLE
-    )
-    dfs[PRODUCTIVITY_TABLE] = _validate_one(
-        dfs[PRODUCTIVITY_TABLE],
-        BrCoeficientesRendaRendaProdutividade,
-        PK_OUTPUT,
-        PRODUCTIVITY_TABLE,
-    )
-    dfs[SALARY_TABLE] = _validate_one(
-        dfs[SALARY_TABLE],
-        BrCoeficientesRendaRendaSalario,
-        PK_OUTPUT,
-        SALARY_TABLE,
-    )
+    targets = {
+        TABLE: (BrCoeficientesRendaPreparacaoCamadaRenda, PK_MAIN),
+        PRODUCTIVITY_TABLE: (BrCoeficientesRendaRendaProdutividade, PK_OUTPUT),
+        SALARY_TABLE: (BrCoeficientesRendaRendaSalario, PK_OUTPUT),
+    }
+    for table, (model, pk_cols) in targets.items():
+        if table in dfs:
+            dfs[table] = _validate_one(dfs[table], model, pk_cols, table)
     return dfs
 
 
@@ -169,6 +162,8 @@ def load(dfs: dict[str, pd.DataFrame]) -> None:
         schema=DATASET_ID,
     ) as db:
         for name, model in targets.items():
+            if name not in dfs:
+                continue
             columns = pydantic_to_postgres_columns(model)
             db.create_table(name, columns, drop_if_exists=True)
             db.load_data(name, dfs[name], if_exists="append")

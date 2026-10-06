@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from datetime import date, datetime
 from decimal import Decimal
+from types import UnionType
 from typing import Any, Type, Union, get_args, get_origin
 
 from pydantic import BaseModel
@@ -25,7 +26,7 @@ _PG_TYPE_MAP: dict[type, str] = {
 
 def _unwrap_optional(tp: Any) -> Any:
     """Strip ``Optional`` / ``X | None`` and return the underlying type."""
-    if get_origin(tp) is Union:
+    if get_origin(tp) in (Union, UnionType):
         non_none = [a for a in get_args(tp) if a is not type(None)]
         if len(non_none) == 1:
             return non_none[0]

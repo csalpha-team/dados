@@ -1,17 +1,17 @@
 """Export the gold tables that feed the downstream Layer 2 algorithm.
 
-Reads the gold zone via :class:`PostgresETL` and materialises the six dynamic
-artefacts described in ``gold_export/l2_input_schemas_examples.md``:
+Reads the gold zone via :class:`PostgresETL` and materialises the Layer 2
+package under ``gold_export/layer2_new_values/``:
 
-- ``cost_coefficients.csv``         (pa_coeficientes_custo.preparacao_camada_custo)
-- ``consumption_coefficients.csv``  (br_coeficientes_consumo.preparacao_camada_consumo)
+- ``cost_values.csv``               (pa_coeficientes_custo.preparacao_camada_custo)
+- ``consumption_values.csv``        (br_coeficientes_consumo.preparacao_camada_consumo)
 - ``investment_coefficients.json``  (br_coeficientes_investimento.coeficientes_investimento)
 - ``export_coefficients.json``      (br_coeficientes_exportacao.preparacao_camada_exportacao)
 - ``income_productivity.json``      (br_coeficientes_renda.renda_produtividade)
 - ``income_salary.json``            (br_coeficientes_renda.renda_salario)
 
 The three ``*_incidence.json`` files and ``l2_input_schemas_examples.md``
-already living in ``gold_export/`` are exogenous configuration — this flow
+already living in the output directory are exogenous configuration — this flow
 leaves them in place and packages them as-is into the final zip.
 """
 
@@ -36,10 +36,20 @@ DATASET_ID = "gold_export"
 ZONE = "export"
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-OUTPUT_DIR = REPO_ROOT / "gold_export"
-ZIP_PATH = OUTPUT_DIR / "gold_export.zip"
+OUTPUT_ROOT = REPO_ROOT / "gold_export"
+OUTPUT_DIR = OUTPUT_ROOT / "layer2_new_values"
+ZIP_PATH = OUTPUT_ROOT / "layer2_new_values.zip"
 
 log = get_logger(dataset_id=DATASET_ID, zone=ZONE)
+
+GENERATED_FILES = {
+    "cost_values.csv",
+    "consumption_values.csv",
+    "investment_coefficients.json",
+    "export_coefficients.json",
+    "income_productivity.json",
+    "income_salary.json",
+}
 
 
 @contextmanager
@@ -64,55 +74,53 @@ def _write_json(path: Path, payload) -> None:
         json.dump(payload, fh, ensure_ascii=False, indent=2, default=float)
 
 
-def export_cost_coefficients() -> Path:
+def export_cost_values(output_dir: Path | None = None) -> Path:
+    output_dir = OUTPUT_DIR if output_dir is None else output_dir
     df = _read(
         "pa_coeficientes_custo",
-        "SELECT ano, nome_regiao_integracao, tipo_coeff, coeff "
+        "SELECT ano, nome_regiao_integracao, tipo_coeff, valor "
         "FROM pa_coeficientes_custo.preparacao_camada_custo",
     )
-    out = OUTPUT_DIR / "cost_coefficients.csv"
+    out = output_dir / "cost_values.csv"
     df.to_csv(out, index=False, encoding="utf-8")
-    log.info("export.cost_coefficients", rows=len(df), path=str(out))
+    log.info("export.cost_values", rows=len(df), path=str(out))
     return out
 
 
-def export_consumption_coefficients() -> Path:
+def export_consumption_values(output_dir: Path | None = None) -> Path:
+    output_dir = OUTPUT_DIR if output_dir is None else output_dir
     df = _read(
         "br_coeficientes_consumo",
-        "SELECT ano, coeff_key, coeff "
+        "SELECT ano, coeff_key, valor "
         "FROM br_coeficientes_consumo.preparacao_camada_consumo",
     )
     if df["ano"].nunique() > 1:
         latest = int(df["ano"].max())
-        log.info("export.consumption_coefficients.pick_year", year=latest)
+        log.info("export.consumption_values.pick_year", year=latest)
         df = df[df["ano"] == latest]
 
-    wide = (
-        df.set_index("coeff_key")["coeff"]
-        .astype(float)
-        .to_frame()
-        .T.reset_index(drop=True)
-    )
-    out = OUTPUT_DIR / "consumption_coefficients.csv"
-    wide.to_csv(out, index=False, encoding="utf-8")
-    log.info("export.consumption_coefficients", cols=len(wide.columns), path=str(out))
+    out = output_dir / "consumption_values.csv"
+    df.to_csv(out, index=False, encoding="utf-8")
+    log.info("export.consumption_values", rows=len(df), path=str(out))
     return out
 
 
-def export_investment_coefficients() -> Path:
+def export_investment_coefficients(output_dir: Path | None = None) -> Path:
+    output_dir = OUTPUT_DIR if output_dir is None else output_dir
     df = _read(
         "br_coeficientes_investimento",
         "SELECT coeff_key, coeff "
         "FROM br_coeficientes_investimento.coeficientes_investimento",
     )
     payload = {row["coeff_key"]: float(row["coeff"]) for _, row in df.iterrows()}
-    out = OUTPUT_DIR / "investment_coefficients.json"
+    out = output_dir / "investment_coefficients.json"
     _write_json(out, payload)
     log.info("export.investment_coefficients", keys=len(payload), path=str(out))
     return out
 
 
-def export_export_coefficients() -> Path:
+def export_export_coefficients(output_dir: Path | None = None) -> Path:
+    output_dir = OUTPUT_DIR if output_dir is None else output_dir
     df = _read(
         "br_coeficientes_exportacao",
         "SELECT ano, produto, valor_fob_dolar, valor_fob_real "
@@ -132,7 +140,7 @@ def export_export_coefficients() -> Path:
             }
             for _, r in grp.iterrows()
         ]
-    out = OUTPUT_DIR / "export_coefficients.json"
+    out = output_dir / "export_coefficients.json"
     _write_json(out, payload)
     log.info("export.export_coefficients", years=len(payload), path=str(out))
     return out
@@ -152,25 +160,27 @@ def _yearly_series(table: str) -> dict[str, dict[str, float]]:
     return payload
 
 
-def export_income_productivity() -> Path:
+def export_income_productivity(output_dir: Path | None = None) -> Path:
+    output_dir = OUTPUT_DIR if output_dir is None else output_dir
     payload = _yearly_series("renda_produtividade")
-    out = OUTPUT_DIR / "income_productivity.json"
+    out = output_dir / "income_productivity.json"
     _write_json(out, payload)
     log.info("export.income_productivity", years=len(payload), path=str(out))
     return out
 
 
-def export_income_salary() -> Path:
+def export_income_salary(output_dir: Path | None = None) -> Path:
+    output_dir = OUTPUT_DIR if output_dir is None else output_dir
     payload = _yearly_series("renda_salario")
-    out = OUTPUT_DIR / "income_salary.json"
+    out = output_dir / "income_salary.json"
     _write_json(out, payload)
     log.info("export.income_salary", years=len(payload), path=str(out))
     return out
 
 
 GENERATORS = (
-    export_cost_coefficients,
-    export_consumption_coefficients,
+    export_cost_values,
+    export_consumption_values,
     export_investment_coefficients,
     export_export_coefficients,
     export_income_productivity,
@@ -178,24 +188,52 @@ GENERATORS = (
 )
 
 
-def bundle_zip() -> Path:
-    if ZIP_PATH.exists():
-        ZIP_PATH.unlink()
-    files = sorted(p for p in OUTPUT_DIR.iterdir() if p.is_file())
-    with zipfile.ZipFile(ZIP_PATH, "w", zipfile.ZIP_DEFLATED) as zf:
+def bundle_zip(output_dir: Path | None = None, zip_path: Path | None = None) -> Path:
+    output_dir = OUTPUT_DIR if output_dir is None else output_dir
+    zip_path = ZIP_PATH if zip_path is None else zip_path
+    if zip_path.exists():
+        zip_path.unlink()
+    files = sorted(
+        p
+        for p in output_dir.iterdir()
+        if p.is_file() and not p.name.startswith(".~lock.")
+    )
+    with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
         for f in files:
-            zf.write(f, arcname=f"gold_export/{f.name}")
-    log.info("export.zip", files=len(files), path=str(ZIP_PATH))
-    return ZIP_PATH
+            zf.write(f, arcname=f"gold_export/{output_dir.name}/{f.name}")
+    log.info("export.zip", files=len(files), path=str(zip_path))
+    return zip_path
+
+
+def _clean_output_dir(output_dir: Path) -> None:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    for path in output_dir.glob(".~lock.*"):
+        path.unlink()
+    for filename in GENERATED_FILES:
+        path = output_dir / filename
+        if path.exists():
+            path.unlink()
+
+
+def _run_package(
+    output_dir: Path,
+    zip_path: Path,
+    generators: tuple,
+) -> Path:
+    log.info("package.start", output_dir=str(output_dir))
+    _clean_output_dir(output_dir)
+    for gen in generators:
+        gen(output_dir)
+    out = bundle_zip(output_dir, zip_path)
+    log.info("package.end", output_dir=str(output_dir), zip=str(out))
+    return out
 
 
 def flow() -> None:
-    log.info("flow.start", output_dir=str(OUTPUT_DIR))
-    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    log.info("flow.start", output_root=str(OUTPUT_ROOT))
+    OUTPUT_ROOT.mkdir(parents=True, exist_ok=True)
     try:
-        for gen in GENERATORS:
-            gen()
-        bundle_zip()
+        _run_package(OUTPUT_DIR, ZIP_PATH, GENERATORS)
     except Exception as exc:
         log.exception("flow.error", error=str(exc))
         raise

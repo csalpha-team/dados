@@ -15,6 +15,7 @@ done
 echo "Processing SQL template with zone names:"
 echo "  - Dados Brutos: $DB_RAW_ZONE"
 echo "  - Dados Tratados: $DB_TRUSTED_ZONE"
+echo "  - Dados Gold: ${DB_GOLD_ZONE:-$DB_AGREGATED_ZONE}"
 echo "  - Dados Agregados: $DB_AGREGATED_ZONE"
 echo "  - Dados de Saída do Algoritmo: $DB_OUTPUT_ZONE"
 
@@ -29,5 +30,14 @@ cat /docker-entrypoint-initdb.d/init.sql.template | \
 
 # Run the processed SQL script through psql
 psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "postgres" -f /tmp/init_processed.sql
+
+if [ -n "$DB_GOLD_ZONE" ] && [ "$DB_GOLD_ZONE" != "$DB_AGREGATED_ZONE" ]; then
+  echo "Creating compatibility gold database: $DB_GOLD_ZONE"
+  psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "postgres" <<SQL
+SELECT 'CREATE DATABASE ${DB_GOLD_ZONE}'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '${DB_GOLD_ZONE}')\gexec
+GRANT ALL PRIVILEGES ON DATABASE ${DB_GOLD_ZONE} TO ${POSTGRES_USER};
+SQL
+fi
 
 echo "Zone architecture databases created successfully!"

@@ -1,4 +1,4 @@
-"""Gold flow: pa_coeficientes_custo — coeficientes de custo por região de integração.
+"""Gold flow: pa_coeficientes_custo — valores de custo por região de integração.
 
 Previously this flow read from gold ``pa_indexadores_custo_producao_rural``
 (a gold→gold dependency). It now reads silver ``al_ibge_censoagro`` directly
@@ -20,8 +20,8 @@ from dados.gold.pa_coeficientes_custo.models import (
     PaCoeficientesCustoPreparacaoCamadaCusto,
 )
 from dados.gold.pa_coeficientes_custo.utils import (
-    agregar_coeficientes_regional_mais_recente,
-    calcular_coeficientes_municipais,
+    agregar_valores_regionais,
+    calcular_valores_municipais,
     carregar_parametros_custo,
     clean_region_name,
     expandir_coeficientes,
@@ -77,21 +77,19 @@ def transform(df: pd.DataFrame) -> pd.DataFrame:
             clean_region_name
         )
 
-    valor_para_chave, rename_map, total_expense_label = carregar_parametros_custo(
+    value_to_key_map, rename_map, total_expense_label = carregar_parametros_custo(
         CONFIG_PATH
     )
-
-    coeff_agrupados = calcular_coeficientes_municipais(
+    valores_agrupados = calcular_valores_municipais(
         df, total_expense_label=total_expense_label
     )
-    coeff_agrupados["nome_regiao_integracao"] = coeff_agrupados[
+    valores_agrupados["nome_regiao_integracao"] = valores_agrupados[
         "nome_regiao_integracao"
     ].replace(rename_map)
 
-    coeff_df = expandir_coeficientes(coeff_agrupados, valor_para_chave)
-    final = agregar_coeficientes_regional_mais_recente(coeff_df)
-
-    return final[list(MODEL.model_fields.keys())].copy()
+    value_df = expandir_coeficientes(valores_agrupados, value_to_key_map)
+    values = agregar_valores_regionais(value_df)
+    return values[list(MODEL.model_fields.keys())].copy()
 
 
 def validate(df: pd.DataFrame) -> pd.DataFrame:
@@ -104,7 +102,7 @@ def validate(df: pd.DataFrame) -> pd.DataFrame:
         log.error("validate.error", reason="duplicate_pk", count=int(dupes.sum()))
         raise ValueError(f"Found {int(dupes.sum())} rows duplicating PK {PK_COLS}")
 
-    df["coeff"] = df["coeff"].apply(lambda v: None if pd.isna(v) else Decimal(str(v)))
+    df["valor"] = df["valor"].apply(lambda v: None if pd.isna(v) else Decimal(str(v)))
     [MODEL(**r) for r in df.to_dict("records")]
     return df
 

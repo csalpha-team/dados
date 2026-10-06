@@ -46,3 +46,12 @@ gold_export
 benchmark/
 gold_export_l1/
 resultados/
+
+# local Codex skills
+.codex/skills/
+
+# dumps locais da camada gold
+gold_export*
+
+# artefatos locais de exploração
+exploracao_*
