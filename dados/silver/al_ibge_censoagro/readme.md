@@ -12,7 +12,7 @@ Tabelas no escopo (uma por agregado/ano):
 | Lavoura permanente | `227` | `tbl_2518_2006` (2518) | `tbl_6955_2017` (6955) |
 | Lavoura temporária | `226` | `tbl_2284_2006` (2284), `tbl_2337_2006` (2237) | `tbl_6957_2017` (6957) |
 
-As demais tabelas do dataset (`tbl_1909/1931/2782/2006`, `tbl_6885/6898/6899/2017`) só têm
+As demais tabelas do dataset (`tbl_1909/1931/2782/2006`, `tbl_6885/6888/6897/6898/6899/2017`) só têm
 contagem de estabelecimentos e valores monetários — **não têm unidade física** e ficam fora
 deste tratamento.
 

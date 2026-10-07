@@ -344,6 +344,47 @@ class AlIbgeCensoagroTbl68982017(BaseModel):
     )
 
 
+class AlIbgeCensoagroTbl68882017(BaseModel):
+    """Pessoal ocupado por grupo de atividade econômica — 2017."""
+
+    ano: int = Field(description="Reference year", json_schema_extra={"unit": "YYYY"})
+    id_municipio: str = Field(
+        description="IBGE 7-digit municipality code", json_schema_extra={"unit": "code"}
+    )
+    grupo_atividade_economica: str = Field(
+        description="IBGE economic activity group (classification 12517), incl. 'Total'",
+        json_schema_extra={"unit": "code"},
+    )
+    pessoal_ocupado: Decimal | None = Field(
+        description="Persons employed on farms",
+        json_schema_extra={"unit": "head_count"},
+    )
+    quantidade_estabelecimentos: Decimal | None = Field(
+        description="Number of farms", json_schema_extra={"unit": "head_count"}
+    )
+
+
+class AlIbgeCensoagroTbl68972017(BaseModel):
+    """Valor da produção por grupo de atividade econômica — 2017."""
+
+    ano: int = Field(description="Reference year", json_schema_extra={"unit": "YYYY"})
+    id_municipio: str = Field(
+        description="IBGE 7-digit municipality code", json_schema_extra={"unit": "code"}
+    )
+    grupo_atividade_economica: str = Field(
+        description="IBGE economic activity group (classification 12517), incl. 'Total'",
+        json_schema_extra={"unit": "code"},
+    )
+    quantidade_estabelecimentos_produtivos: Decimal | None = Field(
+        description="Number of producing farms",
+        json_schema_extra={"unit": "head_count"},
+    )
+    valor_producao: Decimal | None = Field(
+        description="Value of production, in thousands of BRL (IBGE source unit 'Mil Reais')",
+        json_schema_extra={"unit": "1000xBRL"},
+    )
+
+
 class AlIbgeCensoagroTbl68992017(AlIbgeCensoagroTbl19092006):
     """2017 expenditure table — same columns as 1909/2006."""
 
