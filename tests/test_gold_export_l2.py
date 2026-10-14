@@ -92,6 +92,34 @@ class GoldExportL2Tests(unittest.TestCase):
         self.assertTrue(any("renda_produtividade" in q for q in queries))
         self.assertTrue(any("renda_salario" in q for q in queries))
 
+    def test_rural_employment_coefficients_export_preserves_all_dimensions(self) -> None:
+        source = pd.DataFrame(
+            {
+                "ano": [2017],
+                "id_municipio": ["1500107"],
+                "nome": ["Abaetetuba"],
+                "nome_regiao_integracao": ["Tocantins"],
+                "sigla_uf": ["PA"],
+                "grupo_atividade_economica": ["Produção de lavouras temporárias"],
+                "pessoal_ocupado": [20.0],
+                "quantidade_estabelecimentos": [8.0],
+                "quantidade_estabelecimentos_produtivos": [7.0],
+                "valor_producao": [1000.0],
+                "coeficiente_tecnico": [50.0],
+            }
+        )
+
+        with tempfile.TemporaryDirectory() as tmp:
+            output_dir = Path(tmp)
+            with patch.object(dump_gold_l2, "_read", return_value=source):
+                out = dump_gold_l2.export_rural_employment_technical_coefficients(
+                    output_dir
+                )
+
+            exported = pd.read_csv(out, dtype={"id_municipio": str})
+
+        pd.testing.assert_frame_equal(exported, source)
+
     def test_bundle_zip_scopes_files_to_package_directory(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             output_dir = Path(tmp) / "layer2_new_values"
