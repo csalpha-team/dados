@@ -24,6 +24,9 @@ FLOWS=(
   dados.gold.pa_indexadores_producao_rural.pevs_extracao_vegetal
   dados.gold.pa_indexadores_custo_producao_rural.censo_2006_2017_despesas
   dados.gold.pa_indexadores_valor_producao_rural.censo_2006_2017_valor_producao
+  dados.gold.pa_indexadores_valor_producao_rural.censo_2017_pessoal_ocupado_grupo_atividade
+  dados.gold.pa_indexadores_valor_producao_rural.censo_2017_valor_producao_grupo_atividade
+  dados.gold.pa_coeficientes_emprego_rural.censo_2017_grupo_atividade
   dados.gold.pa_indexadores_valor_producao_rural.censo_2017_pessoal_ocupado_producao_rural
   dados.gold.pa_servicos_industria_comercio.pac_comercio
   dados.gold.pa_servicos_industria_comercio.pas_servicos
