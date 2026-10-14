@@ -9,6 +9,8 @@ package under ``gold_export/layer2_new_values/``:
 - ``export_coefficients.json``      (br_coeficientes_exportacao.preparacao_camada_exportacao)
 - ``income_productivity.json``      (br_coeficientes_renda.renda_produtividade)
 - ``income_salary.json``            (br_coeficientes_renda.renda_salario)
+- ``rural_employment_technical_coefficients.csv``
+  (pa_coeficientes_emprego_rural.censo_2017_grupo_atividade)
 
 The three ``*_incidence.json`` files and ``l2_input_schemas_examples.md``
 already living in the output directory are exogenous configuration — this flow
@@ -49,6 +51,7 @@ GENERATED_FILES = {
     "export_coefficients.json",
     "income_productivity.json",
     "income_salary.json",
+    "rural_employment_technical_coefficients.csv",
 }
 
 
@@ -178,6 +181,25 @@ def export_income_salary(output_dir: Path | None = None) -> Path:
     return out
 
 
+def export_rural_employment_technical_coefficients(
+    output_dir: Path | None = None,
+) -> Path:
+    """Export the 2017 Censo technical employment coefficients as flat data."""
+    output_dir = OUTPUT_DIR if output_dir is None else output_dir
+    df = _read(
+        "pa_coeficientes_emprego_rural",
+        "SELECT ano, id_municipio, nome, nome_regiao_integracao, sigla_uf, "
+        "grupo_atividade_economica, pessoal_ocupado, quantidade_estabelecimentos, "
+        "quantidade_estabelecimentos_produtivos, valor_producao, coeficiente_tecnico "
+        "FROM pa_coeficientes_emprego_rural.censo_2017_grupo_atividade "
+        "ORDER BY ano, id_municipio, grupo_atividade_economica",
+    )
+    out = output_dir / "rural_employment_technical_coefficients.csv"
+    df.to_csv(out, index=False, encoding="utf-8")
+    log.info("export.rural_employment_technical_coefficients", rows=len(df), path=str(out))
+    return out
+
+
 GENERATORS = (
     export_cost_values,
     export_consumption_values,
@@ -185,6 +207,7 @@ GENERATORS = (
     export_export_coefficients,
     export_income_productivity,
     export_income_salary,
+    export_rural_employment_technical_coefficients,
 )
 
 

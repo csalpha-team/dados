@@ -13,6 +13,8 @@ FLOWS=(
   dados.raw.al_ibge_censoagro.tbl_2518_2006
   dados.raw.al_ibge_censoagro.tbl_2782_2006
   dados.raw.al_ibge_censoagro.tbl_6885_2017
+  dados.raw.al_ibge_censoagro.tbl_6888_2017
+  dados.raw.al_ibge_censoagro.tbl_6897_2017
   dados.raw.al_ibge_censoagro.tbl_6898_2017
   dados.raw.al_ibge_censoagro.tbl_6899_2017
   dados.raw.al_ibge_censoagro.tbl_6949_2017

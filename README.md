@@ -237,6 +237,7 @@ para a Layer 2 calcular os coeficientes no contexto de aplicação.
 | `export_coefficients.json`        | `br_coeficientes_exportacao.preparacao_camada_exportacao`          | JSON por ano |
 | `income_productivity.json`        | `br_coeficientes_renda.renda_produtividade`                        | JSON por ano |
 | `income_salary.json`              | `br_coeficientes_renda.renda_salario`                              | JSON por ano |
+| `rural_employment_technical_coefficients.csv` | `pa_coeficientes_emprego_rural.censo_2017_grupo_atividade` | CSV por município e grupo |
 
 Comportamento do flow:
 
