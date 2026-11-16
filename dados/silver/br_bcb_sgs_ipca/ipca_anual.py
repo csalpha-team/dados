@@ -45,7 +45,9 @@ def transform(df: pd.DataFrame) -> pd.DataFrame:
     required = {"data_referencia", "variacao_mensal_pct"}
     missing = required.difference(df.columns)
     if missing:
-        raise ValueError(f"Colunas obrigatorias ausentes no IPCA raw: {sorted(missing)}")
+        raise ValueError(
+            f"Colunas obrigatorias ausentes no IPCA raw: {sorted(missing)}"
+        )
     if df.empty:
         raise ValueError("O IPCA raw esta vazio")
 

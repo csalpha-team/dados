@@ -18,7 +18,7 @@ class MonetaryCorrectionConfig:
 
     enabled: bool = True
     series_code: int = 433
-    anchor_year: int = 2022
+    anchor_year: int = 2024
 
 
 def construir_fatores_correcao_ipca(
@@ -53,7 +53,9 @@ def construir_fatores_correcao_ipca(
             .unique()
             .tolist()
         )
-        raise ValueError(f"A tabela anual do IPCA contem anos duplicados: {duplicated_years}")
+        raise ValueError(
+            f"A tabela anual do IPCA contem anos duplicados: {duplicated_years}"
+        )
     if (normalized["indice_ipca"] <= 0).any():
         raise ValueError("A tabela anual do IPCA contem indice nao positivo")
 
@@ -79,18 +81,24 @@ def construir_fatores_correcao_ipca(
     selected = normalized.loc[normalized["ano"].isin(required_years)].copy()
     if "ano_completo" in selected.columns:
         complete_values = selected["ano_completo"].map(
-            lambda value: value
-            if isinstance(value, (bool, np.bool_))
-            else str(value).strip().lower() in {"true", "t", "1"}
+            lambda value: (
+                value
+                if isinstance(value, (bool, np.bool_))
+                else str(value).strip().lower() in {"true", "t", "1"}
+            )
         )
         incomplete = selected.loc[~complete_values, "ano"].tolist()
         if incomplete:
-            raise ValueError(f"IPCA anual incompleto para os anos: {sorted(incomplete)}")
+            raise ValueError(
+                f"IPCA anual incompleto para os anos: {sorted(incomplete)}"
+            )
     if "meses_observados" in selected.columns:
         month_counts = pd.to_numeric(selected["meses_observados"], errors="coerce")
         incomplete = selected.loc[month_counts.ne(12), "ano"].tolist()
         if incomplete:
-            raise ValueError(f"IPCA anual nao possui 12 meses nos anos: {sorted(incomplete)}")
+            raise ValueError(
+                f"IPCA anual nao possui 12 meses nos anos: {sorted(incomplete)}"
+            )
 
     index_by_year = selected.set_index("ano")["indice_ipca"].sort_index()
     anchor_index = float(index_by_year.loc[config.anchor_year])

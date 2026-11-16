@@ -3,6 +3,7 @@
 Pure functions with no I/O — safe to import from any zone.
 """
 
+import numpy as np
 import pandas as pd
 
 
@@ -25,6 +26,40 @@ def currency_fix(row):
         return row["valor_producao"] / (1000 * 2.75)
     else:
         return row["valor_producao"]
+
+
+def currency_fix_series(ano: pd.Series, valor_producao: pd.Series) -> pd.Series:
+    """Versão vetorizada de :func:`currency_fix`.
+
+    Mesmos cortes de ano e mesmos divisores, aplicados de uma vez com
+    ``numpy.select``. O caminho linha a linha (``df.apply(..., axis=1)``) criava
+    uma Series intermediária por linha e dominava tempo e memória nos datasets
+    grandes — PAM e PEVS passam de 1,7 milhão de linhas no silver.
+    """
+    anos = pd.to_numeric(ano, errors="coerce")
+    valores = pd.to_numeric(valor_producao, errors="coerce")
+
+    condicoes = [
+        anos.between(1974, 1985),
+        anos.between(1986, 1988),
+        anos.eq(1989),
+        anos.between(1990, 1992),
+        anos.eq(1993),
+    ]
+    divisores = [
+        1000**4 * 2.75,
+        1000**3 * 2.75,
+        1000**2 * 2.75,
+        1000**2 * 2.75,
+        1000 * 2.75,
+    ]
+    escolhas = [valores / divisor for divisor in divisores]
+
+    return pd.Series(
+        np.select(condicoes, escolhas, default=valores),
+        index=valor_producao.index,
+        dtype="float64",
+    )
 
 
 def products_weight_ratio_fix(row):

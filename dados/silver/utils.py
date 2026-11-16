@@ -5,6 +5,7 @@ from typing import List
 from dados.utils.agricultural_conversions import (
     censo_quantity_to_weight,
     currency_fix,
+    currency_fix_series,
     pevs_volume_to_weight,
     products_weight_ratio_fix,
 )
@@ -13,6 +14,7 @@ __all__ = [
     "fix_ibge_digits",
     "fix_ibge_x_digit",
     "currency_fix",
+    "currency_fix_series",
     "products_weight_ratio_fix",
     "pevs_volume_to_weight",
     "censo_quantity_to_weight",

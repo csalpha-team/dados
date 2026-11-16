@@ -159,9 +159,7 @@ def _plot_employment_inputs(
     pac_projected = _employment_projection(pac, years)
 
     series = {
-        "Indústria (CNAEs usados)": _sum_prefixes(
-            pia_projected, {"10", "11", "20"}
-        ),
+        "Indústria (CNAEs usados)": _sum_prefixes(pia_projected, {"10", "11", "20"}),
         "Comércio atacadista": _sum_prefixes(pac_projected, {"3"}),
         "Comércio varejista": _sum_prefixes(pac_projected, {"4"}),
     }
@@ -191,7 +189,9 @@ def _plot_employment_inputs(
 
     total = sum(series.values())
     total_axis = axes.flat[-1]
-    total_axis.plot(total.index, total.values, color="#4c78a8", linewidth=3.2, alpha=0.45)
+    total_axis.plot(
+        total.index, total.values, color="#4c78a8", linewidth=3.2, alpha=0.45
+    )
     total_axis.plot(
         total.index,
         total.values,

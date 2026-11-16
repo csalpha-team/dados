@@ -10,7 +10,9 @@ from unittest.mock import patch
 
 import pandas as pd
 
-sys.modules.setdefault("dotenv", types.SimpleNamespace(load_dotenv=lambda *a, **k: None))
+sys.modules.setdefault(
+    "dotenv", types.SimpleNamespace(load_dotenv=lambda *a, **k: None)
+)
 sys.modules.setdefault(
     "loguru",
     types.SimpleNamespace(
@@ -21,7 +23,7 @@ sys.modules.setdefault(
                 info=lambda *a, **k: None,
                 error=lambda *a, **k: None,
                 exception=lambda *a, **k: None,
-            )
+            ),
         )
     ),
 )

@@ -27,6 +27,9 @@ URL = (
     "https://servicodados.ibge.gov.br/api/v3/agregados/2715/periodos/{}/variaveis/"
     "630|631|672|673?localidades=N1[all]&classificacao=12354[all]|12355[all]"
 )
+# Serie antiga da PAS: 2007-2023. O IBGE rompeu a serie no ano de referencia 2024
+# (Nota Tecnica PAS 01/2026); 2024 em diante vive no agregado 10762 (tbl_10762.py).
+# range() e exclusivo no fim, entao YEAR_END = 2024 busca ate 2023 - isso e proposital.
 YEAR_START = 2007
 YEAR_END = 2024
 

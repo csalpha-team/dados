@@ -10,6 +10,15 @@
 # ex. Censo Agro 2006 - 2017 : Erva-mate
 # A padronização do nome foi feita considerando o censo como referência
 
+# NOTE: Regra para produto novo em PAM/PEVS (safra 2025 trouxe 24 deles):
+# se o censo já coleta a mesma espécie/parte, reusa-se EXATAMENTE o nome
+# padronizado do dicionário do censo correspondente — é isso que permite o
+# casamento censo x série anual no gold. Só quando o censo não coleta o produto
+# é que se cria um nome novo, no padrão {produto}-{informação adicional}.
+# Sem par no censo hoje: "cajá-fruto" (PEVS) e as olerícolas da PAM temporária
+# (alface, cenoura, chuchu, inhame, milho verde, morango, pimentão, repolho),
+# que o Censo Agro apura em tabela própria, fora de 6957/2337.
+
 
 ### EXTRAÇÃO VEGETAL
 
@@ -34,61 +43,77 @@ CENSO_KG_POR_FRUTO = {
     "jaca": 8.0,
 }
 
+# NOTE: A PEVS é chaveada por ``id_produto`` (id da categoria da classificação
+# 193 do agregado 289), e não pelo rótulo. O IBGE renumera os rótulos quando
+# insere produtos novos — em 2025, por exemplo, "Castanha-de-caju" passou de
+# "1.2" para "1.5" —, o que quebrava silenciosamente o mapeamento por nome.
+# Os ids são estáveis. O comentário ao lado de cada entrada traz o rótulo
+# vigente, apenas para leitura humana.
 dicionario_produtos_pevs = {
-    "1 - Alimentícios": "1-alimentícios",
-    "1.1 - Açaí (fruto)": "açaí-fruto",
-    "1.10 - Outros": "outros alimentícios",
-    "1.2 - Castanha-de-caju": "castanha de caju",
-    "1.3 - Castanha-do-pará": "castanha do pará",
-    "1.4 - Erva-mate": "erva-mate",
-    "1.5 - Mangaba (fruto)": "mangaba-fruto",
-    "1.6 - Palmito": "palmito",
-    "1.7 - Pequi (fruto)": "pequi-fruto",
-    "1.8 - Pinhão": "pinhão",
-    "1.9 - Umbu (fruto)": "umbu",
-    "10 - Tanantes": "10-tanantes",
-    "10.1 - Angico (casca)": "angico-casca",
-    "10.2 - Barbatimão (casca)": "barbatimão-casca",
-    "10.3 - Outros": "outros tanantes",
-    "2 - Aromáticos, medicinais, tóxicos e corantes": "2-aromáticos, medicinais e corantes",
-    "2.1 - Ipecacuanha ou poaia (raiz)": "ipecacuanha-raiz",
-    "2.2 - Jaborandi (folha)": "jaborandi",
-    "2.3 - Urucum (semente)": "urucum",
-    "2.4 - Outros": "outros aromáticos, medicinais e corantes",
-    "3 - Borrachas": "3-borrachas",
-    "3.1 - Caucho": "caucho",
-    "3.2 - Hevea (látex coagulado)": "borracha-latéx coagulado",
-    "3.3 - Hevea (látex líquido)": "borracha-latéx líquido",
-    "3.4 - Mangabeira": "mangabeira",
-    "4 - Ceras": "4-ceras",
-    "4.1 - Carnaúba (cera)": "carnaúba-cera",
-    "4.2 - Carnaúba (pó)": "carnaúba-pó",
-    "4.3 - Outras": "outras ceras",
-    "5 - Fibras": "5-fibras",
-    "5.1 - Buriti": "buriti",
-    "5.2 - Carnaúba": "carnaúba",
-    "5.3 - Piaçava": "piaçava",
-    "5.4 - Outras": "outras fibras",
-    "6 - Gomas não elásticas": "6-gomas não elásticas",
-    "6.1 - Balata": "balata",
-    "6.2 - Maçaranduba": "maçaranduba",
-    "6.3 - Sorva": "sorva",
-    "7.1 - Carvão vegetal": "carvão vegetal",
-    "7.2 - Lenha": "lenha",
-    "7.3 - Madeira em tora": "madeira-tora",
-    "8 - Oleaginosos": "8-oleaginosos",
-    "8.1 - Babaçu (amêndoa)": "babaçu-amêndoa",
-    "8.2 - Copaíba (óleo)": "copaíba-óleo",
-    "8.3 - Cumaru (amêndoa)": "cumaru-amêndoa",
-    "8.4 - Licuri (coquilho)": "licuri-coquilho",
-    "8.5 - Oiticica (semente)": "oiticica",
-    "8.6 - Pequi (amêndoa)": "pequi-amêndoa",
-    "8.7 - Tucum (amêndoa)": "tucum-amêndoa",
-    "8.8 - Outros": "outros oleaginosos",
-    "9.1 - Pinheiro brasileiro (nó de pinho)": "pinheiro brasileiro-nó de pinho",
-    "9.2 - Pinheiro brasileiro (árvores abatidas)": "pinheiro brasileiro-árvores abatidas",
-    "9.3 - Pinheiro brasileiro (madeira em tora)": "pinheiro brasileiro-madeira em tora",
-    "Total": "total",
+    "0": "total",  # Total
+    "3402": "1-alimentícios",  # 1 - Alimentícios
+    "3403": "açaí-fruto",  # 1.1 - Açaí (fruto)
+    "83410": "baru-amêndoa",  # 1.2 - Baru ou Cumaru (amêndoa)
+    "83411": "buriti-coco",  # 1.3 - Buriti (fruto)
+    "83412": "cajá-fruto",  # 1.4 - Cajá (fruto)
+    "3404": "castanha de caju",  # 1.5 - Castanha-de-caju
+    "3405": "castanha do pará",  # 1.6 - Castanha-do-pará
+    "83413": "cupuaçu",  # 1.7 - Cupuaçu (fruto)
+    "3406": "erva-mate",  # 1.8 - Erva-mate
+    "83414": "juçara-fruto",  # 1.9 - Juçara (fruto)
+    "83415": "macaúba-fruto",  # 1.10 - Macaúba (fruto)
+    "3407": "mangaba-fruto",  # 1.11 - Mangaba (fruto)
+    "3408": "palmito",  # 1.12 - Palmito
+    "39409": "pequi-fruto",  # 1.13 - Pequi (fruto)
+    "3409": "pinhão",  # 1.14 - Pinhão
+    "83416": "pupunha-coco",  # 1.15 - Pupunha (fruto)
+    "83417": "tucumã",  # 1.16 - Tucumã ou Tucum (fruto)
+    "3410": "umbu",  # 1.17 - Umbu (fruto)
+    "11296": "outros alimentícios",  # 1.18 - Outros
+    "3411": "2-aromáticos, medicinais e corantes",  # 2 - Aromáticos, medicinais, tóxicos e corantes
+    "3412": "ipecacuanha-raiz",  # 2.1 - Ipecacuanha ou poaia (raiz)
+    "3413": "jaborandi",  # 2.2 - Jaborandi (folha)
+    "3414": "urucum",  # 2.3 - Urucum (semente)
+    "3415": "outros aromáticos, medicinais e corantes",  # 2.4 - Outros
+    "3416": "3-borrachas",  # 3 - Borrachas
+    "3417": "caucho",  # 3.1 - Caucho
+    "3418": "borracha-latéx coagulado",  # 3.2 - Hevea (látex coagulado)
+    "3419": "borracha-latéx líquido",  # 3.3 - Hevea (látex líquido)
+    "40524": "mangabeira",  # 3.4 - Mangabeira
+    "3420": "4-ceras",  # 4 - Ceras
+    "3421": "carnaúba-cera",  # 4.1 - Carnaúba (cera)
+    "3422": "carnaúba-pó",  # 4.2 - Carnaúba (pó)
+    "110011": "outras ceras",  # 4.3 - Outras
+    "3423": "5-fibras",  # 5 - Fibras
+    "3424": "buriti",  # 5.1 - Buriti (fibra)
+    "3425": "carnaúba",  # 5.2 - Carnaúba (fibra)
+    "3426": "piaçava",  # 5.3 - Piaçava
+    "3427": "outras fibras",  # 5.4 - Outras
+    "3428": "6-gomas não elásticas",  # 6 - Gomas não elásticas
+    "3429": "balata",  # 6.1 - Balata
+    "3430": "maçaranduba",  # 6.2 - Maçaranduba
+    "3431": "sorva",  # 6.3 - Sorva
+    "3433": "carvão vegetal",  # 7.1 - Carvão vegetal
+    "3434": "lenha",  # 7.2 - Lenha
+    "3435": "madeira-tora",  # 7.3 - Madeira em tora
+    "3438": "8-oleaginosos",  # 8 - Oleaginosos
+    "83418": "andiroba-semente",  # 8.1 - Andiroba (amêndoa)
+    "3439": "babaçu-amêndoa",  # 8.2 - Babaçu (amêndoa)
+    "3440": "copaíba-óleo",  # 8.3 - Copaíba (óleo)
+    "3441": "cumaru-amêndoa",  # 8.4 - Cumaru (amêndoa)
+    "3442": "licuri-coquilho",  # 8.5 - Licuri (coquilho)
+    "83419": "murumuru-semente",  # 8.6 - Murumuru
+    "3443": "oiticica",  # 8.7 - Oiticica (semente)
+    "3444": "pequi-amêndoa",  # 8.8 - Pequi (amêndoa)
+    "3445": "tucum-amêndoa",  # 8.9 - Tucum (amêndoa)
+    "3446": "outros oleaginosos",  # 8.10 - Outros
+    "3448": "pinheiro brasileiro-nó de pinho",  # 9.1
+    "3449": "pinheiro brasileiro-árvores abatidas",  # 9.2
+    "3450": "pinheiro brasileiro-madeira em tora",  # 9.3
+    "3451": "10-tanantes",  # 10 - Tanantes
+    "3452": "angico-casca",  # 10.1 - Angico (casca)
+    "3453": "barbatimão-casca",  # 10.2 - Barbatimão (casca)
+    "3454": "outros tanantes",  # 10.3 - Outros
 }
 
 dicionario_produtos_censo_6949_2233 = {
@@ -151,6 +176,7 @@ dicionario_produtos_censo_6949_2233 = {
 
 dicionario_produtos_pam_permanente = {
     "Abacate": "abacate",
+    "Acerola": "acerola",
     "Açaí": "açaí-fruto",
     "Algodão arbóreo (em caroço)": "algodão arbóreo",
     "Azeitona": "azeitona",
@@ -166,10 +192,12 @@ dicionario_produtos_pam_permanente = {
     "Castanha de caju": "castanha de caju",
     "Chá-da-índia (folha verde)": "chá da índia",
     "Coco-da-baía*": "coco da baía",
+    "Cupuaçu": "cupuaçu",
     "Dendê (cacho de coco)": "dendê-coco",
     "Erva-mate (folha verde)": "erva mate",
     "Figo": "figo",
     "Goiaba": "goiaba",
+    "Graviola": "graviola",
     "Guaraná (semente)": "guaraná",
     "Laranja": "laranja",
     "Limão": "limão",
@@ -269,6 +297,8 @@ dicionario_produtos_censo_6955_2518 = {
 ### lAVOURA TEMPORÁRIA
 dicionario_produtos_pam_temporaria = {
     "Abacaxi*": "abacaxi",
+    "Abóbora": "abóbora",
+    "Alface": "alface",
     "Alfafa fenada": "alfafa-fenada",
     "Algodão herbáceo (em caroço)": "algodão herbáceo",
     "Alho": "alho",
@@ -279,14 +309,19 @@ dicionario_produtos_pam_temporaria = {
     "Batata-inglesa": "batata inglesa",
     "Cana-de-açúcar": "cana de açúcar",
     "Cana para forragem": "cana forrageira",
+    "Canola": "colza-canola",
     "Cebola": "cebola",
+    "Cenoura": "cenoura",
     "Centeio (em grão)": "centeio-grão",
     "Cevada (em grão)": "cevada-grão",
+    "Chuchu": "chuchu",
     "Ervilha (em grão)": "ervilha-grão",
     "Fava (em grão)": "fava-grão",
     "Feijão (em grão)": "feijão-grão",
     "Fumo (em folha)": "fumo-folha",
+    "Gergelim": "gergelim-semente",
     "Girassol (em grão)": "girassol-grão",
+    "Inhame": "inhame",
     "Juta (fibra)": "juta-fibra",
     "Linho (semente)": "linho-semente",
     "Malva (fibra)": "malva-fibra",
@@ -295,7 +330,11 @@ dicionario_produtos_pam_temporaria = {
     "Melancia": "melancia",
     "Melão": "melão",
     "Milho (em grão)": "milho-grão",
+    "Milho verde": "milho verde",
+    "Morango": "morango",
+    "Pimentão": "pimentão",
     "Rami (fibra)": "rami-fibra",
+    "Repolho": "repolho",
     "Soja (em grão)": "soja-grão",
     "Sorgo (em grão)": "sorgo-grão",
     "Tomate": "tomate",

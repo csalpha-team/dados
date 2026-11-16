@@ -19,6 +19,7 @@ FLOWS=(
   dados.raw.al_ibge_censoagro.tbl_6955_2017
   dados.raw.al_ibge_censoagro.tbl_6957_2017
   dados.raw.al_ibge_pac.tbl_1407
+  dados.raw.al_ibge_pac.tbl_10653
   dados.raw.al_ibge_pam.lavoura_permanente
   dados.raw.al_ibge_pam.lavoura_temporaria
   dados.raw.al_ibge_pevs.extracao_vegetal
@@ -31,10 +32,13 @@ FLOWS=(
   dados.raw.br_csalpha_diretorios_brasil.prodlist_industria
   dados.raw.br_csalpha_diretorios_brasil.prodlist_pesca
   dados.raw.br_ibge_pas.tbl_2715
+  dados.raw.br_ibge_pas.tbl_10762
   dados.raw.br_ibge_pia.tbl_1848
   dados.raw.br_ibge_pia.tbl_1849
   dados.raw.br_ibge_pia.tbl_1987
   dados.raw.br_ibge_pia.tbl_1988
+  dados.raw.br_ibge_pia.tbl_10454
+  dados.raw.br_ibge_pia.tbl_10457
   dados.raw.br_ibge_pof.tbl_2393
   dados.raw.br_ibge_pof.tbl_6715_2018
   dados.raw.br_ibge_pof.tbl_6970

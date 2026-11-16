@@ -29,8 +29,15 @@ FLOWS=(
   dados.silver.al_ibge_pam.lavoura_temporaria
   dados.silver.al_ibge_pevs.extracao_vegetal
   dados.silver.br_ibge_pac.tbl_1407
+  dados.silver.br_ibge_pac.tbl_10653
   dados.silver.br_ibge_pas.tbl_2715
+  dados.silver.br_ibge_pas.tbl_10762
   dados.silver.br_ibge_pia.tbl_1849
+  dados.silver.br_ibge_pia.tbl_10457
+  dados.silver.al_ibge_ppm.efetivo_rebanhos
+  dados.silver.al_ibge_ppm.producao_origem_animal
+  dados.silver.al_ibge_ppm.producao_aquicultura
+  dados.silver.pa_rf_rais.up_rais
   dados.silver.br_ibge_pof.tbl_2393
   dados.silver.br_ibge_pof.tbl_6970
 )
