@@ -400,3 +400,13 @@ class PaIndexadoresExtracaoVegetalPevs(_BaseRow):
     valor_producao: Decimal | None = Field(
         description="Production value (PEVS)", json_schema_extra={"unit": "1000xBRL"}
     )
+
+
+class PaIndexadoresEfetivoRebanhosPpm(_BaseRow):
+    """Efetivo dos rebanhos (PPM, agregado 3939) nos municípios do Pará."""
+
+    produto: str | None = _PRODUTO
+    efetivo_rebanhos: Decimal | None = Field(
+        description="Herd size on Dec 31 (PPM)",
+        json_schema_extra={"unit": "head_count"},
+    )

@@ -78,7 +78,9 @@ def export_cost_values(output_dir: Path | None = None) -> Path:
     output_dir = OUTPUT_DIR if output_dir is None else output_dir
     df = _read(
         "pa_coeficientes_custo",
-        "SELECT ano, nome_regiao_integracao, tipo_coeff, valor "
+        # A tabela gold materializa a coluna como ``coeff``; o contrato do CSV
+        # consumido pela Layer 2 usa ``valor``, então o alias fica aqui.
+        "SELECT ano, nome_regiao_integracao, tipo_coeff, coeff AS valor "
         "FROM pa_coeficientes_custo.preparacao_camada_custo",
     )
     out = output_dir / "cost_values.csv"
@@ -91,7 +93,8 @@ def export_consumption_values(output_dir: Path | None = None) -> Path:
     output_dir = OUTPUT_DIR if output_dir is None else output_dir
     df = _read(
         "br_coeficientes_consumo",
-        "SELECT ano, coeff_key, valor "
+        # Mesmo caso de cost_values: coluna ``coeff`` no gold, ``valor`` no CSV.
+        "SELECT ano, coeff_key, coeff AS valor "
         "FROM br_coeficientes_consumo.preparacao_camada_consumo",
     )
     if df["ano"].nunique() > 1:

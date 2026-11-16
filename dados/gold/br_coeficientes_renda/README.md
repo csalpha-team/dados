@@ -21,20 +21,33 @@ contrato usado pelos dumps da Layer 2: `ano`, `conta_alfa`, `coeff`.
 
 ## Previsão
 
-Os parâmetros pedem uma série anual de `1995` a `2023`, mas as bases PIA/PAC
-usadas aqui começam apenas em `2007`. A PIA termina em 2022 e a PAC em 2023;
-por isso, 2022 é o último ano observado comum e a referência de preços. Os anos
-não observados são imputados antes do cálculo dos coeficientes finais.
+Os parâmetros pedem uma série anual de `1995` a `2024`, mas as bases PIA/PAC
+usadas aqui começam apenas em `2007`. Os anos não observados são imputados
+antes do cálculo dos coeficientes finais.
+
+### Séries antiga e nova do IBGE
+
+O IBGE rompeu as séries da PAC e da PIA-Empresa no ano de referência **2024**
+(Notas Técnicas PAC 01/2026 e PIA-Empresa 01/2026): as tabelas antigas
+(`tbl_1407`, `tbl_1849`) terminam em 2023 e 2024 em diante vem de agregados
+novos (`tbl_10653`, `tbl_10457`). O `extract()` lê as duas séries com
+`UNION ALL`, de modo que 2024 entra como ano **observado**, não projetado.
+
+Isso é seguro aqui porque os coeficientes são razões calculadas dentro de cada
+ano (produção ou salário por pessoa ocupada): a ruptura de nível entre as séries
+não atravessa a razão. Quem precisar dos **níveis** por série deve ler as
+tabelas gold separadas de `pa_servicos_industria_comercio` / `br_servicos`
+(sufixo `_serie_nova`), que nunca misturam as duas.
 
 ## Correção monetária
 
 Antes da previsão, as colunas monetárias são convertidas para preços médios de
-2022 com o IPCA mensal do BCB (SGS 433). A camada gold consome o índice anual
+2024 com o IPCA mensal do BCB (SGS 433). A camada gold consome o índice anual
 validado de `br_bcb_sgs_ipca.ipca_anual`, preservando o encadeamento
 `raw → silver → gold`.
 
 ```text
-valor_real(t) = valor_nominal(t) * indice_ipca(2022) / indice_ipca(t)
+valor_real(t) = valor_nominal(t) * indice_ipca(2024) / indice_ipca(t)
 ```
 
 Na PIA, a correção alcança valor bruto da produção e salários. Na PAC, alcança
@@ -136,7 +149,7 @@ ordem:
 
 1. carregar PIA e PAC da silver;
 2. limpar e padronizar colunas numéricas;
-3. corrigir somente as variáveis monetárias para preços médios de 2022;
+3. corrigir somente as variáveis monetárias para preços médios de 2024;
 4. agregar as bases por `ano` + `divisao_grupo_cnae_2`;
 5. projetar variáveis brutas com o método `theil_sen`;
 6. agregar os dados projetados por `conta_alfa`;
@@ -159,10 +172,10 @@ fluxo:
 - `anos_alvo`: intervalo fechado de anos publicados. Com `start = 1995` e
   `end = 2023`, a saída contém todos os anos entre 1995 e 2023.
 - `valores_producao_aa`: pressupostos monetários nominais que o legado repetia
-  em todos os anos; cada réplica anual é convertida para preços de 2022 pelo
+  em todos os anos; cada réplica anual é convertida para preços de 2024 pelo
   IPCA enquanto não houver fonte própria.
 - `correcao_monetaria`: ativa a correção e registra a série SGS `433` e o
-  ano-âncora `2022`.
+  ano-âncora `2024`.
 - `mapa_setores`: mapeia códigos de `divisao_grupo_cnae_2` para as contas
   alfa. O carregador aceita chaves auxiliares começando com `_` como metadados
   e não as usa no cálculo.
@@ -217,5 +230,5 @@ produtos. O uso deve ser interpretativo e depende de validação caso a caso.
 
 A conta `AAProdução` continua sendo tratada por pressuposto temporário. O valor
 nominal configurado era replicado pelo legado em todos os anos; cada réplica é
-agora convertida para preços de 2022 pela razão dos índices anuais do IPCA. Em
-2022, o fator é 1 e o valor configurado permanece inalterado.
+agora convertida para preços de 2024 pela razão dos índices anuais do IPCA. Em
+2024, o fator é 1 e o valor configurado permanece inalterado.

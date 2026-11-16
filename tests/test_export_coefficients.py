@@ -238,9 +238,7 @@ def test_auditoria_series_gera_grafico_e_resumo(tmp_path) -> None:
         }
     )
 
-    grafico = gerar_grafico_series_coeficientes(
-        coeficientes, tmp_path / "grafico.png"
-    )
+    grafico = gerar_grafico_series_coeficientes(coeficientes, tmp_path / "grafico.png")
     resumo = salvar_resumo_coeficientes(coeficientes, tmp_path / "resumo.csv")
 
     assert grafico.exists()

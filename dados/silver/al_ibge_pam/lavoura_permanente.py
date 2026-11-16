@@ -17,11 +17,12 @@ from dados.raw.utils.postgres_interactions import PostgresETL
 from dados.silver.al_ibge_pam.models import AlIbgePamLavouraPermanente
 from dados.silver.constants.produtos import dicionario_produtos_pam_permanente
 from dados.silver.utils import (
-    currency_fix,
+    currency_fix_series,
     fix_ibge_digits,
     products_weight_ratio_fix,
 )
 from dados.utils.logging import get_logger
+from dados.utils.parallel import validate_rows
 from dados.utils.pydantic_postgres import pydantic_to_postgres_columns
 
 load_dotenv()
@@ -31,6 +32,9 @@ ZONE = "silver"
 TABLE = "lavoura_permanente"
 
 PK_COLS = ["id_municipio", "ano", "produto"]
+
+# Tabelas grandes: validação e carga fatiadas em threads.
+LOAD_MAX_WORKERS = 4
 METRIC_COLS = [
     "quantidade_produzida",
     "valor_producao",
@@ -83,12 +87,25 @@ def transform(df: pd.DataFrame) -> pd.DataFrame:
     ].apply(pd.to_numeric, errors="coerce")
     df = df.apply(products_weight_ratio_fix, axis=1)
 
-    df["produto"] = df["produto"].map(dicionario_produtos_pam_permanente)
+    produto_original = df["produto"]
+    df["produto"] = produto_original.map(dicionario_produtos_pam_permanente)
 
-    # currency_fix é row-wise (lê ano + valor_producao): deflaciona as moedas históricas
+    nao_mapeados = produto_original.loc[df["produto"].isna()].unique()
+    if len(nao_mapeados):
+        log.error(
+            "transform.error",
+            reason="produto_sem_mapeamento",
+            produtos=sorted(nao_mapeados.tolist()),
+        )
+        raise ValueError(
+            "Produtos da PAM (lavoura permanente) sem entrada em dicionario_produtos_pam_permanente: "
+            f"{sorted(nao_mapeados.tolist())}. "
+            "Atualize dados/silver/constants/produtos.py."
+        )
+
+    # currency_fix_series é vetorizada: deflaciona as moedas históricas
     # (Cruzeiros/Cruzados/Cruzados Novos/Cruzeiros Reais) para a base atual (Mil Reais).
-    df["valor_producao"] = df["valor_producao"].astype("float")
-    df["valor_producao"] = df.apply(currency_fix, axis=1)
+    df["valor_producao"] = currency_fix_series(df["ano"], df["valor_producao"])
     return df[list(AlIbgePamLavouraPermanente.model_fields.keys())]
 
 
@@ -109,7 +126,7 @@ def validate(df: pd.DataFrame) -> pd.DataFrame:
         lambda v: None if pd.isna(v) or str(v).strip() in ("", "NaN", "nan") else v
     )
 
-    [AlIbgePamLavouraPermanente(**r) for r in df.to_dict("records")]
+    validate_rows(df, AlIbgePamLavouraPermanente, max_workers=LOAD_MAX_WORKERS)
     return df
 
 
@@ -123,7 +140,7 @@ def load(df: pd.DataFrame) -> None:
         schema=DATASET_ID,
     ) as db:
         db.create_table(TABLE, columns, drop_if_exists=True)
-        db.load_data(TABLE, df, if_exists="append")
+        db.load_data(TABLE, df, if_exists="append", max_workers=LOAD_MAX_WORKERS)
 
 
 def flow() -> None:

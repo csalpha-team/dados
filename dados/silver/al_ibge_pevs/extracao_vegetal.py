@@ -20,8 +20,13 @@ from dados.silver.constants.produtos import (
     PEVS_DENSIDADE_TON_M3,
     dicionario_produtos_pevs,
 )
-from dados.silver.utils import currency_fix, fix_ibge_digits, pevs_volume_to_weight
+from dados.silver.utils import (
+    currency_fix_series,
+    fix_ibge_digits,
+    pevs_volume_to_weight,
+)
 from dados.utils.logging import get_logger
+from dados.utils.parallel import validate_rows
 from dados.utils.pydantic_postgres import pydantic_to_postgres_columns
 
 load_dotenv()
@@ -32,6 +37,9 @@ TABLE = "produtos_extracao_vegetal"
 RAW_TABLE = "produtos_extracao_vegetal"
 
 PK_COLS = ["id_municipio", "ano", "produto"]
+
+# Tabelas grandes: validação e carga fatiadas em threads.
+LOAD_MAX_WORKERS = 4
 
 COLUMN_RENAME = {
     "Quantidade produzida na extração vegetal": "quantidade_produzida",
@@ -49,6 +57,7 @@ def extract() -> pd.DataFrame:
         SELECT
             CAST(ano AS INTEGER) AS ano,
             id_municipio,
+            id_produto,
             produto,
             MAX(CASE WHEN nome_variavel = 'Quantidade produzida na extração vegetal'
                      THEN valor END) AS quantidade_produzida,
@@ -57,7 +66,7 @@ def extract() -> pd.DataFrame:
             MAX(CASE WHEN nome_variavel = 'Quantidade produzida na extração vegetal'
                      THEN unidade_medida END) AS unidade_medida
         FROM {DATASET_ID}.{RAW_TABLE}
-        GROUP BY ano, id_municipio, produto
+        GROUP BY ano, id_municipio, id_produto, produto
     """
     with PostgresETL(
         host="localhost",
@@ -71,7 +80,22 @@ def extract() -> pd.DataFrame:
 
 def transform(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
-    df["produto"] = df["produto"].map(dicionario_produtos_pevs)
+    # Mapeia pelo id da categoria (classificação 193), não pelo rótulo: o IBGE
+    # renumera os rótulos ao inserir produtos novos e o nome deixa de casar.
+    df["produto"] = df["id_produto"].astype(str).map(dicionario_produtos_pevs)
+
+    nao_mapeados = df.loc[df["produto"].isna(), "id_produto"].astype(str).unique()
+    if len(nao_mapeados):
+        log.error(
+            "transform.error",
+            reason="produto_sem_mapeamento",
+            ids=sorted(nao_mapeados.tolist()),
+        )
+        raise ValueError(
+            "Produtos da PEVS sem entrada em dicionario_produtos_pevs "
+            f"(ids da classificação 193): {sorted(nao_mapeados.tolist())}. "
+            "Atualize dados/silver/constants/produtos.py."
+        )
 
     df = fix_ibge_digits(df, ["quantidade_produzida", "valor_producao"], PK_COLS)
 
@@ -79,10 +103,9 @@ def transform(df: pd.DataFrame) -> pd.DataFrame:
     # ('Mil árvores') ficam intactos. Dirigido pela unidade vinda dos metadados.
     df = pevs_volume_to_weight(df, PEVS_DENSIDADE_TON_M3)
 
-    # currency_fix é row-wise (lê ano + valor_producao): deflaciona as moedas históricas
+    # currency_fix_series é vetorizada: deflaciona as moedas históricas
     # (Cruzeiros/Cruzados/Cruzados Novos/Cruzeiros Reais) para a base atual (Mil Reais).
-    df["valor_producao"] = df["valor_producao"].astype("float")
-    df["valor_producao"] = df.apply(currency_fix, axis=1)
+    df["valor_producao"] = currency_fix_series(df["ano"], df["valor_producao"])
 
     return df[list(AlIbgePevsExtracaoVegetal.model_fields.keys())]
 
@@ -105,7 +128,7 @@ def validate(df: pd.DataFrame) -> pd.DataFrame:
         lambda v: None if pd.isna(v) or str(v).strip() in ("", "NaN", "nan") else v
     )
 
-    [AlIbgePevsExtracaoVegetal(**r) for r in df.to_dict("records")]
+    validate_rows(df, AlIbgePevsExtracaoVegetal, max_workers=LOAD_MAX_WORKERS)
     return df
 
 
@@ -119,7 +142,7 @@ def load(df: pd.DataFrame) -> None:
         schema=DATASET_ID,
     ) as db:
         db.create_table(TABLE, columns, drop_if_exists=True)
-        db.load_data(TABLE, df, if_exists="append")
+        db.load_data(TABLE, df, if_exists="append", max_workers=LOAD_MAX_WORKERS)
 
 
 def flow() -> None:

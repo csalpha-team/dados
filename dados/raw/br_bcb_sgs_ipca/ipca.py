@@ -84,7 +84,9 @@ def _validate_monthly_sequence(df: pd.DataFrame) -> pd.DataFrame:
     if df["data_referencia"].duplicated().any():
         raise ValueError("A serie SGS 433 contem meses duplicados")
     if (df["variacao_mensal_pct"] <= -100).any():
-        raise ValueError("A serie SGS 433 contem variacao mensal menor ou igual a -100%")
+        raise ValueError(
+            "A serie SGS 433 contem variacao mensal menor ou igual a -100%"
+        )
 
     ordered = df.sort_values("data_referencia").reset_index(drop=True)
     observed_periods = pd.PeriodIndex(ordered["data_referencia"], freq="M")
