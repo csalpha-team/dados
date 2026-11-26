@@ -2,17 +2,24 @@ import numpy as np
 import pandas as pd
 from typing import List
 
+from dados.utils.logging import get_logger
 from dados.utils.agricultural_conversions import (
     censo_quantity_to_weight,
     currency_fix,
+    currency_fix_series,
     pevs_volume_to_weight,
     products_weight_ratio_fix,
 )
+
+# CLAUDE.md: todo log passa pelo get_logger. Estas funções são compartilhadas
+# por todos os flows silver, por isso o logger é do módulo e não de um dataset.
+log = get_logger(dataset_id="utils", zone="silver")
 
 __all__ = [
     "fix_ibge_digits",
     "fix_ibge_x_digit",
     "currency_fix",
+    "currency_fix_series",
     "products_weight_ratio_fix",
     "pevs_volume_to_weight",
     "censo_quantity_to_weight",
@@ -76,16 +83,21 @@ def fix_ibge_digits(
 
     # Garantir que 'id_municipio' está nas variáveis de agrupamento para extrair UF
     if "id_municipio" not in group_vars:
-        print(
-            "AVISO: 'id_municipio' não está nas variáveis de agrupamento. Adicionando para extrair UF..."
+        log.warning(
+            "fix_ibge_digits.group_vars_ajustado",
+            reason="id_municipio_ausente",
+            group_vars=group_vars,
         )
         group_vars = ["id_municipio"] + group_vars
 
     for column in columns:
         # Filtra valores que não são dígitos e imprime suas ocorrências
         non_digit_values = df_fixed[column][~df_fixed[column].astype(str).str.isdigit()]
-        print(f"Valores não numéricos na coluna {column}:")
-        print(non_digit_values.value_counts())
+        log.info(
+            "fix_ibge_digits.nao_numericos",
+            coluna=column,
+            ocorrencias=non_digit_values.value_counts().to_dict(),
+        )
 
         # Substitui '..' e '-' por 0
         df_fixed[column] = df_fixed[column].apply(
@@ -94,9 +106,7 @@ def fix_ibge_digits(
 
         # Se valores 'X' forem encontrados, calcula e substitui pelas médias agrupadas
         if "X" in non_digit_values.values:
-            print(
-                f"\nSubstituindo valores 'X' na coluna {column} por médias agrupadas..."
-            )
+            log.info("fix_ibge_digits.substitui_x", coluna=column)
             df_fixed = fix_ibge_x_digit(df_fixed, column, group_vars, div_column)
 
     return df_fixed
@@ -120,7 +130,7 @@ def fix_ibge_x_digit(
 
     # Contabiliza quantos valores 'X' existem inicialmente
     x_count_before = (df_fixed[column] == "X").sum()
-    print(f"Total de valores 'X' para substituir na coluna {column}: {x_count_before}")
+    log.info("fix_ibge_x_digit.start", coluna=column, valores_x=int(x_count_before))
 
     # 1. Tratamento de Tipos
     # Garante que a coluna alvo é numérica (X vira NaN)
@@ -225,16 +235,20 @@ def fix_ibge_x_digit(
     if div_column and f"_temp_ratio_{column}" in df_fixed.columns:
         df_fixed.drop(columns=[f"_temp_ratio_{column}"], inplace=True)
 
-    print("\nResumo de substituições por UF:")
-    for uf, count in uf_substitutions.items():
-        if count > 0:
-            print(f"  UF {uf}: {count} valores substituídos")
+    log.info(
+        "fix_ibge_x_digit.substituicoes_por_uf",
+        coluna=column,
+        substituicoes={uf: int(c) for uf, c in uf_substitutions.items() if c > 0},
+    )
 
     # Preenchimento de remanescentes com 0 (casos onde não houve média de grupo disponível)
     remaining_nan = df_fixed[column].isna().sum()
     if remaining_nan > 0:
-        print(
-            f"AVISO: {remaining_nan} valores não puderam ser calculados (sem média de grupo). Preenchendo com 0."
+        log.warning(
+            "fix_ibge_x_digit.sem_media_de_grupo",
+            coluna=column,
+            linhas=int(remaining_nan),
+            acao="preenchido_com_zero",
         )
         df_fixed[column] = df_fixed[column].fillna(0)
 
@@ -252,19 +266,23 @@ def check_duplicates(data: pd.DataFrame, columns: List) -> None:
     Raises:
         ValueError: Se forem encontradas linhas duplicadas no DataFrame.
     """
-    print(f"Verificando duplicatas com base nas colunas: {columns}")
+    log.info("check_duplicates.start", colunas=columns)
 
     duplicates = data.duplicated(subset=columns, keep=False)
 
     if duplicates.any():
         duplicate_rows = data[duplicates]
-        print("Foram encontradas combinações duplicadas:")
-        print(duplicate_rows.count())
+        log.error(
+            "check_duplicates.error",
+            reason="duplicate_rows",
+            linhas=int(len(duplicate_rows)),
+            colunas=columns,
+        )
         raise ValueError(
             "Foram encontrados múltiplos valores para algumas combinações das colunas especificadas."
         )
     else:
-        print("Nenhuma combinação duplicada encontrada.")
+        log.info("check_duplicates.done", duplicadas=0)
 
 
 def calcula_autoconsumo_comercio(

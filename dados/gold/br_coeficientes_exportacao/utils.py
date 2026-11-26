@@ -221,7 +221,9 @@ def _chaves_regra_ncm(regra: Mapping[str, Any]) -> list[str]:
     return chaves
 
 
-def _chave_linha_ncm(linha: pd.Series, coluna_id_ncm: str, coluna_ncm: str) -> list[str]:
+def _chave_linha_ncm(
+    linha: pd.Series, coluna_id_ncm: str, coluna_ncm: str
+) -> list[str]:
     id_ncm = str(linha[coluna_id_ncm]).strip() if coluna_id_ncm in linha else ""
     nome_ncm = str(linha[coluna_ncm]).strip()
     chaves = []
@@ -252,9 +254,7 @@ def _carregar_taxas_cambio_csv(
 
     taxas_df = pd.read_csv(caminho_csv)
     colunas_faltantes = [
-        coluna
-        for coluna in [coluna_ano, coluna_taxa]
-        if coluna not in taxas_df.columns
+        coluna for coluna in [coluna_ano, coluna_taxa] if coluna not in taxas_df.columns
     ]
     if colunas_faltantes:
         raise ValueError(
@@ -355,9 +355,7 @@ def carregar_parametros_exportacao(
             )
 
         preparacoes_produtos[produto_normalizado] = [
-            regra
-            for regra in (_extrair_regra_ncm(item) for item in itens_ncm)
-            if regra
+            regra for regra in (_extrair_regra_ncm(item) for item in itens_ncm) if regra
         ]
 
     participacoes_especificas_raw = config.get(

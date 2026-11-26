@@ -112,9 +112,9 @@ def agregar_valores_regionais(value_df: pd.DataFrame) -> pd.DataFrame:
     if value_df.empty:
         return pd.DataFrame(columns=VALUE_COLUMNS)
 
-    regional_values = value_df.groupby(
-        REGIONAL_GROUP_COLUMNS, as_index=False
-    ).agg({"valor": "sum"})
+    regional_values = value_df.groupby(REGIONAL_GROUP_COLUMNS, as_index=False).agg(
+        {"valor": "sum"}
+    )
 
     regional_values = regional_values.sort_values(
         ["ano", "nome_regiao_integracao", "tipo_coeff"]

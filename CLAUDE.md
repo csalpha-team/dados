@@ -11,7 +11,12 @@ Repository: zone-based data pipeline (raw → silver → gold) on PostgreSQL. Py
 
 ## For any refactor or new dataset work
 
-Read [`REFACTORING.md`](./REFACTORING.md) first. It is the execution spec.
+Read [`README.md`](./README.md) first — é a especificação executiva atual
+(contratos por zona, esqueleto de flow, utilitários compartilhados).
+`REFACTORING.md` não existe mais na árvore: a versão arquivada no git
+(`git show 4d6a34c:REFACTORING.md`) está desatualizada — fala em dbt, que este
+projeto não usa, e aponta models em `dados/<zone>/models/<dataset_id>.py`,
+caminho que mudou para `dados/<zone>/<dataset_id>/models.py`.
 
 ## Quick reference
 
@@ -19,6 +24,6 @@ Read [`REFACTORING.md`](./REFACTORING.md) first. It is the execution spec.
 |--------|----------------------|-----------------------|------------------------|
 | raw    | `DB_RAW_ZONE`        | `<dataset_id>`        | `dados/raw/`           |
 | silver | `DB_SILVER_ZONE`     | `<dataset_id>`        | `dados/silver/`        |
-| gold   | `DB_AGREGATED_ZONE`  | `<dataset_id>`        | `dados/gold/`          |
+| gold   | `DB_GOLD_ZONE`       | `<dataset_id>`        | `dados/gold/`          |
 
 Run a flow: `uv run python -m dados.<zone>.<dataset_id>.<table>`

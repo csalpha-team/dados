@@ -50,6 +50,18 @@ PAC_SOURCE_SCHEMA = os.getenv(
 PAC_SOURCE_TABLE = os.getenv(
     "INCOME_PAC_SOURCE_TABLE", os.getenv("TABELA_ORIGEM_PAC", "tbl_1407")
 )
+# Séries novas do IBGE (ano de referência 2024 em diante). PAC/PIA romperam a
+# série em 2024 e passaram a publicar em agregados próprios; as tabelas antigas
+# param em 2023. Os coeficientes de renda são razões calculadas dentro de cada
+# ano (produção ou salário por pessoa ocupada), então a ruptura de nível entre
+# as séries não se propaga para o coeficiente — mas os insumos de 2024 vêm das
+# tabelas novas, nunca das antigas.
+PIA_SOURCE_TABLE_SERIE_NOVA = os.getenv(
+    "INCOME_PIA_SOURCE_TABLE_SERIE_NOVA", "tbl_10457"
+)
+PAC_SOURCE_TABLE_SERIE_NOVA = os.getenv(
+    "INCOME_PAC_SOURCE_TABLE_SERIE_NOVA", "tbl_10653"
+)
 IPCA_SOURCE_SCHEMA = os.getenv("INCOME_IPCA_SOURCE_SCHEMA", "br_bcb_sgs_ipca")
 IPCA_SOURCE_TABLE = os.getenv("INCOME_IPCA_SOURCE_TABLE", "ipca_anual")
 
@@ -74,18 +86,22 @@ def extract() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, tuple]:
     params = carregar_parametros_renda(CONFIG_PATH)
     years = params[1]
 
-    pia_query = f"""
-        SELECT ano, nome_localidade, divisao_grupo_cnae_2,
+    pia_cols = """ano, nome_localidade, divisao_grupo_cnae_2,
                pessoal_ocupado_31_12,
                valor_bruto_producao_industrial,
-               valor_salarios_remuneracoes
-        FROM {PIA_SOURCE_SCHEMA}.{PIA_SOURCE_TABLE}
+               valor_salarios_remuneracoes"""
+    pac_cols = """ano, unidade_geografica, divisao_grupo_cnae_2,
+               valor_receita_bruta_revenda, pessoal_ocupado_31_12,
+               margem_comercializacao, valor_gastos_salarios_remuneracoes"""
+    pia_query = f"""
+        SELECT {pia_cols} FROM {PIA_SOURCE_SCHEMA}.{PIA_SOURCE_TABLE}
+        UNION ALL
+        SELECT {pia_cols} FROM {PIA_SOURCE_SCHEMA}.{PIA_SOURCE_TABLE_SERIE_NOVA}
     """
     pac_query = f"""
-        SELECT ano, unidade_geografica, divisao_grupo_cnae_2,
-               valor_receita_bruta_revenda, pessoal_ocupado_31_12,
-               margem_comercializacao, valor_gastos_salarios_remuneracoes
-        FROM {PAC_SOURCE_SCHEMA}.{PAC_SOURCE_TABLE}
+        SELECT {pac_cols} FROM {PAC_SOURCE_SCHEMA}.{PAC_SOURCE_TABLE}
+        UNION ALL
+        SELECT {pac_cols} FROM {PAC_SOURCE_SCHEMA}.{PAC_SOURCE_TABLE_SERIE_NOVA}
     """
     ipca_query = f"""
         SELECT ano, indice_ipca, variacao_acumulada_ano_pct,

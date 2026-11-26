@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import os
 from decimal import Decimal
+from typing import Sequence
 
 import pandas as pd
 from dotenv import load_dotenv
@@ -17,11 +18,17 @@ from dados.raw.utils.postgres_interactions import PostgresETL
 from dados.silver.al_ibge_pam.models import AlIbgePamLavouraPermanente
 from dados.silver.constants.produtos import dicionario_produtos_pam_permanente
 from dados.silver.utils import (
-    currency_fix,
+    currency_fix_series,
     fix_ibge_digits,
     products_weight_ratio_fix,
 )
+from dados.utils.batching import (
+    CargaEmStaging,
+    executar_em_lotes_por_ano,
+    listar_anos,
+)
 from dados.utils.logging import get_logger
+from dados.utils.parallel import validate_rows
 from dados.utils.pydantic_postgres import pydantic_to_postgres_columns
 
 load_dotenv()
@@ -31,6 +38,13 @@ ZONE = "silver"
 TABLE = "lavoura_permanente"
 
 PK_COLS = ["id_municipio", "ano", "produto"]
+
+# Tabelas grandes: validação e carga fatiadas em threads, e o flow inteiro
+# executado em lotes de anos (ver dados/utils/batching.py). Sem isso o pico de
+# memória desta tabela passa de 5 GB — a conversão das colunas métricas para
+# ``Decimal`` cria um objeto Python por célula.
+LOAD_MAX_WORKERS = 4
+ANOS_POR_LOTE = 5
 METRIC_COLS = [
     "quantidade_produzida",
     "valor_producao",
@@ -42,8 +56,12 @@ METRIC_COLS = [
 log = get_logger(dataset_id=DATASET_ID, zone=ZONE)
 
 
-def extract() -> pd.DataFrame:
-    # Pivot in SQL: keeps memory bounded and preserves X/.. sentinels for fix_ibge_digits.
+def extract(db: PostgresETL, anos: Sequence[int]) -> pd.DataFrame:
+    """Pivota no Postgres os anos do lote.
+
+    Pivot in SQL: keeps memory bounded and preserves X/.. sentinels for
+    fix_ibge_digits. O filtro por ano é o que mantém o lote pequeno.
+    """
     query = f"""
         SELECT
             CAST(ano AS INTEGER) AS ano,
@@ -56,16 +74,10 @@ def extract() -> pd.DataFrame:
             MAX(CASE WHEN nome_variavel = 'Rendimento médio da produção' THEN valor END) AS rendimento_medio_producao,
             MAX(CASE WHEN nome_variavel = 'Quantidade produzida' THEN unidade_medida END) AS unidade_medida
         FROM {DATASET_ID}.{TABLE}
+        WHERE CAST(ano AS INTEGER) = ANY(%s)
         GROUP BY ano, id_municipio, produto
     """
-    with PostgresETL(
-        host="localhost",
-        database=os.getenv("DB_RAW_ZONE"),
-        user=os.getenv("POSTGRES_USER"),
-        password=os.getenv("POSTGRES_PASSWORD"),
-        schema=DATASET_ID,
-    ) as db:
-        return db.download_data(query)
+    return db.download_data(query, params=(list(anos),))
 
 
 def transform(df: pd.DataFrame) -> pd.DataFrame:
@@ -83,12 +95,25 @@ def transform(df: pd.DataFrame) -> pd.DataFrame:
     ].apply(pd.to_numeric, errors="coerce")
     df = df.apply(products_weight_ratio_fix, axis=1)
 
-    df["produto"] = df["produto"].map(dicionario_produtos_pam_permanente)
+    produto_original = df["produto"]
+    df["produto"] = produto_original.map(dicionario_produtos_pam_permanente)
 
-    # currency_fix é row-wise (lê ano + valor_producao): deflaciona as moedas históricas
+    nao_mapeados = produto_original.loc[df["produto"].isna()].unique()
+    if len(nao_mapeados):
+        log.error(
+            "transform.error",
+            reason="produto_sem_mapeamento",
+            produtos=sorted(nao_mapeados.tolist()),
+        )
+        raise ValueError(
+            "Produtos da PAM (lavoura permanente) sem entrada em dicionario_produtos_pam_permanente: "
+            f"{sorted(nao_mapeados.tolist())}. "
+            "Atualize dados/silver/constants/produtos.py."
+        )
+
+    # currency_fix_series é vetorizada: deflaciona as moedas históricas
     # (Cruzeiros/Cruzados/Cruzados Novos/Cruzeiros Reais) para a base atual (Mil Reais).
-    df["valor_producao"] = df["valor_producao"].astype("float")
-    df["valor_producao"] = df.apply(currency_fix, axis=1)
+    df["valor_producao"] = currency_fix_series(df["ano"], df["valor_producao"])
     return df[list(AlIbgePamLavouraPermanente.model_fields.keys())]
 
 
@@ -109,38 +134,50 @@ def validate(df: pd.DataFrame) -> pd.DataFrame:
         lambda v: None if pd.isna(v) or str(v).strip() in ("", "NaN", "nan") else v
     )
 
-    [AlIbgePamLavouraPermanente(**r) for r in df.to_dict("records")]
+    validate_rows(df, AlIbgePamLavouraPermanente, max_workers=LOAD_MAX_WORKERS)
     return df
 
 
-def load(df: pd.DataFrame) -> None:
-    columns = pydantic_to_postgres_columns(AlIbgePamLavouraPermanente)
-    with PostgresETL(
-        host="localhost",
-        database=os.getenv("DB_SILVER_ZONE"),
-        user=os.getenv("POSTGRES_USER"),
-        password=os.getenv("POSTGRES_PASSWORD"),
-        schema=DATASET_ID,
-    ) as db:
-        db.create_table(TABLE, columns, drop_if_exists=True)
-        db.load_data(TABLE, df, if_exists="append")
-
-
 def flow() -> None:
-    log.info("flow.start", table=TABLE)
+    log.info("flow.start", table=TABLE, anos_por_lote=ANOS_POR_LOTE)
     try:
-        df = extract()
-        log.info("extract.done", rows=len(df))
-        df = transform(df)
-        log.info("transform.done", rows=len(df))
-        df = validate(df)
-        log.info("validate.done", rows=len(df))
-        load(df)
-        log.info("load.done", rows=len(df))
+        with (
+            PostgresETL(
+                host="localhost",
+                database=os.getenv("DB_RAW_ZONE"),
+                user=os.getenv("POSTGRES_USER"),
+                password=os.getenv("POSTGRES_PASSWORD"),
+                schema=DATASET_ID,
+            ) as origem,
+            PostgresETL(
+                host="localhost",
+                database=os.getenv("DB_SILVER_ZONE"),
+                user=os.getenv("POSTGRES_USER"),
+                password=os.getenv("POSTGRES_PASSWORD"),
+                schema=DATASET_ID,
+            ) as destino,
+        ):
+            anos = listar_anos(origem, TABLE)
+            log.info("extract.anos", anos=len(anos), de=min(anos), ate=max(anos))
+
+            columns = pydantic_to_postgres_columns(AlIbgePamLavouraPermanente)
+            with CargaEmStaging(
+                destino, TABLE, columns, max_workers=LOAD_MAX_WORKERS
+            ) as carga:
+                total = executar_em_lotes_por_ano(
+                    anos=anos,
+                    extrair=lambda lote: extract(origem, lote),
+                    transformar=transform,
+                    validar=validate,
+                    carga=carga,
+                    log=log,
+                    anos_por_lote=ANOS_POR_LOTE,
+                )
+            log.info("load.done", rows=total)
     except Exception as exc:
         log.exception("flow.error", error=str(exc))
         raise
-    log.info("flow.end", rows=len(df))
+    log.info("flow.end", rows=total)
 
 
 if __name__ == "__main__":

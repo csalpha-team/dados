@@ -22,6 +22,7 @@ from dados.raw.utils.ibge_api_crawler import (
 )
 from dados.raw.utils.postgres_interactions import PostgresETL
 from dados.utils.logging import get_logger
+from dados.utils.parallel import parallel_map
 from dados.utils.paths import tmp_dir
 
 load_dotenv()
@@ -42,6 +43,10 @@ CLASSIFICACAO = "193[all]"
 ID_PRODUTO_CLASSIFICACAO = "193"
 ID_VARIAVEL_QUANTIDADE = "144"
 EXPECTED_MUNICIPIOS = 773  # Amazônia Legal
+
+# Leitura/parse dos JSON e carga fatiados em threads.
+PARSE_MAX_WORKERS = 8
+LOAD_MAX_WORKERS = 4
 
 COLUMNS_DDL = {
     "id_variavel": "VARCHAR(255)",
@@ -97,11 +102,14 @@ def extract() -> pd.DataFrame:
     files = os.listdir(input_dir)
     log.info("extract.api.done", files=len(files))
 
-    dfs = []
-    for file in files:
+    # 773 arquivos por município: leitura + parse em threads (I/O-bound),
+    # mantendo a ordem para o dataframe sair determinístico.
+    def _parse_file(file: str) -> pd.DataFrame:
         with open(input_dir / file) as f:
             data = json.load(f)
-        dfs.append(parse_pam_json(data, id_produto=ID_PRODUTO_CLASSIFICACAO))
+        return parse_pam_json(data, id_produto=ID_PRODUTO_CLASSIFICACAO)
+
+    dfs = parallel_map(_parse_file, sorted(files), max_workers=PARSE_MAX_WORKERS)
     df = pd.concat(dfs, ignore_index=True)
 
     # A unidade de medida da PEVS é definida por produto (categoria), não pela
@@ -144,7 +152,7 @@ def load(df: pd.DataFrame) -> None:
         schema=DATASET_ID,
     ) as db:
         db.create_table(TABLE, COLUMNS_DDL, if_not_exists=True)
-        db.load_data(TABLE, df, if_exists="replace")
+        db.load_data(TABLE, df, if_exists="replace", max_workers=LOAD_MAX_WORKERS)
 
 
 def flow() -> None:

@@ -1,6 +1,11 @@
 from typing import List, Dict, Any
+
 import pandas as pd
 import requests
+
+from dados.utils.logging import get_logger
+
+log = get_logger(dataset_id="br_ibge_pia", zone="raw")
 
 
 def parse_pia_json_to_table(json_data: List[Dict[str, Any]]) -> pd.DataFrame:
@@ -75,15 +80,18 @@ def download_json(url: str, uf_id_sigla: dict) -> List[Dict[str, Any]]:
 
     for uf_id, sigla in uf_id_sigla.items():
         url_formatada = url.format(uf_id)
-        print(url_formatada)
-        print(uf_id)
-        print(f"Baixando dados do Estado {sigla} - ({uf_id})")
+        log.info("download.uf.start", uf=sigla, id_uf=uf_id, url=url_formatada)
         req = requests.get(url_formatada)
 
         if req.status_code == 200:
             data = req.json()
             dados.append(data)
+            log.info("download.uf.done", uf=sigla, id_uf=uf_id)
         else:
-            print(f"Erro ao baixar dados para {sigla} ({uf_id})")
-            print(f"Status HTTP: {req.status_code}")
+            log.error(
+                "download.uf.error",
+                uf=sigla,
+                id_uf=uf_id,
+                status_code=req.status_code,
+            )
     return dados

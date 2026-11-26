@@ -97,9 +97,7 @@ def extract() -> tuple[pd.DataFrame, pd.DataFrame]:
 
 def transform(payload: tuple[pd.DataFrame, pd.DataFrame]) -> pd.DataFrame:
     pof_data, mip_mapping = payload
-    df = construir_valores_consumo(
-        pof_data, mip_mapping, PARAMETROS_VALORES_CONSUMO
-    )
+    df = construir_valores_consumo(pof_data, mip_mapping, PARAMETROS_VALORES_CONSUMO)
     return df[list(MODEL.model_fields.keys())].copy()
 
 

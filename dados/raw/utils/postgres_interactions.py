@@ -1,8 +1,10 @@
 import psycopg2
 import pandas as pd
 import logging
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import List, Dict, Optional, Union, Any
-from psycopg2.extras import execute_values, RealDictCursor
+from uuid import uuid4
+from psycopg2.extras import execute_values
 
 
 class PostgresETL:
@@ -174,12 +176,44 @@ class PostgresETL:
         else:
             self.logger.info(f"Table {table_name} created or already exists")
 
+    def _chunk_records(
+        self,
+        data: Union[pd.DataFrame, List[Dict[str, Any]]],
+        start: int,
+        chunk_size: int,
+    ) -> List[Dict[str, Any]]:
+        """Materializa apenas uma fatia dos dados como lista de dicionários.
+
+        Para DataFrame, ``to_dict("records")`` do objeto inteiro é o que estourava
+        a memória nas tabelas grandes (PAM/PEVS chegam a 12 milhões de linhas):
+        a lista de dicionários custa várias vezes o tamanho do dataframe. Aqui a
+        conversão acontece por fatia, então o pico fica em um chunk por vez.
+        """
+        if isinstance(data, pd.DataFrame):
+            return data.iloc[start : start + chunk_size].to_dict("records")
+        return data[start : start + chunk_size]
+
+    def _insert_chunk(
+        self,
+        conn,
+        insert_query: str,
+        columns: List[str],
+        chunk: List[Dict[str, Any]],
+    ) -> int:
+        """Insere uma fatia usando a conexão informada (uma por thread)."""
+        values = [[record.get(col) for col in columns] for record in chunk]
+        with conn.cursor() as cursor:
+            execute_values(cursor, insert_query, values)
+        conn.commit()
+        return len(chunk)
+
     def load_data(
         self,
         table_name: str,
         data: Union[pd.DataFrame, List[Dict[str, Any]]],
         if_exists: str = "append",
         chunk_size: int = 35399,
+        max_workers: int = 1,
     ) -> int:
         """
         Load data into a PostgreSQL table
@@ -190,21 +224,25 @@ class PostgresETL:
             if_exists (str): How to behave if the table exists
                              Options: 'fail', 'replace', 'append'
             chunk_size (int): Records per chunk when loading data
+            max_workers (int): Threads de carga. 1 (padrão) usa a conexão do
+                contexto, sequencialmente. Acima de 1, cada thread abre a sua
+                própria conexão — psycopg2 não permite compartilhar uma conexão
+                entre threads — e as fatias são inseridas em paralelo. Útil nas
+                tabelas grandes (PAM/PEVS/PPM); as fatias são independentes,
+                então a ordem de inserção não importa.
 
         Returns:
             int: Number of records inserted
         """
-        if isinstance(data, pd.DataFrame):
-            records = data.to_dict("records")
-        else:
-            records = data
-
-        if not records:
+        total_rows = len(data) if data is not None else 0
+        if not total_rows:
             self.logger.warning("No data to load")
             return 0
 
-        # Get columns from the first record
-        columns = list(records[0].keys())
+        if isinstance(data, pd.DataFrame):
+            columns = list(data.columns)
+        else:
+            columns = list(data[0].keys())
 
         if if_exists == "replace":
             self.execute_query(
@@ -219,48 +257,132 @@ class PostgresETL:
 
         self.logger.info(f"The build query is:\n{insert_query}")
 
-        # Process in chunks
+        starts = list(range(0, total_rows, chunk_size))
         total_inserted = 0
-        for i in range(0, len(records), chunk_size):
-            chunk = records[i : i + chunk_size]
-            values = [[record.get(col) for col in columns] for record in chunk]
 
+        if max_workers <= 1:
+            for numero, start in enumerate(starts, start=1):
+                chunk = self._chunk_records(data, start, chunk_size)
+                try:
+                    total_inserted += self._insert_chunk(
+                        self.conn, insert_query, columns, chunk
+                    )
+                    self.logger.info(
+                        f"Inserted chunk {numero} with {len(chunk)} records"
+                    )
+                except Exception as e:
+                    self.logger.error(f"Error inserting chunk {numero}: {e}")
+                    self.conn.rollback()
+                    raise
+            self.logger.info(
+                f"Total {total_inserted} records inserted into {table_name}"
+            )
+            return total_inserted
+
+        self.logger.info(
+            f"Loading {total_rows} records in {len(starts)} chunks "
+            f"with {max_workers} threads"
+        )
+
+        def _worker(indices: List[int]) -> int:
+            conn = psycopg2.connect(
+                host=self.host,
+                database=self.database,
+                user=self.user,
+                password=self.password,
+                port=self.port,
+            )
+            inseridos = 0
             try:
-                execute_values(self.cursor, insert_query, values)
-                self.conn.commit()
-                total_inserted += len(chunk)
-                self.logger.info(
-                    f"Inserted chunk {i // chunk_size + 1} with {len(chunk)} records"
-                )
+                for start in indices:
+                    chunk = self._chunk_records(data, start, chunk_size)
+                    try:
+                        inseridos += self._insert_chunk(
+                            conn, insert_query, columns, chunk
+                        )
+                    except Exception:
+                        conn.rollback()
+                        raise
+            finally:
+                conn.close()
+            return inseridos
+
+        # Distribui as fatias entre as threads de forma intercalada, para que
+        # todas recebam aproximadamente o mesmo volume.
+        particoes = [starts[i::max_workers] for i in range(max_workers)]
+        particoes = [p for p in particoes if p]
+
+        with ThreadPoolExecutor(max_workers=len(particoes)) as executor:
+            futures = {executor.submit(_worker, p): p for p in particoes}
+            try:
+                for future in as_completed(futures):
+                    total_inserted += future.result()
             except Exception as e:
-                self.logger.error(f"Error inserting chunk {i // chunk_size + 1}: {e}")
-                self.conn.rollback()
+                self.logger.error(f"Error inserting data into {table_name}: {e}")
+                for future in futures:
+                    future.cancel()
                 raise
 
         self.logger.info(f"Total {total_inserted} records inserted into {table_name}")
 
         return total_inserted
 
-    def download_data(self, query: str, params: tuple = None) -> pd.DataFrame:
+    def download_data(
+        self,
+        query: str,
+        params: tuple = None,
+        fetch_size: int = 200_000,
+    ) -> pd.DataFrame:
         """
         Download data from PostgreSQL to a DataFrame
+
+        Usa cursor do lado do servidor e monta o dataframe por lotes de tuplas.
+        O caminho anterior (``RealDictCursor`` + ``fetchall``) materializava um
+        dicionário por linha antes de virar dataframe — em tabelas de milhões de
+        linhas (PAM/PEVS) esse intermediário custava vários GB e era o que
+        derrubava os flows grandes na releitura.
 
         Args:
             query (str): SQL query to execute
             params (tuple): Parameters for the query
+            fetch_size (int): Linhas por lote trazidas do servidor
 
         Returns:
             DataFrame: Query results as a pandas DataFrame
         """
+        cursor_name = f"download_{uuid4().hex}"
         try:
-            # Get dictionary cursor for better DataFrame conversion
-            dict_cursor = self.conn.cursor(cursor_factory=RealDictCursor)
-            dict_cursor.execute(query, params)
-            results = dict_cursor.fetchall()
-            df = pd.DataFrame(results)
+            with self.conn.cursor(name=cursor_name) as server_cursor:
+                server_cursor.itersize = fetch_size
+                server_cursor.execute(query, params)
+
+                # Em cursor nomeado, ``description`` só fica disponível depois
+                # do primeiro fetch — ler antes devolve None.
+                colunas: List[str] = []
+                partes: List[pd.DataFrame] = []
+                while True:
+                    lote = server_cursor.fetchmany(fetch_size)
+                    if not colunas and server_cursor.description:
+                        colunas = [
+                            descricao[0] for descricao in server_cursor.description
+                        ]
+                    if not lote:
+                        break
+                    partes.append(pd.DataFrame(lote, columns=colunas))
+
+            if not partes:
+                df = pd.DataFrame(columns=colunas)
+            elif len(partes) == 1:
+                df = partes[0]
+            else:
+                df = pd.concat(partes, ignore_index=True, copy=False)
+                partes.clear()
+
+            self.conn.commit()
             self.logger.info(f"Downloaded {len(df)} rows from database")
             return df
         except Exception as e:
+            self.conn.rollback()
             self.logger.error(f"Download error: {e}")
             raise
 

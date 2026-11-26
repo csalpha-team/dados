@@ -62,7 +62,7 @@ FINAL_COLUMNS = ["ano", "conta_alfa", "tipo_coeff", "coeff"]
 def _construir_anos(config_value: Any) -> list[int]:
     if isinstance(config_value, dict):
         start = int(config_value.get("start", config_value.get("inicio", 1995)))
-        end = int(config_value.get("end", config_value.get("fim", 2023)))
+        end = int(config_value.get("end", config_value.get("fim", 2024)))
         if end < start:
             raise ValueError(
                 "target_years.end deve ser maior ou igual a target_years.start"
@@ -75,7 +75,7 @@ def _construir_anos(config_value: Any) -> list[int]:
             raise ValueError("target_years nao pode ser vazio")
         return years
 
-    return list(range(1995, 2024))
+    return list(range(1995, 2025))
 
 
 def carregar_parametros_renda(
@@ -147,7 +147,7 @@ def carregar_parametros_renda(
     monetary_config = MonetaryCorrectionConfig(
         enabled=bool(monetary_config_raw.get("enabled", True)),
         series_code=int(monetary_config_raw.get("serie_sgs", 433)),
-        anchor_year=int(monetary_config_raw.get("ano_ancora", 2022)),
+        anchor_year=int(monetary_config_raw.get("ano_ancora", 2024)),
     )
 
     years = _construir_anos(config.get("target_years", config.get("anos_alvo")))
@@ -580,7 +580,11 @@ def _aplicar_tolerancia_crescimento_anual(
             next_value = float(indexed.loc[first_observed_year])
             next_year = first_observed_year
             for current_year in sorted(
-                [int(year) for year in indexed.index if int(year) < first_observed_year],
+                [
+                    int(year)
+                    for year in indexed.index
+                    if int(year) < first_observed_year
+                ],
                 reverse=True,
             ):
                 current_value = float(indexed.loc[current_year])
@@ -739,9 +743,15 @@ def preparar_dados_coeficientes_renda(
 
     final = pd.concat([projected_coefficients, aa_coefficients], ignore_index=True)
     final["coeff"] = pd.to_numeric(final["coeff"], errors="coerce")
+    # Janela observada do painel combinado: a tolerância de crescimento só limita
+    # anos fora do intervalo com dado observado (antes do primeiro e depois do
+    # último). PIA e PAC já foram limitadas individualmente acima; aqui a mesma
+    # janela vale para o quadro consolidado (inclui os coeficientes AA).
+    observed_years_final = sorted(set(pia_observed_years) | set(pac_observed_years))
     final = _aplicar_tolerancia_crescimento_anual(
         final,
         forecast_config.max_annual_growth_rate,
+        observed_years=observed_years_final,
     )
     final = final.sort_values(["ano", "conta_alfa", "tipo_coeff"]).reset_index(
         drop=True

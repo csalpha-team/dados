@@ -1,6 +1,6 @@
 """Raw flow: IBGE PIA — tabela 1849 (Pesquisa Industrial Anual, UF).
 
-Source: IBGE Agregados API, table 1849 (2007-2022, CNAE 12762).
+Source: IBGE Agregados API, table 1849 (2007-2023, CNAE 12762).
 Lands one row per (UF, categoria, ano, variavel) into
 ``$DB_RAW_ZONE.br_ibge_pia.tbl_1849``.
 """
@@ -25,7 +25,7 @@ TABLE = "tbl_1849"
 
 URL = (
     "https://servicodados.ibge.gov.br/api/v3/agregados/1849/periodos/"
-    "2007|2008|2009|2010|2011|2012|2013|2014|2015|2016|2017|2018|2019|2020|2021|2022"
+    "2007|2008|2009|2010|2011|2012|2013|2014|2015|2016|2017|2018|2019|2020|2021|2022|2023"
     "/variaveis/706|631|673|834|835|836|837|838|839|840|810|811"
     "?localidades=N3[{}]&classificacao=12762[all]"
 )

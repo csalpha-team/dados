@@ -108,9 +108,7 @@ class IncomeForecasterTests(unittest.TestCase):
 
 class RendaPreparationTests(unittest.TestCase):
     @staticmethod
-    def _ipca(
-        years: list[int], indices: list[float] | None = None
-    ) -> pd.DataFrame:
+    def _ipca(years: list[int], indices: list[float] | None = None) -> pd.DataFrame:
         indices = indices or [100.0] * len(years)
         return pd.DataFrame(
             {
@@ -403,9 +401,7 @@ class RendaPreparationTests(unittest.TestCase):
         coefficients = preparar_dados_coeficientes_renda(
             pia_df=self._empty_pia(),
             pac_df=pac_df,
-            ipca_df=self._ipca(
-                [2006, 2007, 2008, 2009], [90.0, 100.0, 110.0, 121.0]
-            ),
+            ipca_df=self._ipca([2006, 2007, 2008, 2009], [90.0, 100.0, 110.0, 121.0]),
             sector_mappings={
                 "PIA_INDUSTRIA": {},
                 "PAC_COMERCIO": {"ContaTeste": ["3"]},

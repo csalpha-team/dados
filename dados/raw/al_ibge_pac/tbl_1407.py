@@ -26,6 +26,9 @@ URL = (
     "https://servicodados.ibge.gov.br/api/v3/agregados/1407/periodos/{}/variaveis/"
     "368|312|314|503|866?localidades=N1[all]&classificacao=12354[all]|11066[all]"
 )
+# Serie antiga da PAC: 2007-2023. O IBGE rompeu a serie no ano de referencia 2024
+# (Nota Tecnica PAC 01/2026); 2024 em diante vive no agregado 10653 (tbl_10653.py).
+# range() e exclusivo no fim, entao YEAR_END = 2024 busca ate 2023 - isso e proposital.
 YEAR_START = 2007
 YEAR_END = 2024
 

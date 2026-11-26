@@ -7,9 +7,10 @@ de utilitários compartilhados. O objetivo é entregar, no final do pipeline, um
 conjunto de coeficientes e indexadores prontos para alimentar o
 [algoritmo csalpha](https://github.com/csalpha-team/csalpha) (Layer 2).
 
-A especificação executiva dos pipelines vive em
-[`REFACTORING.md`](./REFACTORING.md); este documento descreve a **estrutura
-atual do repositório por zona**.
+Este documento é a **especificação executiva** dos pipelines e descreve a
+estrutura atual do repositório por zona. (O antigo `REFACTORING.md` saiu da
+árvore e está desatualizado; a cópia arquivada no git ainda fala em dbt, que
+não é usado aqui.)
 
 ---
 
@@ -26,7 +27,7 @@ atual do repositório por zona**.
 |--------|----------------------|---------------------|----------|--------------------------|
 | raw    | `DB_RAW_ZONE`        | `dados/raw/`        | opcional | silver                   |
 | silver | `DB_SILVER_ZONE`     | `dados/silver/`     | **obrigatório** | silver, gold       |
-| gold   | `DB_AGREGATED_ZONE`  | `dados/gold/`       | **obrigatório** | export / algoritmo |
+| gold   | `DB_GOLD_ZONE`       | `dados/gold/`       | **obrigatório** | export / algoritmo |
 
 Regra de camadas estrita: **raw → silver → gold**. Não existe gold → gold,
 nem gold → raw, nem silver → gold (silver não lê gold).
@@ -68,6 +69,48 @@ uv run python -m dados.<zona>.<dataset_id>.<tabela>
 | `pydantic_to_postgres_columns`  | `dados/utils/pydantic_postgres.py`            | Deriva DDL Postgres a partir do schema pydantic.        |
 | `async_crawler_ibge_municipio`  | `dados/raw/utils/ibge_api_crawler.py`         | Coletas na API Agregados do IBGE.                       |
 | `fix_ibge_digits`, `fix_ibge_x_digit` | `dados/silver/utils.py`                 | Limpeza de códigos especiais do IBGE (`.`, `X`, `-`).   |
+| `parallel_map`, `validate_rows` | `dados/utils/parallel.py`                   | Parse de JSON e validação pydantic fatiados em threads (datasets grandes). |
+| `executar_em_lotes_por_ano`, `CargaEmStaging` | `dados/utils/batching.py` | Flow silver em lotes de anos, com publicação atômica da tabela destino. |
+
+### Datasets grandes (PAM, PEVS, PPM)
+
+PAM e PEVS chegam a milhões de linhas e estouravam a memória ao recarregar:
+`PostgresETL.load_data` convertia o dataframe inteiro em lista de dicionários
+(`to_dict("records")`) antes de inserir, e a validação pydantic fazia o mesmo.
+Hoje as duas etapas são fatiadas:
+
+- `load_data(..., max_workers=N)` materializa **uma fatia por vez** e, com
+  `N > 1`, insere as fatias em paralelo — uma conexão por thread, porque
+  conexões psycopg2 não podem ser compartilhadas entre threads. Com `N = 1`
+  (padrão) o comportamento é o sequencial de sempre.
+- `validate_rows(df, Model, max_workers=N)` valida por fatia em threads; o pico
+  de memória passa a ser `max_workers × chunk_size` registros.
+- Nos flows raw, a leitura e o parse dos 773 JSON por município usam
+  `parallel_map` (I/O-bound), com a ordem preservada para o dataframe sair
+  determinístico.
+
+Fatiar só a carga não bastava: o pico continuava no meio do flow, na conversão
+das colunas métricas para `Decimal` (um objeto Python por célula) — 5,7 GB na
+PAM. Por isso os flows silver grandes rodam **em lotes de anos**, via
+`dados/utils/batching.py`:
+
+- `listar_anos(db, tabela)` descobre os anos na origem e
+  `executar_em_lotes_por_ano(...)` roda extract→transform→validate→load lote a
+  lote (`ANOS_POR_LOTE = 5`), de modo que o pico é o de um lote.
+- `CargaEmStaging` acumula os lotes em `<tabela>__stg` e só troca a tabela
+  publicada no fim, numa transação (`DROP` + `RENAME`). O caminho antigo
+  (`create_table(drop_if_exists=True)` seguido de `append`) deixava a tabela
+  destino truncada ou pela metade quando um lote falhava.
+- Medido na PAM lavoura permanente: pico de **5,7 GB → 680 MB**, mesmo tempo de
+  parede (~4min30) e contagens por ano idênticas.
+
+Particionar por `ano` só é correto porque nenhuma transformação desses datasets
+cruza anos: `fix_ibge_x_digit` imputa o sentinela `X` pela média do grupo
+UF × (`ano`, `produto`), `products_weight_ratio_fix`, `pevs_volume_to_weight` e
+`currency_fix_series` são linha a linha, e o PK inclui `ano` (a checagem de
+duplicidade por lote é tão forte quanto a global). Uma transformação futura que
+dependa de outros anos — média móvel, deflator encadeado, interpolação — invalida
+a estratégia.
 
 Regras duras herdadas por todos os scripts:
 
@@ -95,8 +138,8 @@ colunas `VARCHAR(255)`. Nada de tratamento, nada de agregação.
 Datasets atualmente implementados em `dados/raw/`:
 
 ```
-al_ibge_censoagro/   al_ibge_pac/   al_ibge_paic/   al_ibge_pam/
-al_ibge_pevs/        al_ibge_ppm/   br_csalpha_access/
+al_ibge_censoagro/   al_ibge_pac/   al_ibge_pam/   al_ibge_pevs/
+al_ibge_ppm/   br_bcb_sgs_ipca/   br_csalpha_access/
 br_csalpha_diretorios_brasil/   br_ibge_pas/   br_ibge_pia/   br_ibge_pof/
 mip_csalfa/   pa_me_comex_stat/   pa_rf_rais/
 ```
@@ -128,7 +171,7 @@ class AlIbgePamLavouraPermanente(_PamBase):
 
 Unidades padronizadas: `BRL`, `thousand_BRL`, `USD`, `kg`, `ton`, `L`,
 `head_count`, `hectare`, `m2`, `ratio`, `percent`, `dimensionless`, `YYYY`,
-`YYYY-MM`, `date`, `code` (lista completa em `REFACTORING.md` §4).
+`YYYY-MM`, `date`, `code` (lista completa na seção 4 deste documento).
 
 O linter `tests/test_pydantic_metadata.py` percorre todos os models de
 silver/gold e falha se algum campo não tem `description` + `unit`.
@@ -163,9 +206,19 @@ paralelos de tipos: o pydantic é a **única** fonte de verdade.
 Datasets atualmente em silver:
 
 ```
-al_ibge_censoagro/   al_ibge_pam/   al_ibge_pevs/
-br_ibge_pac/   br_ibge_pas/   br_ibge_pia/   br_ibge_pof/
+al_ibge_censoagro/   al_ibge_pam/   al_ibge_pevs/   al_ibge_ppm/
+br_bcb_sgs_ipca/   br_csalpha_diretorios_brasil/
+br_ibge_pac/   br_ibge_pas/   br_ibge_pia/   br_ibge_pof/   pa_rf_rais/
 ```
+
+> **Rupturas de série do IBGE em 2024.** PAC, PAS e PIA-Empresa passaram a
+> publicar o ano de referência 2024 em agregados novos, incomparáveis com a
+> série anterior (Notas Técnicas PAC/PAS/PIA-Empresa 01/2026). Em raw e silver
+> as duas séries vivem em tabelas separadas — antiga `tbl_1407`/`tbl_2715`/
+> `tbl_1849` (até 2023) e nova `tbl_10653`/`tbl_10762`/`tbl_10457` (2024–) —, e
+> no gold cada série tem sua própria tabela (sufixo `_serie_nova`). Detalhes nos
+> `README.md` de `dados/raw/al_ibge_pac/`, `dados/raw/br_ibge_pas/` e
+> `dados/raw/br_ibge_pia/`.
 
 Helpers de limpeza específicos da camada estão em `dados/silver/utils.py`
 (códigos IBGE) e constantes (mapeamentos de produtos, colunas) em
@@ -181,7 +234,7 @@ valores observados, coeficientes ou indexadores — no formato que a Layer 2 do
 [csalpha](https://github.com/csalpha-team/csalpha) consome.
 
 - **Entrada**: apenas silver. Nunca raw, nunca outra gold.
-- **Saída**: tabela em `$DB_AGREGATED_ZONE.<dataset_id>.<table>`, sempre
+- **Saída**: tabela em `$DB_GOLD_ZONE.<dataset_id>.<table>`, sempre
   com schema pydantic em `dados/gold/models/<dataset_id>.py`.
 - **Consumidores**: a rotina de export (§6) e, por meio dela, o algoritmo.
 
@@ -274,7 +327,7 @@ DB_PREFIX=zona
 DB_RAW_ZONE=${DB_PREFIX}_brutos
 DB_SILVER_ZONE=${DB_PREFIX}_tratados
 DB_GOLD_ZONE=${DB_PREFIX}_gold
-DB_AGREGATED_ZONE=${DB_PREFIX}_agregated
+DB_GOLD_ZONE=${DB_PREFIX}_gold
 ```
 
 Subir o ambiente local (Postgres + PgAdmin) e instruções de execução: veja
