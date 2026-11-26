@@ -12,6 +12,7 @@ done
 
 FLOWS=(
   dados.silver.br_bcb_sgs_ipca.ipca_anual
+  dados.silver.br_csalpha_diretorios_brasil.regioes_integracao
   dados.silver.al_ibge_censoagro.tbl_1909_2006
   dados.silver.al_ibge_censoagro.tbl_1931_2006
   dados.silver.al_ibge_censoagro.tbl_2233_2006
@@ -20,6 +21,8 @@ FLOWS=(
   dados.silver.al_ibge_censoagro.tbl_2518_2006
   dados.silver.al_ibge_censoagro.tbl_2782_2006
   dados.silver.al_ibge_censoagro.tbl_6885_2017
+  dados.silver.al_ibge_censoagro.tbl_6888_2017
+  dados.silver.al_ibge_censoagro.tbl_6897_2017
   dados.silver.al_ibge_censoagro.tbl_6898_2017
   dados.silver.al_ibge_censoagro.tbl_6899_2017
   dados.silver.al_ibge_censoagro.tbl_6949_2017
@@ -32,7 +35,9 @@ FLOWS=(
   dados.silver.br_ibge_pac.tbl_10653
   dados.silver.br_ibge_pas.tbl_2715
   dados.silver.br_ibge_pas.tbl_10762
+  dados.silver.br_ibge_pia.tbl_1848
   dados.silver.br_ibge_pia.tbl_1849
+  dados.silver.br_ibge_pia.tbl_10454
   dados.silver.br_ibge_pia.tbl_10457
   dados.silver.al_ibge_ppm.efetivo_rebanhos
   dados.silver.al_ibge_ppm.producao_origem_animal

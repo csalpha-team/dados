@@ -23,6 +23,8 @@ FLOWS=(
   dados.gold.pa_indexadores_producao_rural.pam_lavoura_temporaria
   dados.gold.pa_indexadores_producao_rural.pevs_extracao_vegetal
   dados.gold.pa_indexadores_producao_rural.ppm_efetivo_rebanhos
+  dados.gold.pa_indexadores_producao_rural.ppm_producao_origem_animal
+  dados.gold.pa_indexadores_producao_rural.ppm_producao_aquicultura
   dados.gold.pa_indexadores_custo_producao_rural.censo_2006_2017_despesas
   dados.gold.pa_indexadores_valor_producao_rural.censo_2006_2017_valor_producao
   dados.gold.pa_indexadores_valor_producao_rural.censo_2017_pessoal_ocupado_producao_rural

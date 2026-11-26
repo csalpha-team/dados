@@ -148,6 +148,17 @@ tabelas `_serie_nova`.
 - Os flows raw de `producao_origem_animal` e `producao_aquicultura` passaram a
   enriquecer a unidade por produto com `get_classificacao_unidades`, como a
   PEVS já fazia — antes gravavam `unidade_medida` vazia.
+- **PIA 1848 e 10454** (segunda rodada): as duas tabelas tinham raw mas nenhum
+  silver. São o recorte CNAE fino (divisão **e** grupo, 143 categorias) das
+  séries antiga e nova, pares da 1849 e da 10457 (só divisão, 27 categorias).
+  `tbl_1848` → 65.637 linhas (17 anos × 27 UF × 143 categorias), `tbl_10454` →
+  3.861 (2024). Os models `BrIbgePiaTbl1848` e `BrIbgePiaTbl10454` registram no
+  campo da CNAE que os dois níveis coexistem: **somar a tabela inteira duplica
+  os valores**.
+- **PPM no gold** (segunda rodada): `producao_origem_animal_ppm` (44.928 linhas
+  = 144 municípios × 6 produtos × 52 anos) e `producao_aquicultura_ppm` (46.800
+  = 144 × 25 × 13 anos, série começa em 2013). Antes só `efetivo_rebanhos_ppm`
+  existia, embora os três silvers estivessem prontos.
 
 ### 3.3 Rebase dos coeficientes de renda para 2024
 
@@ -205,6 +216,39 @@ Medições (máquina de 8 CPUs, 7 GB):
 A versão vetorizada de `currency_fix` foi conferida contra o caminho linha a
 linha em todas as faixas de moeda, com resultado idêntico.
 
+**Execução em lotes (segunda rodada).** Fatiar só a carga não resolvia: o pico
+continuava no meio do flow, na conversão das colunas métricas para `Decimal`
+(um objeto Python por célula). `dados/utils/batching.py` passou a rodar
+extract→transform→validate→load **por lote de anos** (`ANOS_POR_LOTE = 5`), e a
+`CargaEmStaging` acumula os lotes em `<tabela>__stg`, trocando a tabela
+publicada só no fim, numa transação. Isso também corrige um risco antigo: o
+`create_table(drop_if_exists=True)` + `append` deixava a tabela destino
+truncada ou pela metade quando o flow falhava no meio.
+
+| Flow silver | Pico antes | Pico depois | Tempo depois |
+|---|---|---|---|
+| PAM lavoura permanente | ~5,7 GB | **680 MB** | 4min36 |
+| PAM lavoura temporária | ~5,7 GB | **713 MB** | 4min34 |
+| PEVS extração vegetal | 1,4 GB | **375 MB** | 1min27 |
+| PPM efetivo rebanhos | 393 MB | **160 MB** | 18s |
+| PPM produção origem animal | — | **156 MB** | 16s |
+| PPM produção aquicultura | — | **244 MB** | 11s |
+
+Em todos eles a contagem de linhas por ano antes e depois é idêntica, conferida
+linha a linha com `diff`.
+
+Particionar por `ano` só é correto porque nenhuma transformação desses datasets
+cruza anos: `fix_ibge_x_digit` imputa o sentinela `X` pela média do grupo
+UF × (`ano`, `produto`); `products_weight_ratio_fix`, `pevs_volume_to_weight` e
+`currency_fix_series` são linha a linha; e o PK inclui `ano`, então a checagem
+de PK duplicado por lote é tão forte quanto a global. Uma transformação futura
+que dependa de outros anos (média móvel, deflator encadeado, interpolação)
+invalida a estratégia — está registrado no docstring do módulo.
+
+O custo é um scan da tabela raw por lote: na PAM, 11 scans de 13,5 milhões de
+linhas. Na prática o tempo de parede ficou igual ao da versão monolítica, mas é
+o ponto a atacar se a janela de anos crescer muito.
+
 ### 3.6 Documentação e operação
 
 - Os módulos novos foram registrados em `scripts/run_all_raws.sh`,
@@ -220,13 +264,9 @@ linha em todas as faixas de moeda, com resultado idêntico.
 
 ### 4.1 Decisões em aberto
 
-1. **Pico de memória do silver da PAM (~5,7 GB).** Depois das otimizações, o
-   que resta vem da conversão das 8 colunas numéricas para `Decimal` antes da
-   validação e da carga — 1,7 milhão de linhas × 8 colunas de objetos Python.
-   Reduzir exige validar e carregar em fatias, convertendo cada fatia na hora
-   (preserva a precisão, custa um refactor do contrato `validate`/`load`), ou
-   manter `float64` até a carga (simples, mas altera a semântica numérica de
-   valores monetários). Não foi alterado por conta própria.
+1. ~~**Pico de memória do silver da PAM (~5,7 GB).**~~ **Resolvido** na segunda
+   rodada pela execução em lotes de anos (§3.5): 680 MB, sem trocar `Decimal`
+   por `float64` — a precisão monetária ficou intacta.
 2. **Três nomes da PEVS alinhados ao censo**: `Buriti (fruto)`→`buriti-coco`,
    `Pupunha (fruto)`→`pupunha-coco`, `Andiroba (amêndoa)`→`andiroba-semente`.
    Seguem a mesma lógica do `Umbu (fruto)`→`umbu` que já existia, mas o rótulo
@@ -253,7 +293,11 @@ linha em todas as faixas de moeda, com resultado idêntico.
   `pia_industria` (2007–2022, sem flow correspondente) além de
   `pia_industrias`; e `br_despesas_familiares` aparece também como
   `brasil_despesas_familiares`. Falta decidir o que é canônico.
-- **PIA 10454 não tem silver**, por paridade com a 1848, que também não tem.
+- ~~**PIA 10454 não tem silver**, por paridade com a 1848.~~ **Resolvido**:
+  as duas ganharam silver na segunda rodada (§3.2). Nenhuma delas tem gold
+  ainda — o gold `pia_industrias` consome a 1849/10457 (recorte por divisão);
+  usar o recorte fino exige decidir qual nível da CNAE o indexador do Pará deve
+  adotar.
 
 ### 4.3 Operação
 

@@ -410,3 +410,49 @@ class PaIndexadoresEfetivoRebanhosPpm(_BaseRow):
         description="Herd size on Dec 31 (PPM)",
         json_schema_extra={"unit": "head_count"},
     )
+
+
+class PaIndexadoresProducaoOrigemAnimalPpm(_BaseRow):
+    """Produção de origem animal (PPM, agregado 74) nos municípios do Pará."""
+
+    produto: str | None = _PRODUTO
+    producao: Decimal | None = Field(
+        description=(
+            "Quantity produced (PPM). The unit varies by product and is kept in "
+            "``unidade_medida`` (Mil litros for milk, Mil dúzias for eggs, "
+            "Quilogramas for honey, cocoons and wool)."
+        ),
+        json_schema_extra={"unit": "code"},
+    )
+    valor_producao: Decimal | None = Field(
+        description="Production value (PPM)", json_schema_extra={"unit": "1000xBRL"}
+    )
+    unidade_medida: str | None = Field(
+        description="Source unit of ``producao`` (IBGE aggregate 74)",
+        json_schema_extra={"unit": "code"},
+    )
+
+
+class PaIndexadoresProducaoAquiculturaPpm(_BaseRow):
+    """Produção da aquicultura (PPM, agregado 3940) nos municípios do Pará.
+
+    Série começa em 2013 — não há aquicultura na PPM antes disso.
+    """
+
+    produto: str | None = _PRODUTO
+    producao: Decimal | None = Field(
+        description=(
+            "Quantity produced (PPM aquaculture). The unit varies by product and "
+            "is kept in ``unidade_medida`` (usually Quilogramas; Milheiros for "
+            "fingerlings and juveniles)."
+        ),
+        json_schema_extra={"unit": "code"},
+    )
+    valor_producao: Decimal | None = Field(
+        description="Production value (PPM aquaculture)",
+        json_schema_extra={"unit": "1000xBRL"},
+    )
+    unidade_medida: str | None = Field(
+        description="Source unit of ``producao`` (IBGE aggregate 3940)",
+        json_schema_extra={"unit": "code"},
+    )

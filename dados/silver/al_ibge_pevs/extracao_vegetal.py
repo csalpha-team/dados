@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import os
 from decimal import Decimal
+from typing import Sequence
 
 import pandas as pd
 from dotenv import load_dotenv
@@ -25,6 +26,11 @@ from dados.silver.utils import (
     fix_ibge_digits,
     pevs_volume_to_weight,
 )
+from dados.utils.batching import (
+    CargaEmStaging,
+    executar_em_lotes_por_ano,
+    listar_anos,
+)
 from dados.utils.logging import get_logger
 from dados.utils.parallel import validate_rows
 from dados.utils.pydantic_postgres import pydantic_to_postgres_columns
@@ -38,8 +44,11 @@ RAW_TABLE = "produtos_extracao_vegetal"
 
 PK_COLS = ["id_municipio", "ano", "produto"]
 
-# Tabelas grandes: validação e carga fatiadas em threads.
+# Tabelas grandes: validação e carga fatiadas em threads, e o flow inteiro
+# executado em lotes de anos (ver dados/utils/batching.py), para que o pico
+# de memória seja o de um lote e não o da tabela inteira.
 LOAD_MAX_WORKERS = 4
+ANOS_POR_LOTE = 5
 
 COLUMN_RENAME = {
     "Quantidade produzida na extração vegetal": "quantidade_produzida",
@@ -49,7 +58,7 @@ COLUMN_RENAME = {
 log = get_logger(dataset_id=DATASET_ID, zone=ZONE)
 
 
-def extract() -> pd.DataFrame:
+def extract(db: PostgresETL, anos: Sequence[int]) -> pd.DataFrame:
     # Pivot in SQL: the raw landing is ~3M rows long-format; reshaping in
     # pandas via pivot_table OOMs on small workers. Conditional aggregation
     # in Postgres keeps the X/.. sentinels intact for fix_ibge_digits downstream.
@@ -66,16 +75,10 @@ def extract() -> pd.DataFrame:
             MAX(CASE WHEN nome_variavel = 'Quantidade produzida na extração vegetal'
                      THEN unidade_medida END) AS unidade_medida
         FROM {DATASET_ID}.{RAW_TABLE}
+        WHERE CAST(ano AS INTEGER) = ANY(%s)
         GROUP BY ano, id_municipio, id_produto, produto
     """
-    with PostgresETL(
-        host="localhost",
-        database=os.getenv("DB_RAW_ZONE"),
-        user=os.getenv("POSTGRES_USER"),
-        password=os.getenv("POSTGRES_PASSWORD"),
-        schema=DATASET_ID,
-    ) as db:
-        return db.download_data(query)
+    return db.download_data(query, params=(list(anos),))
 
 
 def transform(df: pd.DataFrame) -> pd.DataFrame:
@@ -132,34 +135,46 @@ def validate(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def load(df: pd.DataFrame) -> None:
-    columns = pydantic_to_postgres_columns(AlIbgePevsExtracaoVegetal)
-    with PostgresETL(
-        host="localhost",
-        database=os.getenv("DB_SILVER_ZONE"),
-        user=os.getenv("POSTGRES_USER"),
-        password=os.getenv("POSTGRES_PASSWORD"),
-        schema=DATASET_ID,
-    ) as db:
-        db.create_table(TABLE, columns, drop_if_exists=True)
-        db.load_data(TABLE, df, if_exists="append", max_workers=LOAD_MAX_WORKERS)
-
-
 def flow() -> None:
-    log.info("flow.start", table=TABLE)
+    log.info("flow.start", table=TABLE, anos_por_lote=ANOS_POR_LOTE)
     try:
-        df = extract()
-        log.info("extract.done", rows=len(df))
-        df = transform(df)
-        log.info("transform.done", rows=len(df))
-        df = validate(df)
-        log.info("validate.done", rows=len(df))
-        load(df)
-        log.info("load.done", rows=len(df))
+        with (
+            PostgresETL(
+                host="localhost",
+                database=os.getenv("DB_RAW_ZONE"),
+                user=os.getenv("POSTGRES_USER"),
+                password=os.getenv("POSTGRES_PASSWORD"),
+                schema=DATASET_ID,
+            ) as origem,
+            PostgresETL(
+                host="localhost",
+                database=os.getenv("DB_SILVER_ZONE"),
+                user=os.getenv("POSTGRES_USER"),
+                password=os.getenv("POSTGRES_PASSWORD"),
+                schema=DATASET_ID,
+            ) as destino,
+        ):
+            anos = listar_anos(origem, RAW_TABLE)
+            log.info("extract.anos", anos=len(anos), de=min(anos), ate=max(anos))
+
+            columns = pydantic_to_postgres_columns(AlIbgePevsExtracaoVegetal)
+            with CargaEmStaging(
+                destino, TABLE, columns, max_workers=LOAD_MAX_WORKERS
+            ) as carga:
+                total = executar_em_lotes_por_ano(
+                    anos=anos,
+                    extrair=lambda lote: extract(origem, lote),
+                    transformar=transform,
+                    validar=validate,
+                    carga=carga,
+                    log=log,
+                    anos_por_lote=ANOS_POR_LOTE,
+                )
+            log.info("load.done", rows=total)
     except Exception as exc:
         log.exception("flow.error", error=str(exc))
         raise
-    log.info("flow.end", rows=len(df))
+    log.info("flow.end", rows=total)
 
 
 if __name__ == "__main__":

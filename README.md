@@ -70,6 +70,7 @@ uv run python -m dados.<zona>.<dataset_id>.<tabela>
 | `async_crawler_ibge_municipio`  | `dados/raw/utils/ibge_api_crawler.py`         | Coletas na API Agregados do IBGE.                       |
 | `fix_ibge_digits`, `fix_ibge_x_digit` | `dados/silver/utils.py`                 | Limpeza de códigos especiais do IBGE (`.`, `X`, `-`).   |
 | `parallel_map`, `validate_rows` | `dados/utils/parallel.py`                   | Parse de JSON e validação pydantic fatiados em threads (datasets grandes). |
+| `executar_em_lotes_por_ano`, `CargaEmStaging` | `dados/utils/batching.py` | Flow silver em lotes de anos, com publicação atômica da tabela destino. |
 
 ### Datasets grandes (PAM, PEVS, PPM)
 
@@ -87,6 +88,29 @@ Hoje as duas etapas são fatiadas:
 - Nos flows raw, a leitura e o parse dos 773 JSON por município usam
   `parallel_map` (I/O-bound), com a ordem preservada para o dataframe sair
   determinístico.
+
+Fatiar só a carga não bastava: o pico continuava no meio do flow, na conversão
+das colunas métricas para `Decimal` (um objeto Python por célula) — 5,7 GB na
+PAM. Por isso os flows silver grandes rodam **em lotes de anos**, via
+`dados/utils/batching.py`:
+
+- `listar_anos(db, tabela)` descobre os anos na origem e
+  `executar_em_lotes_por_ano(...)` roda extract→transform→validate→load lote a
+  lote (`ANOS_POR_LOTE = 5`), de modo que o pico é o de um lote.
+- `CargaEmStaging` acumula os lotes em `<tabela>__stg` e só troca a tabela
+  publicada no fim, numa transação (`DROP` + `RENAME`). O caminho antigo
+  (`create_table(drop_if_exists=True)` seguido de `append`) deixava a tabela
+  destino truncada ou pela metade quando um lote falhava.
+- Medido na PAM lavoura permanente: pico de **5,7 GB → 680 MB**, mesmo tempo de
+  parede (~4min30) e contagens por ano idênticas.
+
+Particionar por `ano` só é correto porque nenhuma transformação desses datasets
+cruza anos: `fix_ibge_x_digit` imputa o sentinela `X` pela média do grupo
+UF × (`ano`, `produto`), `products_weight_ratio_fix`, `pevs_volume_to_weight` e
+`currency_fix_series` são linha a linha, e o PK inclui `ano` (a checagem de
+duplicidade por lote é tão forte quanto a global). Uma transformação futura que
+dependa de outros anos — média móvel, deflator encadeado, interpolação — invalida
+a estratégia.
 
 Regras duras herdadas por todos os scripts:
 
